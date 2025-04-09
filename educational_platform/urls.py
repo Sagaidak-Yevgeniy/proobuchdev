@@ -18,6 +18,8 @@ urlpatterns = [
     path('courses/', include('courses.urls')),
     path('lessons/', include('lessons.urls')),
     path('assignments/', include('assignments.urls')),
+    path('gamification/', include('gamification.urls')),
+    path('ai/', include('ai_assistant.urls')),
 ]
 
 # Добавляем обработку медиа-файлов в режиме разработки

@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}История чатов с AI-ассистентом{% endblock %}
+
+{% block content %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200">История чатов с AI-ассистентом</h1>
+        <a href="{% url 'chat_new' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200">
+            <i class="fas fa-plus mr-2"></i>Новый чат
+        </a>
+    </div>
+
+    {% if sessions %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for session in sessions %}
+                <div class="border rounded-lg p-4 hover:shadow-md transition-shadow {% if not session.is_active %}opacity-75{% endif %} dark:border-gray-700">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">{{ session.title }}</h3>
+                        {% if session.is_active %}
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full dark:bg-green-800 dark:text-green-100">Активна</span>
+                        {% else %}
+                            <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full dark:bg-gray-700 dark:text-gray-300">Архив</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        {% if session.course %}
+                            <p><i class="fas fa-book mr-1"></i> Курс: {{ session.course.title }}</p>
+                        {% endif %}
+                        {% if session.lesson %}
+                            <p><i class="fas fa-file-alt mr-1"></i> Урок: {{ session.lesson.title }}</p>
+                        {% endif %}
+                        {% if session.assignment %}
+                            <p><i class="fas fa-tasks mr-1"></i> Задание: {{ session.assignment.title }}</p>
+                        {% endif %}
+                        <p><i class="far fa-clock mr-1"></i> Обновлен: {{ session.updated_at|date:"d.m.Y H:i" }}</p>
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <a href="{% url 'chat_detail' session.id %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mr-3">
+                            <i class="fas fa-comments mr-1"></i>Открыть
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-8">
+            <div class="text-5xl text-gray-300 dark:text-gray-600 mb-3">
+                <i class="fas fa-robot"></i>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">У вас пока нет чатов с AI-ассистентом</p>
+            <a href="{% url 'chat_new' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>Начать новый чат
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Что умеет AI-ассистент?</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="border rounded-lg p-4 dark:border-gray-700">
+            <div class="flex items-center mb-3">
+                <div class="text-blue-600 text-xl mr-3"><i class="fas fa-question-circle"></i></div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Отвечает на вопросы</h3>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400">Задавайте вопросы по программированию, и AI-ассистент предоставит детальные ответы с пояснениями и примерами.</p>
+        </div>
+        
+        <div class="border rounded-lg p-4 dark:border-gray-700">
+            <div class="flex items-center mb-3">
+                <div class="text-blue-600 text-xl mr-3"><i class="fas fa-code"></i></div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Анализирует код</h3>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400">Отправьте свой код, и AI-ассистент поможет найти ошибки, оптимизировать его и предложит улучшения.</p>
+        </div>
+        
+        <div class="border rounded-lg p-4 dark:border-gray-700">
+            <div class="flex items-center mb-3">
+                <div class="text-blue-600 text-xl mr-3"><i class="fas fa-lightbulb"></i></div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Дает подсказки</h3>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400">Запрашивайте подсказки для решения заданий, чтобы получить направление, не раскрывая полного решения.</p>
+        </div>
+        
+        <div class="border rounded-lg p-4 dark:border-gray-700">
+            <div class="flex items-center mb-3">
+                <div class="text-blue-600 text-xl mr-3"><i class="fas fa-book-open"></i></div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Объясняет концепции</h3>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400">Попросите объяснить сложные концепции программирования простым и понятным языком.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

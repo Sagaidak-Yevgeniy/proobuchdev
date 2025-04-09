@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block title %}Профиль игрока - {{ profile_user.username }}{% endblock %}
+
+{% block content %}
+<div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-6">
+    <div class="flex flex-col md:flex-row items-start">
+        <div class="w-full md:w-1/3 mb-6 md:mb-0 md:mr-6">
+            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                <div class="flex items-center mb-6">
+                    <div class="mr-4">
+                        {% if profile_user.avatar %}
+                            <img src="{{ profile_user.avatar.url }}" alt="{{ profile_user.username }}" class="w-20 h-20 rounded-full object-cover">
+                        {% else %}
+                            <div class="w-20 h-20 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full">
+                                <i class="fas fa-user text-3xl"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-800 dark:text-gray-200">{{ profile_user.get_full_name|default:profile_user.username }}</h1>
+                        <p class="text-gray-600 dark:text-gray-400">{{ profile_user.username }}</p>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-gray-700 dark:text-gray-300">Очки</span>
+                        <span class="text-blue-600 dark:text-blue-400 font-bold">{{ total_points }}</span>
+                    </div>
+                    <div class="mb-4">
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-center">
+                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-200">{{ user_achievements.count }}</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Достижений</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-center">
+                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-200">{{ user_badges.count }}</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Значков</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-center">
+                        <a href="{% url 'leaderboard' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-trophy mr-2"></i> Таблица лидеров
+                        </a>
+                    </div>
+                </div>
+                
+                {% if achievement_stats %}
+                    <div class="mb-6">
+                        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Статистика достижений</h2>
+                        <div class="space-y-3">
+                            {% for stat in achievement_stats %}
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm text-gray-600 dark:text-gray-400">
+                                            {% if stat.achievement__type == 'course' %}
+                                                <i class="fas fa-book mr-1"></i> Курсы
+                                            {% elif stat.achievement__type == 'lesson' %}
+                                                <i class="fas fa-chalkboard-teacher mr-1"></i> Уроки
+                                            {% elif stat.achievement__type == 'assignment' %}
+                                                <i class="fas fa-tasks mr-1"></i> Задания
+                                            {% elif stat.achievement__type == 'code' %}
+                                                <i class="fas fa-code mr-1"></i> Код
+                                            {% elif stat.achievement__type == 'forum' %}
+                                                <i class="fas fa-comments mr-1"></i> Форум
+                                            {% elif stat.achievement__type == 'activity' %}
+                                                <i class="fas fa-chart-line mr-1"></i> Активность
+                                            {% else %}
+                                                <i class="fas fa-award mr-1"></i> Особые
+                                            {% endif %}
+                                        </span>
+                                        <span class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ stat.count }}</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                        <div class="bg-blue-600 h-2 rounded-full" style="width: {% widthratio stat.count user_achievements.count 100 %}%"></div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                {% if points_history %}
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Недавняя активность</h2>
+                        <div class="space-y-3">
+                            {% for entry in points_history %}
+                                <div class="flex items-start py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                                    <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full 
+                                        {% if entry.points > 0 %}bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300
+                                        {% elif entry.points < 0 %}bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300
+                                        {% else %}bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300{% endif %} mr-3">
+                                        {% if entry.action == 'achievement' %}
+                                            <i class="fas fa-trophy text-sm"></i>
+                                        {% elif entry.action == 'assignment' %}
+                                            <i class="fas fa-tasks text-sm"></i>
+                                        {% elif entry.action == 'streak' %}
+                                            <i class="fas fa-fire text-sm"></i>
+                                        {% elif entry.action == 'login' %}
+                                            <i class="fas fa-sign-in-alt text-sm"></i>
+                                        {% elif entry.action == 'forum' %}
+                                            <i class="fas fa-comments text-sm"></i>
+                                        {% elif entry.action == 'help' %}
+                                            <i class="fas fa-hands-helping text-sm"></i>
+                                        {% elif entry.action == 'admin' %}
+                                            <i class="fas fa-user-shield text-sm"></i>
+                                        {% else %}
+                                            <i class="fas fa-star text-sm"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-grow">
+                                        <div class="flex justify-between items-start">
+                                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ entry.description }}</p>
+                                            <span class="text-sm font-semibold 
+                                                {% if entry.points > 0 %}text-green-600 dark:text-green-400
+                                                {% elif entry.points < 0 %}text-red-600 dark:text-red-400
+                                                {% else %}text-gray-600 dark:text-gray-400{% endif %}">
+                                                {% if entry.points > 0 %}+{% endif %}{{ entry.points }}
+                                            </span>
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                            <i class="far fa-clock mr-1"></i> {{ entry.created_at|date:"d.m.Y H:i" }}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="w-full md:w-2/3">
+            <div class="mb-6">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Значки</h2>
+                {% if user_badges %}
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {% for user_badge in user_badges %}
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 flex flex-col items-center hover:shadow-md transition-shadow">
+                                {% if user_badge.badge.icon %}
+                                    <img src="{{ user_badge.badge.icon.url }}" alt="{{ user_badge.badge.name }}" class="w-16 h-16 mb-3 object-contain">
+                                {% else %}
+                                    <div class="w-16 h-16 mb-3 flex items-center justify-center bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-full">
+                                        <i class="fas fa-medal text-2xl"></i>
+                                    </div>
+                                {% endif %}
+                                <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 text-center">{{ user_badge.badge.name }}</h3>
+                                <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                    {{ user_badge.earned_at|date:"d.m.Y" }}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <p class="text-gray-600 dark:text-gray-400">Пока нет полученных значков</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div>
+                <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Достижения</h2>
+                {% if user_achievements %}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {% for user_achievement in user_achievements %}
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow bg-white dark:bg-gray-800">
+                                <div class="flex items-start">
+                                    {% if user_achievement.achievement.icon %}
+                                        <img src="{{ user_achievement.achievement.icon.url }}" alt="{{ user_achievement.achievement.name }}" class="w-12 h-12 mr-4 object-contain">
+                                    {% else %}
+                                        <div class="w-12 h-12 mr-4 flex items-center justify-center bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-full">
+                                            <i class="fas fa-trophy text-xl"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200">{{ user_achievement.achievement.name }}</h3>
+                                        <div class="flex items-center mb-1">
+                                            <span class="text-xs text-gray-600 dark:text-gray-400 mr-2">{{ user_achievement.achievement.get_type_display }}</span>
+                                            <span class="text-xs px-2 py-0.5 rounded-full 
+                                                {% if user_achievement.achievement.difficulty == 'easy' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                                {% elif user_achievement.achievement.difficulty == 'medium' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                                {% elif user_achievement.achievement.difficulty == 'hard' %}bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200
+                                                {% else %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200{% endif %}">
+                                                {{ user_achievement.achievement.get_difficulty_display }}
+                                            </span>
+                                        </div>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">{{ user_achievement.achievement.description }}</p>
+                                        <div class="text-xs text-gray-500 dark:text-gray-500">
+                                            <i class="far fa-clock mr-1"></i> {{ user_achievement.earned_at|date:"d.m.Y" }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <p class="text-gray-600 dark:text-gray-400">Пока нет полученных достижений</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

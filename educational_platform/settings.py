@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'courses.apps.CoursesConfig',
     'lessons.apps.LessonsConfig',
     'assignments.apps.AssignmentsConfig',
+    'gamification.apps.GamificationConfig',
+    'ai_assistant.apps.AiAssistantConfig',
 ]
 
 MIDDLEWARE = [

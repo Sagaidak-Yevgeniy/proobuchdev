@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Значки{% endblock %}
+
+{% block content %}
+<div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Ваши значки</h1>
+        <div class="bg-blue-600 text-white py-2 px-4 rounded-lg">
+            <i class="fas fa-star mr-1"></i> Всего очков: <span class="font-bold">{{ total_points }}</span>
+        </div>
+    </div>
+
+    {% if user_badges %}
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+            {% for user_badge in user_badges %}
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 flex flex-col items-center">
+                    <div class="mb-4">
+                        {% if user_badge.badge.icon %}
+                            <img src="{{ user_badge.badge.icon.url }}" alt="{{ user_badge.badge.name }}" class="w-24 h-24 object-contain">
+                        {% else %}
+                            <div class="w-24 h-24 flex items-center justify-center bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-full">
+                                <i class="fas fa-medal text-4xl"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">{{ user_badge.badge.name }}</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{{ user_badge.badge.description }}</p>
+                        <div class="text-xs text-gray-500 dark:text-gray-500">
+                            <i class="far fa-clock mr-1"></i> Получен: {{ user_badge.earned_at|date:"d.m.Y" }}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-8 mb-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div class="text-5xl text-gray-300 dark:text-gray-600 mb-4">
+                <i class="fas fa-medal"></i>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">У вас пока нет значков</p>
+            <p class="text-gray-600 dark:text-gray-400">Зарабатывайте очки, чтобы получать значки!</p>
+        </div>
+    {% endif %}
+
+    <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Доступные значки</h2>
+    
+    {% if available_badges %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for badge in available_badges %}
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 {% if total_points >= badge.required_points %}bg-yellow-50 dark:bg-yellow-900 border-yellow-300 dark:border-yellow-700{% else %}opacity-60{% endif %} hover:opacity-100 transition-opacity">
+                    <div class="flex items-center">
+                        <div class="mr-4">
+                            {% if badge.icon %}
+                                <img src="{{ badge.icon.url }}" alt="{{ badge.name }}" class="w-16 h-16 object-contain opacity-50">
+                            {% else %}
+                                <div class="w-16 h-16 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full">
+                                    <i class="fas fa-medal text-2xl"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">{{ badge.name }}</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ badge.description }}</p>
+                            {% if total_points >= badge.required_points %}
+                                <div class="inline-flex items-center px-2 py-1 rounded-lg bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs">
+                                    <i class="fas fa-check-circle mr-1"></i> Вы можете получить этот значок!
+                                </div>
+                            {% else %}
+                                <div class="text-sm text-gray-500 dark:text-gray-500">
+                                    <i class="fas fa-lock mr-1"></i> Требуется {{ badge.required_points }} очков 
+                                    <span class="text-xs ml-1">(осталось {{ badge.required_points|add:"-"|add:total_points }})</span>
+                                </div>
+                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: {% widthratio total_points badge.required_points 100 %}%"></div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <p class="text-gray-600 dark:text-gray-400">Вы получили все доступные значки!</p>
+        </div>
+    {% endif %}
+    
+    <div class="mt-6 text-center">
+        <a href="{% url 'leaderboard' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+            <i class="fas fa-trophy mr-2"></i> Таблица лидеров
+        </a>
+    </div>
+</div>
+{% endblock %}

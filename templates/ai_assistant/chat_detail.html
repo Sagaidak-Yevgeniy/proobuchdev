@@ -1,0 +1,479 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Чат с AI-ассистентом - {{ session.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        max-height: calc(100vh - 350px);
+        min-height: 400px;
+    }
+    
+    .message-user {
+        background-color: #e9f5ff;
+        border-radius: 1rem 1rem 0 1rem;
+    }
+    
+    .message-assistant {
+        background-color: #f0f0f0;
+        border-radius: 1rem 1rem 1rem 0;
+    }
+    
+    .message-system {
+        background-color: #fff3e0;
+        border-radius: 0.5rem;
+        font-style: italic;
+    }
+    
+    .dark .message-user {
+        background-color: #1e3a5f;
+    }
+    
+    .dark .message-assistant {
+        background-color: #2d2d2d;
+    }
+    
+    .dark .message-system {
+        background-color: #3d341f;
+    }
+    
+    /* Подсветка синтаксиса */
+    pre {
+        background-color: #f5f5f5;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        overflow-x: auto;
+        margin: 1rem 0;
+    }
+    
+    .dark pre {
+        background-color: #1a1a1a;
+    }
+    
+    /* Стили для рейтинга */
+    .rating {
+        display: flex;
+        justify-content: center;
+        margin-top: 0.5rem;
+    }
+    
+    .rating input {
+        display: none;
+    }
+    
+    .rating label {
+        cursor: pointer;
+        width: 1.5rem;
+        font-size: 1.5rem;
+        color: #ddd;
+        transition: all 0.2s ease;
+    }
+    
+    .rating input:checked ~ label {
+        color: #ffd700;
+    }
+    
+    .rating:hover label {
+        color: #ffd700;
+    }
+    
+    .rating label:hover ~ label {
+        color: #ddd;
+    }
+    
+    /* Анимация загрузки */
+    .dot-typing {
+        position: relative;
+        left: -9999px;
+        width: 10px;
+        height: 10px;
+        border-radius: 5px;
+        background-color: #5a67d8;
+        color: #5a67d8;
+        box-shadow: 9984px 0 0 0 #5a67d8, 9999px 0 0 0 #5a67d8, 10014px 0 0 0 #5a67d8;
+        animation: dot-typing 1.5s infinite linear;
+    }
+    
+    @keyframes dot-typing {
+        0% {
+            box-shadow: 9984px 0 0 0 #5a67d8, 9999px 0 0 0 #5a67d8, 10014px 0 0 0 #5a67d8;
+        }
+        16.667% {
+            box-shadow: 9984px -10px 0 0 #5a67d8, 9999px 0 0 0 #5a67d8, 10014px 0 0 0 #5a67d8;
+        }
+        33.333% {
+            box-shadow: 9984px 0 0 0 #5a67d8, 9999px 0 0 0 #5a67d8, 10014px 0 0 0 #5a67d8;
+        }
+        50% {
+            box-shadow: 9984px 0 0 0 #5a67d8, 9999px -10px 0 0 #5a67d8, 10014px 0 0 0 #5a67d8;
+        }
+        66.667% {
+            box-shadow: 9984px 0 0 0 #5a67d8, 9999px 0 0 0 #5a67d8, 10014px 0 0 0 #5a67d8;
+        }
+        83.333% {
+            box-shadow: 9984px 0 0 0 #5a67d8, 9999px 0 0 0 #5a67d8, 10014px -10px 0 0 #5a67d8;
+        }
+        100% {
+            box-shadow: 9984px 0 0 0 #5a67d8, 9999px 0 0 0 #5a67d8, 10014px 0 0 0 #5a67d8;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+    <!-- Заголовок чата -->
+    <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center">
+        <div>
+            <h1 class="text-xl font-bold text-gray-800 dark:text-gray-200">{{ session.title }}</h1>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+                {% if session.course %}
+                    <span class="mr-3"><i class="fas fa-book mr-1"></i> {{ session.course.title }}</span>
+                {% endif %}
+                {% if session.lesson %}
+                    <span class="mr-3"><i class="fas fa-file-alt mr-1"></i> {{ session.lesson.title }}</span>
+                {% endif %}
+                {% if session.assignment %}
+                    <span><i class="fas fa-tasks mr-1"></i> {{ session.assignment.title }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div>
+            <a href="{% url 'chat_history' %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                <i class="fas fa-arrow-left mr-1"></i>Назад к списку
+            </a>
+        </div>
+    </div>
+    
+    <!-- Область сообщений -->
+    <div id="chatMessages" class="chat-container p-4 overflow-y-auto">
+        {% if not messages %}
+            <div class="text-center py-10 text-gray-500 dark:text-gray-400">
+                <div class="text-5xl mb-4"><i class="fas fa-robot"></i></div>
+                <p>Начните беседу с AI-ассистентом</p>
+            </div>
+        {% else %}
+            {% for message in messages %}
+                <div class="message mb-4 {% if message.role == 'user' %}ml-auto max-w-3/4{% elif message.role == 'assistant' %}mr-auto max-w-3/4{% else %}mx-auto max-w-md{% endif %}">
+                    {% if message.role == 'user' %}
+                        <div class="flex justify-end mb-1 text-sm text-gray-600 dark:text-gray-400">
+                            <span>Вы</span>
+                            <span class="ml-2">{{ message.created_at|date:"H:i" }}</span>
+                        </div>
+                        <div class="message-user p-3 text-gray-800 dark:text-gray-200">
+                            {{ message.content|linebreaks }}
+                        </div>
+                    {% elif message.role == 'assistant' %}
+                        <div class="flex justify-start mb-1 text-sm text-gray-600 dark:text-gray-400">
+                            <span>AI-ассистент</span>
+                            <span class="ml-2">{{ message.created_at|date:"H:i" }}</span>
+                            <div class="feedback-buttons ml-2">
+                                <button onclick="toggleFeedback('{{ message.id }}')" class="text-gray-500 hover:text-blue-500 text-xs">
+                                    <i class="far fa-thumbs-up"></i> Оценить
+                                </button>
+                            </div>
+                        </div>
+                        <div class="message-assistant p-3 text-gray-800 dark:text-gray-200">
+                            <div class="message-content">{{ message.content|linebreaks|safe }}</div>
+                            <div id="feedback-form-{{ message.id }}" class="feedback-form hidden mt-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                <div class="text-sm font-medium mb-2">Оцените ответ:</div>
+                                <div class="rating mb-2" id="rating-{{ message.id }}">
+                                    <input type="radio" id="star5-{{ message.id }}" name="rating-{{ message.id }}" value="5" />
+                                    <label for="star5-{{ message.id }}">★</label>
+                                    <input type="radio" id="star4-{{ message.id }}" name="rating-{{ message.id }}" value="4" />
+                                    <label for="star4-{{ message.id }}">★</label>
+                                    <input type="radio" id="star3-{{ message.id }}" name="rating-{{ message.id }}" value="3" />
+                                    <label for="star3-{{ message.id }}">★</label>
+                                    <input type="radio" id="star2-{{ message.id }}" name="rating-{{ message.id }}" value="2" />
+                                    <label for="star2-{{ message.id }}">★</label>
+                                    <input type="radio" id="star1-{{ message.id }}" name="rating-{{ message.id }}" value="1" />
+                                    <label for="star1-{{ message.id }}">★</label>
+                                </div>
+                                <div>
+                                    <textarea id="feedback-comment-{{ message.id }}" class="w-full p-2 border rounded dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600" placeholder="Комментарий (необязательно)"></textarea>
+                                </div>
+                                <div class="mt-2 text-right">
+                                    <button onclick="submitFeedback('{{ message.id }}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">Отправить</button>
+                                    <button onclick="toggleFeedback('{{ message.id }}')" class="bg-gray-300 hover:bg-gray-400 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200 px-3 py-1 rounded text-sm ml-2">Отмена</button>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="message-system p-2 text-center text-gray-600 dark:text-gray-400 text-sm">
+                            {{ message.content }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% endif %}
+        <div id="typingIndicator" class="hidden">
+            <div class="flex justify-start mb-1 text-sm text-gray-600 dark:text-gray-400">
+                <span>AI-ассистент печатает...</span>
+            </div>
+            <div class="message-assistant p-3 inline-block">
+                <div class="dot-typing"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Форма отправки сообщения -->
+    <div class="p-4 border-t dark:border-gray-700">
+        {% if ai_available %}
+            <form id="messageForm" class="flex flex-col space-y-2">
+                <textarea id="messageInput" rows="3" class="w-full p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600" placeholder="Напишите сообщение..."></textarea>
+                <div class="flex justify-between items-center">
+                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                        <span id="charCount">0</span> / 2000 символов
+                    </div>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-200 flex items-center">
+                        <span>Отправить</span>
+                        <i class="fas fa-paper-plane ml-2"></i>
+                    </button>
+                </div>
+            </form>
+        {% else %}
+            <div class="bg-yellow-100 text-yellow-800 p-4 rounded-lg dark:bg-yellow-800 dark:text-yellow-100">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span class="font-bold">AI-ассистент недоступен</span>
+                </div>
+                <p>API ключ не настроен. Пожалуйста, обратитесь к администратору платформы.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@2.3.3/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.24.1/prism.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageForm = document.getElementById('messageForm');
+    const messageInput = document.getElementById('messageInput');
+    const chatMessages = document.getElementById('chatMessages');
+    const charCount = document.getElementById('charCount');
+    const typingIndicator = document.getElementById('typingIndicator');
+    
+    // Прокрутка чата вниз
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    // Вызываем при загрузке страницы
+    scrollToBottom();
+    
+    // Отслеживание количества символов
+    messageInput.addEventListener('input', function() {
+        const count = this.value.length;
+        charCount.textContent = count;
+        
+        if (count > 2000) {
+            charCount.classList.add('text-red-600');
+        } else {
+            charCount.classList.remove('text-red-600');
+        }
+    });
+    
+    // Обработка отправки формы
+    if (messageForm) {
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            if (message.length > 2000) {
+                alert('Сообщение слишком длинное. Максимальная длина - 2000 символов.');
+                return;
+            }
+            
+            // Показываем сообщение пользователя
+            const userMessage = document.createElement('div');
+            userMessage.className = 'message mb-4 ml-auto max-w-3/4';
+            userMessage.innerHTML = `
+                <div class="flex justify-end mb-1 text-sm text-gray-600 dark:text-gray-400">
+                    <span>Вы</span>
+                    <span class="ml-2">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+                <div class="message-user p-3 text-gray-800 dark:text-gray-200">
+                    ${message.replace(/\n/g, '<br>')}
+                </div>
+            `;
+            chatMessages.appendChild(userMessage);
+            scrollToBottom();
+            
+            // Очищаем поле ввода
+            messageInput.value = '';
+            charCount.textContent = '0';
+            
+            // Показываем индикатор печати
+            typingIndicator.classList.remove('hidden');
+            scrollToBottom();
+            
+            // Отправляем запрос на сервер
+            fetch('{% url "chat_send_message" session.id %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    message: message
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Скрываем индикатор печати
+                typingIndicator.classList.add('hidden');
+                
+                if (data.success) {
+                    // Показываем ответ ассистента
+                    const assistantMessage = document.createElement('div');
+                    assistantMessage.className = 'message mb-4 mr-auto max-w-3/4';
+                    
+                    // Форматируем содержимое сообщения с поддержкой Markdown
+                    let content = data.message;
+                    
+                    // Форматирование кода
+                    content = content.replace(/```([\s\S]*?)```/g, function(match, p1) {
+                        return '<pre><code>' + p1 + '</code></pre>';
+                    });
+                    
+                    assistantMessage.innerHTML = `
+                        <div class="flex justify-start mb-1 text-sm text-gray-600 dark:text-gray-400">
+                            <span>AI-ассистент</span>
+                            <span class="ml-2">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            <div class="feedback-buttons ml-2">
+                                <button onclick="toggleFeedback('${data.message_id}')" class="text-gray-500 hover:text-blue-500 text-xs">
+                                    <i class="far fa-thumbs-up"></i> Оценить
+                                </button>
+                            </div>
+                        </div>
+                        <div class="message-assistant p-3 text-gray-800 dark:text-gray-200">
+                            <div class="message-content">${content.replace(/\n/g, '<br>')}</div>
+                            <div id="feedback-form-${data.message_id}" class="feedback-form hidden mt-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                <div class="text-sm font-medium mb-2">Оцените ответ:</div>
+                                <div class="rating mb-2" id="rating-${data.message_id}">
+                                    <input type="radio" id="star5-${data.message_id}" name="rating-${data.message_id}" value="5" />
+                                    <label for="star5-${data.message_id}">★</label>
+                                    <input type="radio" id="star4-${data.message_id}" name="rating-${data.message_id}" value="4" />
+                                    <label for="star4-${data.message_id}">★</label>
+                                    <input type="radio" id="star3-${data.message_id}" name="rating-${data.message_id}" value="3" />
+                                    <label for="star3-${data.message_id}">★</label>
+                                    <input type="radio" id="star2-${data.message_id}" name="rating-${data.message_id}" value="2" />
+                                    <label for="star2-${data.message_id}">★</label>
+                                    <input type="radio" id="star1-${data.message_id}" name="rating-${data.message_id}" value="1" />
+                                    <label for="star1-${data.message_id}">★</label>
+                                </div>
+                                <div>
+                                    <textarea id="feedback-comment-${data.message_id}" class="w-full p-2 border rounded dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600" placeholder="Комментарий (необязательно)"></textarea>
+                                </div>
+                                <div class="mt-2 text-right">
+                                    <button onclick="submitFeedback('${data.message_id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">Отправить</button>
+                                    <button onclick="toggleFeedback('${data.message_id}')" class="bg-gray-300 hover:bg-gray-400 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200 px-3 py-1 rounded text-sm ml-2">Отмена</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    chatMessages.appendChild(assistantMessage);
+                } else {
+                    // Показываем сообщение об ошибке
+                    const errorMessage = document.createElement('div');
+                    errorMessage.className = 'message mb-4 mx-auto max-w-md';
+                    errorMessage.innerHTML = `
+                        <div class="message-system p-2 text-center text-gray-600 dark:text-gray-400 text-sm">
+                            <i class="fas fa-exclamation-triangle mr-1"></i> Ошибка: ${data.error}
+                        </div>
+                    `;
+                    chatMessages.appendChild(errorMessage);
+                }
+                
+                scrollToBottom();
+            })
+            .catch(error => {
+                // Скрываем индикатор печати
+                typingIndicator.classList.add('hidden');
+                
+                // Показываем сообщение об ошибке
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'message mb-4 mx-auto max-w-md';
+                errorMessage.innerHTML = `
+                    <div class="message-system p-2 text-center text-gray-600 dark:text-gray-400 text-sm">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> Ошибка сети. Пожалуйста, попробуйте позже.
+                    </div>
+                `;
+                chatMessages.appendChild(errorMessage);
+                scrollToBottom();
+            });
+        });
+    }
+});
+
+// Функция для показа/скрытия формы обратной связи
+function toggleFeedback(messageId) {
+    const feedbackForm = document.getElementById(`feedback-form-${messageId}`);
+    feedbackForm.classList.toggle('hidden');
+}
+
+// Функция для отправки обратной связи
+function submitFeedback(messageId) {
+    const rating = document.querySelector(`input[name="rating-${messageId}"]:checked`);
+    if (!rating) {
+        alert('Пожалуйста, выберите оценку.');
+        return;
+    }
+    
+    const comment = document.getElementById(`feedback-comment-${messageId}`).value;
+    
+    fetch(`{% url 'chat_feedback' session.id=session.id message_id=0 %}`.replace('0', messageId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            rating: rating.value,
+            comment: comment
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const feedbackForm = document.getElementById(`feedback-form-${messageId}`);
+            feedbackForm.innerHTML = `
+                <div class="text-center text-green-600 dark:text-green-400 py-2">
+                    <i class="fas fa-check-circle mr-2"></i> Спасибо за обратную связь!
+                </div>
+            `;
+            
+            setTimeout(() => {
+                feedbackForm.classList.add('hidden');
+            }, 2000);
+        } else {
+            alert(`Ошибка: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        alert('Ошибка сети. Пожалуйста, попробуйте позже.');
+    });
+}
+
+// Обработка подсветки кода при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Заменяем блоки кода на pre>code
+    document.querySelectorAll('.message-content').forEach(function(element) {
+        let content = element.innerHTML;
+        
+        // Заменяем ```code``` на <pre><code>code</code></pre>
+        content = content.replace(/```([\s\S]*?)```/g, function(match, p1) {
+            return '<pre><code>' + p1 + '</code></pre>';
+        });
+        
+        element.innerHTML = content;
+    });
+});
+</script>
+{% endblock %}
