@@ -11,9 +11,15 @@ class CustomUserCreationForm(UserCreationForm):
         widget=forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'Email'})
     )
     
+    # Убираем роль администратора из доступных опций при регистрации
+    ROLE_CHOICES = [
+        (Profile.STUDENT, 'Ученик'),
+        (Profile.TEACHER, 'Преподаватель'),
+    ]
+    
     role = forms.ChoiceField(
         label='Роль',
-        choices=Profile.ROLES,
+        choices=ROLE_CHOICES,
         required=True,
         widget=forms.Select(attrs={'class': 'form-select'})
     )

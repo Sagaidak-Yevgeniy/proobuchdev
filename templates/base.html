@@ -90,10 +90,19 @@
                         <i class="fas fa-graduation-cap mr-2"></i><span class="md:inline hidden">ПроОбучение</span><span class="md:hidden">ПроОбучение</span>
                     </a>
                     
-                    <!-- Гамбургер меню для мобильных устройств -->
-                    <button id="mobile-menu-button" class="lg:hidden text-white focus:outline-none">
-                        <i class="fas fa-bars text-xl"></i>
-                    </button>
+                    <div class="flex items-center">
+                        <!-- Колокольчик уведомлений (только для авторизованных пользователей) -->
+                        {% if user.is_authenticated %}
+                        <div class="mr-3">
+                            {% include "components/notification_dropdown.html" %}
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Гамбургер меню для мобильных устройств -->
+                        <button id="mobile-menu-button" class="lg:hidden text-white focus:outline-none">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Навигационное меню -->
@@ -117,10 +126,6 @@
                     
                     <div class="flex flex-col lg:flex-row lg:items-center lg:space-x-4">
                         {% if user.is_authenticated %}
-                            <!-- Компонент уведомлений -->
-                            <div class="py-2 lg:py-0">
-                                {% include "components/notification_dropdown.html" %}
-                            </div>
                             <div class="relative py-2 lg:py-0">
                                 <button class="flex items-center hover:text-blue-200 w-full lg:w-auto" onclick="toggleDropdown()">
                                     <span class="truncate max-w-[150px]">{{ user.username }}</span> <span class="text-xs">({{ user.profile.get_role_display }})</span> <i class="fas fa-chevron-down ml-1 text-xs"></i>
