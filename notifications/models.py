@@ -97,6 +97,8 @@ class NotificationSettings(models.Model):
     receive_lesson = models.BooleanField(default=True, verbose_name=_('Уведомления об уроках'))
     receive_assignment = models.BooleanField(default=True, verbose_name=_('Уведомления о заданиях'))
     receive_message = models.BooleanField(default=True, verbose_name=_('Уведомления о сообщениях'))
+    receive_system = models.BooleanField(default=True, verbose_name=_('Системные уведомления'))
+    receive_deadline = models.BooleanField(default=True, blank=True, null=True, verbose_name=_('Уведомления о дедлайнах'))
     
     # Email уведомления
     email_notifications = models.BooleanField(default=True, verbose_name=_('Email-уведомления'))
@@ -145,6 +147,10 @@ class NotificationSettings(models.Model):
             return self.receive_assignment
         elif notification_type == 'message':
             return self.receive_message
+        elif notification_type == 'deadline':
+            return self.receive_deadline if self.receive_deadline is not None else True
+        elif notification_type == 'system':
+            return self.receive_system
             
         # Для остальных типов (info, success, warning, error) всегда True
         return True
