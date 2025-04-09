@@ -428,7 +428,7 @@ function submitFeedback(messageId) {
     
     const comment = document.getElementById(`feedback-comment-${messageId}`).value;
     
-    fetch(`{% url 'chat_feedback' session.id message_id=0 %}`.replace('0', messageId), {
+    fetch(`{% url 'chat_feedback' session_id=session.id message_id=0 %}`.replace('0', messageId), {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

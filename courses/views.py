@@ -118,6 +118,91 @@ def course_edit(request, slug):
     
     return render(request, 'courses/course_edit.html', context)
 
+
+@login_required
+def course_edit_content(request, slug):
+    """Редактирование содержимого курса (уроки и материалы)"""
+    from django.db import models
+    from lessons.models import Lesson, LessonContent
+    from lessons.forms import LessonForm, LessonContentForm
+    
+    course = get_object_or_404(Course, slug=slug)
+    
+    # Проверка прав доступа
+    if request.user != course.author and not request.user.profile.role == 'admin':
+        messages.error(request, 'У вас нет прав для редактирования содержимого этого курса.')
+        return redirect('course_detail', slug=course.slug)
+    
+    # Получаем все уроки курса с их содержимым
+    lessons = Lesson.objects.filter(course=course).order_by('order')
+    
+    context = {
+        'course': course,
+        'lessons': lessons,
+        'title': 'Редактирование содержимого курса'
+    }
+    
+    # Если это POST запрос для обновления урока
+    if request.method == 'POST' and 'lesson_id' in request.POST:
+        lesson_id = request.POST.get('lesson_id')
+        lesson = get_object_or_404(Lesson, id=lesson_id, course=course)
+        
+        lesson_form = LessonForm(request.POST, instance=lesson)
+        if lesson_form.is_valid():
+            lesson_form.save()
+            
+            # Если урок содержит содержимое, обновляем его
+            if hasattr(lesson, 'content'):
+                content_form = LessonContentForm(request.POST, instance=lesson.content)
+                if content_form.is_valid():
+                    content_form.save()
+            else:
+                # Создаем новое содержимое для урока
+                content_form = LessonContentForm(request.POST)
+                if content_form.is_valid():
+                    content = content_form.save(commit=False)
+                    content.lesson = lesson
+                    content.save()
+            
+            messages.success(request, f'Урок "{lesson.title}" успешно обновлен!')
+            return redirect('course_edit_content', slug=course.slug)
+    
+    # Если это POST запрос для создания нового урока
+    elif request.method == 'POST' and 'new_lesson' in request.POST:
+        lesson_form = LessonForm(request.POST)
+        content_form = LessonContentForm(request.POST)
+        
+        if lesson_form.is_valid():
+            lesson = lesson_form.save(commit=False)
+            lesson.course = course
+            
+            # Определяем порядковый номер для нового урока
+            if not lesson.order:
+                max_order = lessons.aggregate(models.Max('order'))['order__max'] or 0
+                lesson.order = max_order + 1
+            
+            lesson.save()
+            
+            if content_form.is_valid():
+                content = content_form.save(commit=False)
+                content.lesson = lesson
+                content.save()
+            
+            messages.success(request, f'Новый урок "{lesson.title}" успешно создан!')
+            return redirect('course_edit_content', slug=course.slug)
+    
+    # Если это POST запрос для удаления урока
+    elif request.method == 'POST' and 'delete_lesson' in request.POST:
+        lesson_id = request.POST.get('delete_lesson')
+        lesson = get_object_or_404(Lesson, id=lesson_id, course=course)
+        lesson_title = lesson.title
+        lesson.delete()
+        
+        messages.success(request, f'Урок "{lesson_title}" успешно удален!')
+        return redirect('course_edit_content', slug=course.slug)
+    
+    return render(request, 'courses/course_edit_content.html', context)
+
 @login_required
 def course_delete(request, slug):
     """Удаление курса (только для автора и администраторов)"""
