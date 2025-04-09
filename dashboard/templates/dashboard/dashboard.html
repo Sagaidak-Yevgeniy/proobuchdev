@@ -142,9 +142,9 @@
     </div>
     
     <div class="dashboard-controls">
-        <button id="add-widget-btn" class="btn btn-primary">
+        <a href="{% url 'dashboard:add_widget' %}" class="btn btn-primary">
             <i class="fas fa-plus mr-1"></i> Добавить виджет
-        </button>
+        </a>
         
         <div class="dashboard-settings">
             <a href="{% url 'dashboard:settings' %}" class="btn btn-outline">
@@ -184,9 +184,9 @@
                     <i class="fas fa-chart-line text-5xl mb-4 text-gray-300"></i>
                     <h3 class="text-2xl font-semibold mb-2">Добавьте свой первый виджет</h3>
                     <p class="text-gray-600 mb-6">Настройте дашборд под свои потребности, добавив полезные виджеты</p>
-                    <button id="first-widget-btn" class="btn btn-primary">
+                    <a href="{% url 'dashboard:add_widget' %}" class="btn btn-primary">
                         <i class="fas fa-plus mr-1"></i> Добавить виджет
-                    </button>
+                    </a>
                 </div>
             </div>
         {% endif %}
