@@ -197,6 +197,29 @@
     @apply relative flex-1 flex flex-col max-w-xs w-full bg-white;
 }
 
+/* Дополнительные стили для мобильного меню */
+.mobile-menu-container {
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform 0.3s ease, visibility 0.3s;
+}
+
+.mobile-menu-container.active {
+    transform: translateX(0);
+    visibility: visible;
+}
+
+.mobile-overlay {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s;
+}
+
+.mobile-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
 /* Стили для прогресс-бара */
 .progress-bar {
     @apply w-full bg-gray-200 rounded-full h-2.5 mb-4;
