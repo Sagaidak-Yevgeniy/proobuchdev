@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% load olympiad_extras %}
+
+{% block title %}Отправки решений - {{ olympiad.title }} - Образовательная платформа{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Навигация и заголовок -->
+    <div class="mb-6">
+        <div class="flex flex-wrap items-center text-sm text-gray-500 mb-2">
+            <a href="{% url 'olympiad_list' %}" class="hover:text-gray-700">Олимпиады</a>
+            <span class="mx-2">/</span>
+            <a href="{% url 'olympiad_detail' slug=olympiad.slug %}" class="hover:text-gray-700">{{ olympiad.title }}</a>
+            <span class="mx-2">/</span>
+            <span class="text-gray-900 font-medium">Отправки решений</span>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h1 class="text-2xl sm:text-3xl font-bold">Отправки решений</h1>
+            
+            <div class="flex flex-wrap gap-2">
+                <a href="{% url 'olympiad_detail' slug=olympiad.slug %}" class="inline-flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    <i class="fas fa-arrow-left mr-1.5"></i>Вернуться к олимпиаде
+                </a>
+                
+                {% if olympiad.is_active and is_participating %}
+                <a href="{% url 'olympiad_leaderboard' slug=olympiad.slug %}" class="inline-flex items-center px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700">
+                    <i class="fas fa-trophy mr-1.5"></i>Таблица результатов
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Фильтры -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <h2 class="text-xl font-semibold">Фильтры</h2>
+        </div>
+        
+        <div class="p-6">
+            <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label for="problem" class="block text-sm font-medium text-gray-700 mb-1">Задача</label>
+                    <select id="problem" name="problem" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Все задачи</option>
+                        {% for p in problems %}
+                            <option value="{{ p.id }}" {% if problem_id == p.id %}selected{% endif %}>{{ p.order }}. {{ p.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Статус</label>
+                    <select id="status" name="status" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Все статусы</option>
+                        <option value="accepted" {% if status == 'accepted' %}selected{% endif %}>Принято</option>
+                        <option value="wrong_answer" {% if status == 'wrong_answer' %}selected{% endif %}>Неправильный ответ</option>
+                        <option value="runtime_error" {% if status == 'runtime_error' %}selected{% endif %}>Ошибка выполнения</option>
+                        <option value="time_limit" {% if status == 'time_limit' %}selected{% endif %}>Превышено время</option>
+                        <option value="memory_limit" {% if status == 'memory_limit' %}selected{% endif %}>Превышена память</option>
+                        <option value="compilation_error" {% if status == 'compilation_error' %}selected{% endif %}>Ошибка компиляции</option>
+                        <option value="pending" {% if status == 'pending' %}selected{% endif %}>В обработке</option>
+                        <option value="testing" {% if status == 'testing' %}selected{% endif %}>Тестируется</option>
+                    </select>
+                </div>
+                
+                {% if is_staff %}
+                <div>
+                    <label for="user" class="block text-sm font-medium text-gray-700 mb-1">Участник</label>
+                    <select id="user" name="user" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Все участники</option>
+                        {% for participant in olympiad.participants.all %}
+                            <option value="{{ participant.user.id }}" {% if user_id == participant.user.id %}selected{% endif %}>{{ participant.user.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                
+                <div class="flex items-end">
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
+                        <i class="fas fa-filter mr-1.5"></i>Применить фильтры
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Список отправок -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <h2 class="text-xl font-semibold">Отправки решений</h2>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Задача</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Участник</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Баллы</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Время</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Отправлено</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for submission in submissions %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ submission.id }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{% url 'problem_detail' olympiad_slug=olympiad.slug pk=submission.problem.id %}" class="text-blue-600 hover:text-blue-900">
+                                {{ submission.problem.order }}. {{ submission.problem.title }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ submission.user.username }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if submission.status == 'accepted' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <i class="fas fa-check mr-1"></i>Принято
+                            </span>
+                            {% elif submission.status == 'pending' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                <i class="fas fa-clock mr-1"></i>В обработке
+                            </span>
+                            {% elif submission.status == 'testing' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                <i class="fas fa-spinner fa-spin mr-1"></i>Тестируется
+                            </span>
+                            {% elif submission.status == 'wrong_answer' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <i class="fas fa-times mr-1"></i>Неправильный ответ
+                            </span>
+                            {% elif submission.status == 'time_limit' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                <i class="fas fa-clock mr-1"></i>Превышено время
+                            </span>
+                            {% elif submission.status == 'memory_limit' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                <i class="fas fa-memory mr-1"></i>Превышена память
+                            </span>
+                            {% elif submission.status == 'runtime_error' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <i class="fas fa-bug mr-1"></i>Ошибка выполнения
+                            </span>
+                            {% elif submission.status == 'compilation_error' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <i class="fas fa-file-code mr-1"></i>Ошибка компиляции
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>{{ submission.status }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ submission.points }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if submission.executed_time %}
+                            {{ submission.executed_time }} мс
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ submission.submitted_at|date:"d.m.Y H:i:s" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{% url 'submission_detail' olympiad_slug=olympiad.slug submission_id=submission.id %}" class="text-blue-600 hover:text-blue-900">
+                                Подробности
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                            Нет отправок, соответствующих выбранным фильтрам.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Пагинация -->
+        {% if submissions.has_other_pages %}
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-700">
+                    Показаны записи {{ submissions.start_index }} - {{ submissions.end_index }} из {{ submissions.paginator.count }}
+                </div>
+                
+                <div class="flex space-x-1">
+                    {% if submissions.has_previous %}
+                    <a href="?page=1{% if problem_id %}&problem={{ problem_id }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                    <a href="?page={{ submissions.previous_page_number }}{% if problem_id %}&problem={{ problem_id }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                    {% endif %}
+                    
+                    {% for i in submissions.paginator.page_range %}
+                        {% if submissions.number == i %}
+                        <span class="px-3 py-1 rounded-md border border-blue-600 bg-blue-600 text-white">{{ i }}</span>
+                        {% elif i > submissions.number|add:'-3' and i < submissions.number|add:'3' %}
+                        <a href="?page={{ i }}{% if problem_id %}&problem={{ problem_id }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">{{ i }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if submissions.has_next %}
+                    <a href="?page={{ submissions.next_page_number }}{% if problem_id %}&problem={{ problem_id }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                    <a href="?page={{ submissions.paginator.num_pages }}{% if problem_id %}&problem={{ problem_id }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

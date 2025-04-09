@@ -1,10 +1,11 @@
 {% extends 'base.html' %}
+{% load olympiad_extras %}
 
 {% block title %}Таблица результатов - {{ olympiad.title }} - Образовательная платформа{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto">
-    <!-- Заголовок и основная информация -->
+    <!-- Навигация и заголовок -->
     <div class="mb-6">
         <div class="flex flex-wrap items-center text-sm text-gray-500 mb-2">
             <a href="{% url 'olympiad_list' %}" class="hover:text-gray-700">Олимпиады</a>
@@ -15,75 +16,72 @@
         </div>
         
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h1 class="text-3xl font-bold">Таблица результатов</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold">Таблица результатов</h1>
             
             <div class="flex flex-wrap gap-2">
                 <a href="{% url 'olympiad_detail' slug=olympiad.slug %}" class="inline-flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
                     <i class="fas fa-arrow-left mr-1.5"></i>Вернуться к олимпиаде
                 </a>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Статус олимпиады -->
-    <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-        <div class="p-4">
-            <div class="flex flex-col md:flex-row md:items-center justify-between">
-                <div class="mb-4 md:mb-0">
-                    {% if olympiad.status == 'active' %}
-                    <div class="flex items-center">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mr-2">
-                            <span class="animate-pulse w-2 h-2 bg-green-700 rounded-full mr-1.5"></span>Активная
-                        </span>
-                        <span class="text-sm text-gray-600">Окончание: {{ olympiad.end_time|date:"d.m.Y H:i" }}</span>
-                    </div>
-                    <p class="mt-1 text-sm text-gray-500 italic">Таблица результатов может измениться до окончания олимпиады.</p>
-                    {% elif olympiad.status == 'future' %}
-                    <div class="flex items-center">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2">
-                            <i class="fas fa-clock text-xs mr-1.5"></i>Предстоящая
-                        </span>
-                        <span class="text-sm text-gray-600">Начало: {{ olympiad.start_time|date:"d.m.Y H:i" }}</span>
-                    </div>
-                    <p class="mt-1 text-sm text-gray-500 italic">Результаты будут доступны после начала олимпиады.</p>
-                    {% elif olympiad.status == 'past' %}
-                    <div class="flex items-center">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 mr-2">
-                            <i class="fas fa-flag-checkered text-xs mr-1.5"></i>Завершенная
-                        </span>
-                        <span class="text-sm text-gray-600">Завершена: {{ olympiad.end_time|date:"d.m.Y H:i" }}</span>
-                    </div>
-                    <p class="mt-1 text-sm text-gray-500 italic">Представлены окончательные результаты олимпиады.</p>
-                    {% endif %}
-                </div>
                 
-                <div class="text-right">
-                    <div class="text-sm text-gray-600">Участников: <span class="font-semibold">{{ participants|length }}</span></div>
-                    <div class="text-sm text-gray-600">Задач: <span class="font-semibold">{{ problems|length }}</span></div>
-                </div>
+                {% if olympiad.is_active and is_participating %}
+                <a href="{% url 'submission_list' slug=olympiad.slug %}" class="inline-flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    <i class="fas fa-history mr-1.5"></i>Мои отправки
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Статус олимпиады -->
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+            {% if olympiad.is_active %}
+            <div class="flex items-center bg-green-100 text-green-800 rounded-full px-3 py-1 text-sm">
+                <i class="fas fa-clock mr-2"></i>
+                <span>До окончания: </span>
+                <span id="time-remaining" class="ml-1 font-medium">Загрузка...</span>
+            </div>
+            {% elif olympiad.is_future %}
+            <div class="flex items-center bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-sm">
+                <i class="fas fa-calendar-alt mr-2"></i>
+                <span>Начало: {{ olympiad.start_time|date:"d.m.Y H:i" }}</span>
+            </div>
+            {% else %}
+            <div class="flex items-center bg-gray-100 text-gray-800 rounded-full px-3 py-1 text-sm">
+                <i class="fas fa-flag-checkered mr-2"></i>
+                <span>Завершена: {{ olympiad.end_time|date:"d.m.Y H:i" }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="flex items-center bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-sm">
+                <i class="fas fa-users mr-2"></i>
+                <span>Участников: {{ participants|length }}</span>
+            </div>
+            
+            <div class="flex items-center bg-purple-100 text-purple-800 rounded-full px-3 py-1 text-sm">
+                <i class="fas fa-tasks mr-2"></i>
+                <span>Задач: {{ problems|length }}</span>
             </div>
         </div>
     </div>
     
-    <!-- Таблица лидеров -->
-    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+    <!-- Таблица результатов -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
         <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
-            <h2 class="text-xl font-semibold">Результаты участников</h2>
+            <h2 class="text-xl font-semibold">Таблица результатов</h2>
         </div>
         
         <div class="overflow-x-auto">
-            <table class="min-w-full">
+            <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Место</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Участник</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Решено задач</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Баллы</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Место</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Участник</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Решено задач</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Баллы</th>
+                        
                         {% for problem in problems %}
-                        <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            <a href="{% url 'problem_detail' olympiad_slug=olympiad.slug pk=problem.pk %}" title="{{ problem.title }}" class="hover:text-blue-600">
-                                <span class="hidden md:inline">{{ problem.title|truncatechars:10 }}</span>
-                                <span class="md:hidden">{{ forloop.counter }}</span>
+                        <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <a href="{% url 'problem_detail' olympiad_slug=olympiad.slug pk=problem.id %}" class="hover:text-blue-600" title="{{ problem.title }}">
+                                {{ problem.order }}
                             </a>
                         </th>
                         {% endfor %}
@@ -91,65 +89,54 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for participant in participants %}
-                    <tr {% if user == participant.user %}class="bg-blue-50"{% endif %}>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium {% if forloop.counter <= 3 %}text-blue-600{% else %}text-gray-900{% endif %}">
-                            {% if forloop.counter == 1 %}
-                            <span class="inline-flex items-center justify-center bg-yellow-400 text-yellow-800 w-6 h-6 rounded-full">
-                                <i class="fas fa-trophy"></i>
-                            </span>
-                            {% elif forloop.counter == 2 %}
-                            <span class="inline-flex items-center justify-center bg-gray-300 text-gray-700 w-6 h-6 rounded-full">
-                                <i class="fas fa-medal"></i>
-                            </span>
-                            {% elif forloop.counter == 3 %}
-                            <span class="inline-flex items-center justify-center bg-yellow-700 text-yellow-100 w-6 h-6 rounded-full">
-                                <i class="fas fa-award"></i>
-                            </span>
-                            {% else %}
+                    <tr class="{% if participant.user.id == user.id %}bg-blue-50{% endif %}">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {{ forloop.counter }}
-                            {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {{ participant.user.username }}
-                            {% if user == participant.user %}
-                            <span class="ml-1 text-xs text-blue-600">(вы)</span>
-                            {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ participant.solved_problems }} / {{ problems|length }}
+                            {{ participant.solved_problems }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold {% if participant.total_points > 0 %}text-green-600{% else %}text-gray-500{% endif %}">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
                             {{ participant.total_points }}
                         </td>
                         
                         {% for problem in problems %}
-                        <td class="px-2 py-4 text-center whitespace-nowrap text-sm">
-                            {% with submission=results|get_item:participant.user_id|get_item:"problems"|get_item:problem.id %}
-                                {% if submission %}
-                                    {% if submission.status == 'accepted' %}
-                                    <span class="inline-flex items-center justify-center px-2 py-1 rounded-md bg-green-100 text-green-800 font-medium">
-                                        <i class="fas fa-check mr-1"></i>{{ submission.points }}
-                                    </span>
-                                    {% elif submission.status == 'pending' or submission.status == 'testing' %}
-                                    <span class="inline-flex items-center justify-center px-2 py-1 rounded-md bg-blue-100 text-blue-800">
-                                        <i class="fas fa-spinner fa-spin"></i>
-                                    </span>
-                                    {% else %}
-                                    <span class="inline-flex items-center justify-center px-2 py-1 rounded-md bg-red-100 text-red-800">
-                                        <i class="fas fa-times"></i>
-                                    </span>
-                                    {% endif %}
-                                {% else %}
-                                <span class="text-gray-300">—</span>
-                                {% endif %}
+                            {% with problem_id=problem.id %}
+                                {% with user_id=participant.user.id %}
+                                    {% with problem_result=results|get_item:user_id|get_item:'problems'|get_item:problem_id %}
+                                        <td class="px-4 py-4 text-center align-middle">
+                                            {% if problem_result %}
+                                                {% if problem_result.status == 'accepted' %}
+                                                <a href="{% url 'submission_detail' olympiad_slug=olympiad.slug submission_id=problem_result.submission_id %}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800" title="Принято">
+                                                    <i class="fas fa-check mr-1"></i>{{ problem_result.points }}
+                                                </a>
+                                                {% elif problem_result.status == 'pending' or problem_result.status == 'testing' %}
+                                                <a href="{% url 'submission_detail' olympiad_slug=olympiad.slug submission_id=problem_result.submission_id %}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800" title="В процессе">
+                                                    <i class="fas fa-spinner fa-spin mr-1"></i>
+                                                </a>
+                                                {% else %}
+                                                <a href="{% url 'submission_detail' olympiad_slug=olympiad.slug submission_id=problem_result.submission_id %}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800" title="Неверно">
+                                                    <i class="fas fa-times mr-1"></i>{{ problem_result.points }}
+                                                </a>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                    -
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                    {% endwith %}
+                                {% endwith %}
                             {% endwith %}
-                        </td>
                         {% endfor %}
                     </tr>
                     {% empty %}
                     <tr>
                         <td colspan="{{ problems|length|add:4 }}" class="px-6 py-4 text-center text-gray-500">
-                            Пока нет участников в олимпиаде
+                            В олимпиаде пока нет участников.
                         </td>
                     </tr>
                     {% endfor %}
@@ -157,19 +144,87 @@
             </table>
         </div>
     </div>
+    
+    <!-- Легенда -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <h2 class="text-xl font-semibold">Легенда</h2>
+        </div>
+        
+        <div class="p-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div class="flex items-center">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mr-2">
+                        <i class="fas fa-check mr-1"></i>100
+                    </span>
+                    <span class="text-sm text-gray-600">Задача решена полностью</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 mr-2">
+                        <i class="fas fa-times mr-1"></i>50
+                    </span>
+                    <span class="text-sm text-gray-600">Задача решена частично</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2">
+                        <i class="fas fa-spinner fa-spin mr-1"></i>
+                    </span>
+                    <span class="text-sm text-gray-600">Решение в процессе проверки</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 mr-2">
+                        -
+                    </span>
+                    <span class="text-sm text-gray-600">Нет отправок для задачи</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="bg-blue-50 px-2 py-0.5 rounded mr-2">
+                        Строка
+                    </span>
+                    <span class="text-sm text-gray-600">Выделяет текущего пользователя</span>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Фильтр для получения элемента из словаря по ключу (для user_results)
-function getItem(dict, key) {
-    return dict[key];
+// Функция обновления времени до окончания
+function updateCountdown() {
+    {% if olympiad.is_active %}
+    const endTime = new Date('{{ olympiad.end_time|date:"c" }}').getTime();
+    const now = new Date().getTime();
+    const distance = endTime - now;
+    
+    // Расчеты для дней, часов, минут и секунд
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+    
+    // Обновление времени до окончания
+    const timeRemainingElement = document.getElementById("time-remaining");
+    
+    if (timeRemainingElement) {
+        if (distance < 0) {
+            timeRemainingElement.innerHTML = "Завершена";
+            // Перезагрузка страницы, когда олимпиада заканчивается
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            timeRemainingElement.innerHTML = `${days}д ${hours}ч ${minutes}м ${seconds}с`;
+        }
+    }
+    {% endif %}
 }
 
-// Регистрируем фильтр, если его еще нет
-if (typeof django !== 'undefined' && django.template && django.template.filters) {
-    django.template.filters.get_item = getItem;
-}
+// Инициализация и обновление каждую секунду
+document.addEventListener('DOMContentLoaded', function() {
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+});
 </script>
 {% endblock %}
