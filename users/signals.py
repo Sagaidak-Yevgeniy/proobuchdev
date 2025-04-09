@@ -52,79 +52,9 @@ def save_user_interface(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Profile)
 def send_welcome_notification(sender, instance, created, **kwargs):
-    """Отправляет приветственное уведомление пользователю в зависимости от его роли"""
-    # Получаем пользователя и его полное имя
-    user = instance.user
-    full_name = user.get_full_name() or user.username
-    
-    # Определяем специфические для каждой роли фрагменты текста для поиска
-    role_specific_text = {
-        Profile.STUDENT: "изучать курсы, выполнять задания и развивать свои навыки программирования",
-        Profile.TEACHER: "Как преподаватель, вы можете создавать курсы, уроки и задания для студентов",
-        Profile.ADMIN: "Вы были зарегистрированы как администратор платформы"
-    }
-    
-    # Проверяем наличие уведомлений с правильным ролевым контекстом
-    current_role_text = role_specific_text.get(instance.role, "")
-    
-    if not current_role_text:
-        # Для неизвестных ролей просто проверяем наличие приветственного сообщения
-        should_send = not Notification.objects.filter(
-            user=user,
-            title__startswith="Добро пожаловать"
-        ).exists()
-    else:
-        # Для известных ролей проверяем наличие уведомления с соответствующим текстом
-        should_send = not Notification.objects.filter(
-            user=user,
-            message__contains=current_role_text
-        ).exists()
-    
-    # Если нужно отправить уведомление
-    if should_send:
-        # Подготовка сообщений в зависимости от роли
-        if instance.role == Profile.STUDENT:
-            title = "Добро пожаловать на платформу!"
-            message = f"Здравствуйте, {full_name}! Мы рады приветствовать вас на нашей образовательной платформе. "\
-                     f"Здесь вы можете изучать курсы, выполнять задания и развивать свои навыки программирования. "\
-                     f"Желаем вам успехов в обучении!"
-            icon = "fa-graduation-cap"
-        
-        elif instance.role == Profile.TEACHER:
-            title = "Добро пожаловать на платформу!"
-            message = f"Здравствуйте, {full_name}! Рады приветствовать вас на нашей образовательной платформе. "\
-                     f"Как преподаватель, вы можете создавать курсы, уроки и задания для студентов. "\
-                     f"Мы надеемся, что платформа будет полезна в вашей педагогической деятельности!"
-            icon = "fa-chalkboard-teacher"
-        
-        elif instance.role == Profile.ADMIN:
-            title = "Добро пожаловать, администратор!"
-            message = f"Здравствуйте, {full_name}! Вы были зарегистрированы как администратор платформы. "\
-                     f"Вам доступны все функции управления, включая модерацию контента, управление пользователями "\
-                     f"и настройку системы. Благодарим за вашу работу!"
-            icon = "fa-user-shield"
-        
-        else:
-            # Для неизвестных ролей используем общее сообщение
-            title = "Добро пожаловать на платформу!"
-            message = f"Здравствуйте, {full_name}! Спасибо за регистрацию на нашей образовательной платформе. "\
-                     f"Мы рады видеть вас в нашем сообществе!"
-            icon = "fa-user"
-        
-        # Создаем уведомление
-        notification = Notification.objects.create(
-            user=user,
-            title=title,
-            message=message,
-            notification_type='info',
-            is_read=False,
-            is_high_priority=True,
-            url='/',
-            importance='high',
-            icon=icon
-        )
-        
-        print(f"DEBUG Signal: Created welcome notification for {user.username} with role {instance.role}")
-        return notification
-    
+    """
+    Отправляет приветственное уведомление пользователю в зависимости от его роли
+    ПРИМЕЧАНИЕ: Функционал отключен по запросу пользователя.
+    """
+    # Функционал отключен
     return None
