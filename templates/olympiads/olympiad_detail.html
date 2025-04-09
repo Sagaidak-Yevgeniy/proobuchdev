@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load olympiad_extras %}
 
 {% block title %}{{ olympiad.title }} - Образовательная платформа{% endblock %}
 
@@ -436,14 +437,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(updateCountdown, 1000);
 });
 
-// Фильтр для получения элемента из словаря по ключу (для user_submissions)
-function getItem(dict, key) {
-    return dict[key];
-}
-
-// Регистрируем фильтр, если его еще нет
-if (typeof django !== 'undefined' && django.template && django.template.filters) {
-    django.template.filters.get_item = getItem;
-}
+// Не нужно больше использовать JS-фильтр для словарей,
+// так как мы добавили Django-фильтр get_item
 </script>
 {% endblock %}
