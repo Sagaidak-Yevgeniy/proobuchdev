@@ -138,7 +138,9 @@ def notify_lesson_creation(sender, instance, created, **kwargs):
     """Отправляет уведомление о создании нового урока студентам курса"""
     print(f"Сигнал notify_lesson_creation сработал. created={created}, lesson={instance.title}")
     
-    if created and hasattr(instance, 'course') and instance.course.is_published and instance.is_published:
+    # Изменили условие: убрали проверку instance.is_published, т.к. урок может быть не опубликован, 
+    # но преподаватель добавил его в курс, и студенты должны знать об этом
+    if created and hasattr(instance, 'course') and instance.course.is_published:
         print(f"Урок соответствует условиям для отправки уведомлений: course={instance.course.title}, is_published={instance.is_published}")
         
         # Получаем студентов, которые записаны на этот курс
@@ -157,11 +159,13 @@ def notify_lesson_creation(sender, instance, created, **kwargs):
                 print(f"У пользователя {user.username} нет настроек уведомлений")
                 continue
             
+            status_text = "доступен" if instance.is_published else "скоро будет доступен"
+            
             print(f"Создаем уведомление для пользователя {user.username} о новом уроке {instance.title}")
             Notification.objects.create(
                 user=user,
                 title=_('Новый урок в курсе'),
-                message=_(f'В курсе "{instance.course.title}" появился новый урок: "{instance.title}"'),
+                message=_(f'В курсе "{instance.course.title}" появился новый урок: "{instance.title}" ({status_text})'),
                 notification_type='lesson',
                 is_high_priority=False,
                 url=f'/courses/{instance.course.slug}/lessons/{instance.id}/'
@@ -174,7 +178,9 @@ def notify_lesson_update(sender, instance, created, **kwargs):
     """Отправляет уведомление об обновлении урока студентам"""
     print(f"Сигнал notify_lesson_update сработал. created={created}, lesson={instance.title}")
     
-    if not created and hasattr(instance, 'course') and instance.course.is_published and instance.is_published:
+    # Изменили условие: убрали проверку instance.is_published, т.к. когда урок становится опубликованным
+    # это важное обновление, о котором студенты должны узнать
+    if not created and hasattr(instance, 'course') and instance.course.is_published:
         print(f"Урок соответствует условиям для отправки уведомлений об обновлении: course={instance.course.title}, is_published={instance.is_published}")
         
         # Получаем студентов, которые записаны на этот курс
@@ -193,11 +199,15 @@ def notify_lesson_update(sender, instance, created, **kwargs):
                 print(f"У пользователя {user.username} нет настроек уведомлений")
                 continue
             
+            status_info = ""
+            # Добавляем информацию о статусе публикации
+            status_info = " Урок " + ("доступен" if instance.is_published else "недоступен") + " для прохождения."
+            
             print(f"Создаем уведомление для пользователя {user.username} об обновлении урока {instance.title}")
             Notification.objects.create(
                 user=user,
                 title=_('Обновление урока'),
-                message=_(f'Урок "{instance.title}" в курсе "{instance.course.title}" был обновлен.'),
+                message=_(f'Урок "{instance.title}" в курсе "{instance.course.title}" был обновлен.{status_info}'),
                 notification_type='lesson',
                 is_high_priority=False,
                 url=f'/courses/{instance.course.slug}/lessons/{instance.id}/'
