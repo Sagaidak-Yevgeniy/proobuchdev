@@ -1,24 +1,15 @@
 /**
  * Скрипт для обработки уведомлений
- * С поддержкой адаптивности и мобильного вида
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Элементы DOM для десктопной версии
+    // Элементы DOM
     const notificationButton = document.getElementById('notification-button');
     const notificationDropdown = document.getElementById('notification-dropdown');
     const notificationList = document.getElementById('notification-list');
     const notificationNoItems = document.getElementById('notification-no-items');
     const markAllReadButton = document.getElementById('mark-all-as-read');
     const notificationCount = document.querySelector('.notification-count');
-    
-    // Элементы DOM для мобильной версии
-    const notificationMobileDropdown = document.getElementById('notification-mobile-dropdown');
-    const notificationMobileList = document.getElementById('notification-mobile-list');
-    const notificationMobileNoItems = document.getElementById('notification-mobile-no-items');
-    
-    // Флаг для мобильного режима
-    const isMobile = window.innerWidth < 640;
     
     if (!notificationButton) {
         // Если кнопки уведомлений нет на странице, выходим
@@ -27,25 +18,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Показывает выпадающее меню
     function showDropdown() {
-        if (isMobile) {
-            notificationMobileDropdown.classList.remove('hidden');
-            document.body.style.overflow = 'hidden'; // Блокируем прокрутку страницы
-        } else {
-            notificationDropdown.classList.remove('hidden');
-        }
-        
+        notificationDropdown.classList.remove('hidden');
         // Загружаем список уведомлений
         loadNotifications();
     }
     
     // Скрывает выпадающее меню
     function hideDropdown() {
-        if (isMobile) {
-            notificationMobileDropdown.classList.add('hidden');
-            document.body.style.overflow = ''; // Разрешаем прокрутку страницы
-        } else {
-            notificationDropdown.classList.add('hidden');
-        }
+        notificationDropdown.classList.add('hidden');
     }
     
     // Загружает список уведомлений через API
@@ -53,47 +33,20 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('/notifications/list/?format=json')
             .then(response => response.json())
             .then(data => {
-                // Очищаем список для десктопа
-                if (notificationList) {
-                    notificationList.innerHTML = '';
-                }
-                
-                // Очищаем список для мобильных если он есть
-                if (notificationMobileList) {
-                    notificationMobileList.innerHTML = '';
-                }
+                // Очищаем список
+                notificationList.innerHTML = '';
                 
                 if (data.notifications.length === 0) {
                     // Если уведомлений нет, показываем сообщение "Нет уведомлений"
-                    if (notificationNoItems) {
-                        notificationNoItems.classList.remove('hidden');
-                    }
-                    if (notificationMobileNoItems) {
-                        notificationMobileNoItems.classList.remove('hidden');
-                    }
+                    notificationNoItems.classList.remove('hidden');
                 } else {
-                    if (notificationNoItems) {
-                        notificationNoItems.classList.add('hidden');
-                    }
-                    if (notificationMobileNoItems) {
-                        notificationMobileNoItems.classList.add('hidden');
-                    }
+                    notificationNoItems.classList.add('hidden');
                     
-                    // Добавляем уведомления в список для десктопа
-                    if (notificationList) {
-                        data.notifications.forEach(notification => {
-                            const notificationItem = createNotificationItem(notification, false);
-                            notificationList.appendChild(notificationItem);
-                        });
-                    }
-                    
-                    // Добавляем уведомления в список для мобильных если он есть
-                    if (notificationMobileList) {
-                        data.notifications.forEach(notification => {
-                            const notificationItem = createNotificationItem(notification, true);
-                            notificationMobileList.appendChild(notificationItem);
-                        });
-                    }
+                    // Добавляем уведомления в список
+                    data.notifications.forEach(notification => {
+                        const notificationItem = createNotificationItem(notification);
+                        notificationList.appendChild(notificationItem);
+                    });
                 }
                 
                 // Обновляем счетчик непрочитанных уведомлений
@@ -107,16 +60,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Создает элемент уведомления
-    function createNotificationItem(notification, isMobile = false) {
+    function createNotificationItem(notification) {
         const li = document.createElement('li');
-        
-        // Добавляем различные классы в зависимости от типа устройства
-        if (isMobile) {
-            li.classList.add('px-4', 'py-4', 'hover:bg-gray-50', 'dark:hover:bg-gray-700', 'border-b', 'border-gray-200', 'dark:border-gray-700');
-        } else {
-            li.classList.add('px-4', 'py-3', 'hover:bg-gray-50', 'dark:hover:bg-gray-700');
-        }
-        
+        li.classList.add('px-4', 'py-3', 'hover:bg-gray-50', 'dark:hover:bg-gray-700');
         if (!notification.is_read) {
             li.classList.add('bg-blue-50', 'dark:bg-blue-900/20');
         }
@@ -306,39 +252,22 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Удаляем уведомление из DOM в обоих списках (десктоп и мобильный)
-                if (notificationList) {
-                    const notificationItems = notificationList.querySelectorAll(`[data-id="${id}"]`);
-                    notificationItems.forEach(item => {
-                        const parent = item.closest('li');
-                        if (parent) {
-                            parent.remove();
-                        }
-                    });
-                    
-                    // Проверяем, остались ли еще уведомления в десктопном списке
-                    if (notificationList.children.length === 0 && notificationNoItems) {
-                        notificationNoItems.classList.remove('hidden');
+                // Удаляем уведомление из DOM
+                const notificationItems = notificationList.querySelectorAll(`[data-id="${id}"]`);
+                notificationItems.forEach(item => {
+                    const parent = item.closest('li');
+                    if (parent) {
+                        parent.remove();
                     }
-                }
-                
-                if (notificationMobileList) {
-                    const mobileItems = notificationMobileList.querySelectorAll(`[data-id="${id}"]`);
-                    mobileItems.forEach(item => {
-                        const parent = item.closest('li');
-                        if (parent) {
-                            parent.remove();
-                        }
-                    });
-                    
-                    // Проверяем, остались ли еще уведомления в мобильном списке
-                    if (notificationMobileList.children.length === 0 && notificationMobileNoItems) {
-                        notificationMobileNoItems.classList.remove('hidden');
-                    }
-                }
+                });
                 
                 // Обновляем счетчик непрочитанных уведомлений
                 updateNotificationCount(data.unread_count);
+                
+                // Проверяем, остались ли еще уведомления
+                if (notificationList.children.length === 0) {
+                    notificationNoItems.classList.remove('hidden');
+                }
             }
         })
         .catch(error => {
@@ -360,39 +289,18 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Обновляем внешний вид всех уведомлений в десктопной версии
-                if (notificationList) {
-                    const items = notificationList.querySelectorAll('li');
-                    items.forEach(item => {
-                        item.classList.remove('bg-blue-50', 'dark:bg-blue-900/20');
-                        const markReadButton = item.querySelector('.mark-read-button');
-                        if (markReadButton) {
-                            markReadButton.remove();
-                        }
-                    });
-                }
-                
-                // Обновляем внешний вид всех уведомлений в мобильной версии
-                if (notificationMobileList) {
-                    const mobileItems = notificationMobileList.querySelectorAll('li');
-                    mobileItems.forEach(item => {
-                        item.classList.remove('bg-blue-50', 'dark:bg-blue-900/20');
-                        const markReadButton = item.querySelector('.mark-read-button');
-                        if (markReadButton) {
-                            markReadButton.remove();
-                        }
-                    });
-                }
+                // Обновляем внешний вид всех уведомлений
+                const items = notificationList.querySelectorAll('li');
+                items.forEach(item => {
+                    item.classList.remove('bg-blue-50', 'dark:bg-blue-900/20');
+                    const markReadButton = item.querySelector('.mark-read-button');
+                    if (markReadButton) {
+                        markReadButton.remove();
+                    }
+                });
                 
                 // Обновляем счетчик непрочитанных уведомлений
                 updateNotificationCount(0);
-                
-                // Закрываем мобильное меню после отметки всех как прочитанных (опционально)
-                if (isMobile && notificationMobileDropdown) {
-                    setTimeout(() => {
-                        hideDropdown();
-                    }, 500);
-                }
             }
         })
         .catch(error => {

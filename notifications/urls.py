@@ -11,7 +11,4 @@ urlpatterns = [
     path('read-all/', views.mark_all_read, name='mark_all_read'),
     path('delete/<int:notification_id>/', views.delete_notification, name='delete'),
     path('list/', views.notification_list, name='list'),
-    
-    # Убираем неготовые маршруты пока не создадим соответствующие представления
-    # Временное решение для демо адаптивной верстки
 ]

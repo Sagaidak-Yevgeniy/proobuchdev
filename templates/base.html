@@ -75,170 +75,41 @@
         .dark .text-gray-700 { color: #c0c0c0; }
         .dark .border-gray-300 { border-color: #333; }
         .dark .shadow-md { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); }
-        
-        /* Адаптивные улучшения для мобильных устройств */
-        @media (max-width: 640px) {
-            .mobile-menu-container {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 80%;
-                height: 100vh;
-                background-color: #fff;
-                z-index: 50;
-                overflow-y: auto;
-                box-shadow: 2px 0 5px rgba(0,0,0,0.2);
-                transform: translateX(-100%);
-                visibility: hidden;
-                transition: transform 0.3s ease, visibility 0.3s;
-            }
-            
-            .dark .mobile-menu-container {
-                background-color: #1e1e1e;
-            }
-            
-            .mobile-menu-container.active {
-                transform: translateX(0);
-                visibility: visible;
-            }
-            
-            .mobile-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0,0,0,0.5);
-                z-index: 40;
-                display: none;
-                opacity: 0;
-                visibility: hidden;
-                transition: opacity 0.3s ease, visibility 0.3s;
-            }
-            
-            .mobile-overlay.active {
-                display: block;
-                opacity: 1;
-                visibility: visible;
-            }
-        }
     </style>
     
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen flex flex-col transition-colors duration-200">
-    <!-- Мобильное меню -->
-    <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
-    <div class="mobile-menu-container dark:bg-gray-800 dark:text-white" id="mobileMenu">
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <a href="{% url 'home' %}" class="text-xl font-bold flex items-center">
-                <i class="fas fa-graduation-cap mr-2"></i>ПроОбучение
-            </a>
-            <button class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" onclick="toggleMobileMenu()">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-        </div>
-        <div class="p-4">
-            <nav class="space-y-3">
-                <a href="{% url 'course_list' %}" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                    <i class="fas fa-book mr-2"></i>Курсы
-                </a>
-                {% if user.is_authenticated %}
-                    <a href="{% url 'my_courses' %}" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                        <i class="fas fa-graduation-cap mr-2"></i>Мои курсы
-                    </a>
-                    <a href="{% url 'chat_history' %}" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                        <i class="fas fa-robot mr-2"></i>AI-ассистент
-                    </a>
-                    <a href="{% url 'dashboard:index' %}" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                        <i class="fas fa-chart-line mr-2"></i>Дашборд
-                    </a>
-                    {% if user.profile.is_teacher %}
-                    <a href="{% url 'course_create' %}" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                        <i class="fas fa-plus-circle mr-2"></i>Создать курс
-                    </a>
-                    {% endif %}
-                    <div class="border-t border-gray-200 dark:border-gray-700 my-2 pt-2">
-                        <p class="px-4 text-sm text-gray-500 dark:text-gray-400">Личный кабинет</p>
-                    </div>
-                    <a href="{% url 'profile' %}" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                        <i class="fas fa-user mr-2"></i>Мой профиль
-                    </a>
-                    <a href="{% url 'achievement_list' %}" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                        <i class="fas fa-trophy mr-2"></i>Достижения
-                    </a>
-                    <a href="{% url 'leaderboard' %}" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                        <i class="fas fa-list-ol mr-2"></i>Рейтинг
-                    </a>
-                    <a href="{% url 'interface_settings' %}" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                        <i class="fas fa-sliders-h mr-2"></i>Настройки интерфейса
-                    </a>
-                    {% if user.is_staff or user.profile.is_admin %}
-                    <a href="{% url 'admin:index' %}" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                        <i class="fas fa-cog mr-2"></i>Админ-панель
-                    </a>
-                    {% endif %}
-                    <div class="border-t border-gray-200 dark:border-gray-700 my-2 pt-2"></div>
-                    <a href="{% url 'logout' %}" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-red-600 dark:text-red-400">
-                        <i class="fas fa-sign-out-alt mr-2"></i>Выйти
-                    </a>
-                {% else %}
-                    <div class="border-t border-gray-200 dark:border-gray-700 my-2 pt-2">
-                        <p class="px-4 text-sm text-gray-500 dark:text-gray-400">Аккаунт</p>
-                    </div>
-                    <a href="{% url 'login' %}" class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Войти
-                    </a>
-                    <a href="{% url 'register' %}" class="block py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded my-2">
-                        <i class="fas fa-user-plus mr-2"></i>Регистрация
-                    </a>
-                {% endif %}
-            </nav>
-        </div>
-    </div>
-
     <!-- Навигационная панель -->
     <nav class="bg-blue-600 text-white shadow-lg dark:bg-gray-800">
         <div class="container mx-auto px-4 py-3">
             <div class="flex justify-between items-center">
-                <div class="flex items-center">
-                    <button class="mr-2 text-2xl sm:hidden" onclick="toggleMobileMenu()">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <a href="{% url 'home' %}" class="text-lg sm:text-xl font-bold flex items-center">
-                        <i class="fas fa-graduation-cap mr-2"></i><span class="hidden sm:inline">ПроОбучение</span><span class="sm:hidden">ПО</span>
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'home' %}" class="text-xl font-bold flex items-center">
+                        <i class="fas fa-graduation-cap mr-2"></i>ПроОбучение
                     </a>
-                </div>
-                
-                <!-- Десктопное меню -->
-                <div class="hidden sm:flex items-center space-x-2 md:space-x-4">
-                    <a href="{% url 'course_list' %}" class="hover:text-blue-200 text-sm md:text-base">Курсы</a>
+                    <a href="{% url 'course_list' %}" class="hover:text-blue-200">Курсы</a>
                     {% if user.is_authenticated %}
-                        <a href="{% url 'chat_history' %}" class="hover:text-blue-200 text-sm md:text-base">
-                            <i class="fas fa-robot mr-1"></i><span class="hidden md:inline">AI-ассистент</span><span class="md:hidden">AI</span>
+                        <a href="{% url 'chat_history' %}" class="hover:text-blue-200">
+                            <i class="fas fa-robot mr-1"></i>AI-ассистент
                         </a>
                         {% if user.profile.is_teacher %}
-                        <a href="{% url 'course_create' %}" class="hover:text-blue-200 text-sm md:text-base">
-                            <span class="hidden lg:inline">Создать курс</span>
-                            <span class="lg:hidden"><i class="fas fa-plus-circle"></i></span>
-                        </a>
+                        <a href="{% url 'course_create' %}" class="hover:text-blue-200">Создать курс</a>
                         {% endif %}
-                        <a href="{% url 'my_courses' %}" class="hover:text-blue-200 text-sm md:text-base">
-                            <span class="hidden md:inline">Мои курсы</span>
-                            <span class="md:hidden"><i class="fas fa-graduation-cap"></i></span>
+                    {% endif %}
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'my_courses' %}" class="hover:text-blue-200">Мои курсы</a>
+                        <a href="{% url 'dashboard:index' %}" class="hover:text-blue-200">
+                          <i class="fas fa-chart-line mr-1"></i>Дашборд
                         </a>
-                        <a href="{% url 'dashboard:index' %}" class="hover:text-blue-200 text-sm md:text-base">
-                          <i class="fas fa-chart-line mr-1"></i><span class="hidden lg:inline">Дашборд</span>
-                        </a>
-                        
                         <!-- Компонент уведомлений -->
                         {% include "components/notification_dropdown.html" %}
-                        
                         <div class="relative">
-                            <button class="flex items-center hover:text-blue-200 text-sm md:text-base" onclick="toggleDropdown()">
-                                <span class="hidden md:inline">{{ user.username }}</span>
-                                <span class="md:hidden"><i class="fas fa-user"></i></span>
-                                <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                            <button class="flex items-center hover:text-blue-200" onclick="toggleDropdown()">
+                                {{ user.username }} ({{ user.profile.get_role_display }}) <i class="fas fa-chevron-down ml-1 text-xs"></i>
                             </button>
                             <div id="userDropdown" class="absolute right-0 hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-lg rounded-lg mt-2 py-2 w-48 z-10">
                                 <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
@@ -263,9 +134,35 @@
                                 </a>
                             </div>
                         </div>
+                        <script>
+                        let isDropdownOpen = false;
+                        
+                        function toggleDropdown() {
+                            const dropdown = document.getElementById("userDropdown");
+                            isDropdownOpen = !isDropdownOpen;
+                            
+                            if (isDropdownOpen) {
+                                dropdown.classList.remove("hidden");
+                            } else {
+                                dropdown.classList.add("hidden");
+                            }
+                        }
+                        
+                        // Закрыть выпадающий список при клике вне его
+                        document.addEventListener('click', function(event) {
+                            const dropdown = document.getElementById("userDropdown");
+                            const button = event.target.closest('button');
+                            
+                            // Если клик был не по кнопке и не по выпадающему меню, закрываем меню
+                            if (!button && !event.target.closest('#userDropdown') && !dropdown.classList.contains('hidden')) {
+                                dropdown.classList.add('hidden');
+                                isDropdownOpen = false;
+                            }
+                        });
+                        </script>
                     {% else %}
-                        <a href="{% url 'login' %}" class="hover:text-blue-200 text-sm md:text-base">Войти</a>
-                        <a href="{% url 'register' %}" class="bg-white text-blue-600 px-3 py-1 md:px-4 md:py-2 rounded-lg hover:bg-blue-100 text-sm md:text-base">Регистрация</a>
+                        <a href="{% url 'login' %}" class="hover:text-blue-200">Войти</a>
+                        <a href="{% url 'register' %}" class="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-100">Регистрация</a>
                     {% endif %}
                 </div>
             </div>
@@ -274,9 +171,9 @@
     
     <!-- Сообщения -->
     {% if messages %}
-    <div class="container mx-auto px-4 mt-3 sm:mt-4">
+    <div class="container mx-auto px-4 mt-4">
         {% for message in messages %}
-        <div class="{% if message.tags == 'error' %}bg-red-100 border-red-300 text-red-700{% elif message.tags == 'success' %}bg-green-100 border-green-300 text-green-700{% elif message.tags == 'warning' %}bg-yellow-100 border-yellow-300 text-yellow-700{% else %}bg-blue-100 border-blue-300 text-blue-700{% endif %} border-l-4 p-3 sm:p-4 mb-3 rounded text-sm sm:text-base">
+        <div class="{% if message.tags == 'error' %}bg-red-100 border-red-300 text-red-700{% elif message.tags == 'success' %}bg-green-100 border-green-300 text-green-700{% elif message.tags == 'warning' %}bg-yellow-100 border-yellow-300 text-yellow-700{% else %}bg-blue-100 border-blue-300 text-blue-700{% endif %} border-l-4 p-4 mb-3 rounded">
             {{ message }}
             <button class="float-right" onclick="this.parentElement.style.display='none'">&times;</button>
         </div>
@@ -285,26 +182,26 @@
     {% endif %}
     
     <!-- Основное содержимое -->
-    <main class="container mx-auto px-4 py-4 sm:py-6 flex-grow">
+    <main class="container mx-auto px-4 py-6 flex-grow">
         {% block content %}{% endblock %}
     </main>
     
     <!-- Подвал -->
-    <footer class="bg-gray-800 text-white py-4 sm:py-6 mt-auto">
+    <footer class="bg-gray-800 text-white py-6 mt-auto">
         <div class="container mx-auto px-4">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="mb-4 md:mb-0">
-                    <h2 class="text-lg sm:text-xl font-bold"><i class="fas fa-graduation-cap mr-2"></i>ПроОбучение</h2>
-                    <p class="text-gray-400 mt-1 text-sm sm:text-base">Учитесь с удовольствием</p>
+                    <h2 class="text-xl font-bold">ПроОбучение</h2>
+                    <p class="text-gray-400 mt-1">Учитесь с удовольствием</p>
                 </div>
                 
-                <div class="flex space-x-4 sm:space-x-6">
+                <div class="flex space-x-6">
                     <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-github"></i></a>
                     <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-twitter"></i></a>
                     <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-telegram"></i></a>
                 </div>
             </div>
-            <div class="mt-4 sm:mt-6 text-center text-gray-400 text-xs sm:text-sm">
+            <div class="mt-6 text-center text-gray-400 text-sm">
                 &copy; 2024-{% now "Y" %} CodeMastersPRO. Все права защищены.
             </div>
         </div>
@@ -315,63 +212,6 @@
     {% if user.is_authenticated %}
     <script src="{% static 'js/notifications.js' %}"></script>
     {% endif %}
-    
-    <script>
-    // Функция для переключения мобильного меню
-    function toggleMobileMenu() {
-        const menu = document.getElementById('mobileMenu');
-        const overlay = document.getElementById('mobileOverlay');
-        
-        menu.classList.toggle('active');
-        overlay.classList.toggle('active');
-        
-        // Запретить прокрутку страницы, если меню открыто
-        if (menu.classList.contains('active')) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
-    }
-    
-    // Убедимся, что меню не открыто при загрузке страницы
-    document.addEventListener('DOMContentLoaded', function() {
-        const menu = document.getElementById('mobileMenu');
-        const overlay = document.getElementById('mobileOverlay');
-        
-        // Закрываем меню при загрузке страницы, если оно открыто
-        if (menu.classList.contains('active')) {
-            menu.classList.remove('active');
-            overlay.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-    });
-    
-    let isDropdownOpen = false;
-    
-    function toggleDropdown() {
-        const dropdown = document.getElementById("userDropdown");
-        isDropdownOpen = !isDropdownOpen;
-        
-        if (isDropdownOpen) {
-            dropdown.classList.remove("hidden");
-        } else {
-            dropdown.classList.add("hidden");
-        }
-    }
-    
-    // Закрыть выпадающий список при клике вне его
-    document.addEventListener('click', function(event) {
-        const dropdown = document.getElementById("userDropdown");
-        const button = event.target.closest('button');
-        
-        // Если клик был не по кнопке и не по выпадающему меню, закрываем меню
-        if (!button && !event.target.closest('#userDropdown') && !dropdown.classList.contains('hidden')) {
-            dropdown.classList.add('hidden');
-            isDropdownOpen = false;
-        }
-    });
-    </script>
-    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

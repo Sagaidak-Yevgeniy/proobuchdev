@@ -8,57 +8,18 @@
 <style>
     .dashboard-container {
         display: grid;
-        grid-template-columns: repeat(1, 1fr);
+        grid-template-columns: repeat(12, 1fr);
         grid-gap: 16px;
-        padding: 10px;
-    }
-    
-    /* Адаптивные стили для сетки с виджетами */
-    @media (min-width: 640px) {
-        .dashboard-container {
-            grid-template-columns: repeat(2, 1fr);
-            padding: 16px;
-        }
-    }
-    
-    @media (min-width: 768px) {
-        .dashboard-container {
-            grid-template-columns: repeat(3, 1fr);
-        }
-    }
-    
-    @media (min-width: 1024px) {
-        .dashboard-container {
-            grid-template-columns: repeat(4, 1fr);
-            grid-gap: 20px;
-            padding: 20px;
-        }
-    }
-    
-    @media (min-width: 1280px) {
-        .dashboard-container {
-            grid-template-columns: repeat(6, 1fr);
-        }
+        padding: 20px;
     }
     
     .widget {
         background-color: #fff;
         border-radius: 12px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        padding: 15px;
+        padding: 20px;
         transition: all 0.3s ease;
         position: relative;
-    }
-    
-    @media (min-width: 768px) {
-        .widget {
-            padding: 20px;
-        }
-    }
-    
-    .dark .widget {
-        background-color: #1e1e1e;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     }
     
     .widget:hover {
@@ -66,51 +27,22 @@
         transform: translateY(-2px);
     }
     
-    .dark .widget:hover {
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    }
-    
     .widget-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 15px;
-        flex-wrap: wrap;
     }
     
     .widget-title {
         font-weight: 600;
-        font-size: 1rem;
+        font-size: 1.2rem;
         color: #333;
-        margin-bottom: 5px;
-    }
-    
-    .dark .widget-title {
-        color: #e0e0e0;
-    }
-    
-    @media (min-width: 768px) {
-        .widget-title {
-            font-size: 1.1rem;
-            margin-bottom: 0;
-        }
-    }
-    
-    @media (min-width: 1024px) {
-        .widget-title {
-            font-size: 1.2rem;
-        }
     }
     
     .widget-actions {
         display: flex;
-        gap: 6px;
-    }
-    
-    @media (min-width: 768px) {
-        .widget-actions {
-            gap: 8px;
-        }
+        gap: 8px;
     }
     
     .widget-action-btn {
@@ -133,70 +65,16 @@
         overflow-y: auto;
     }
     
-    /* Адаптивные размеры для виджетов */
-    /* По умолчанию на мобильных все виджеты занимают всю ширину */
-    .widget-small, .widget-medium, .widget-large {
-        grid-column: span 1;
+    .widget-small {
+        grid-column: span 3;
     }
     
-    /* Размеры на tablet (sm) */
-    @media (min-width: 640px) {
-        .widget-small {
-            grid-column: span 1;
-        }
-        
-        .widget-medium {
-            grid-column: span 2;
-        }
-        
-        .widget-large {
-            grid-column: span 2;
-        }
+    .widget-medium {
+        grid-column: span 6;
     }
     
-    /* Размеры на desktop (md) */
-    @media (min-width: 768px) {
-        .widget-small {
-            grid-column: span 1;
-        }
-        
-        .widget-medium {
-            grid-column: span 2;
-        }
-        
-        .widget-large {
-            grid-column: span 3;
-        }
-    }
-    
-    /* Размеры на large desktop (lg) */
-    @media (min-width: 1024px) {
-        .widget-small {
-            grid-column: span 1;
-        }
-        
-        .widget-medium {
-            grid-column: span 2;
-        }
-        
-        .widget-large {
-            grid-column: span 4;
-        }
-    }
-    
-    /* Размеры на extra large (xl) */
-    @media (min-width: 1280px) {
-        .widget-small {
-            grid-column: span 1;
-        }
-        
-        .widget-medium {
-            grid-column: span 2;
-        }
-        
-        .widget-large {
-            grid-column: span 3;
-        }
+    .widget-large {
+        grid-column: span 12;
     }
     
     .widget-loading {
@@ -263,13 +141,13 @@
         <p class="text-gray-600">Добро пожаловать, {{ request.user.username }}! Здесь вы можете отслеживать свой прогресс обучения.</p>
     </div>
     
-    <div class="dashboard-controls flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0 mb-6 sm:mb-4 px-4 sm:px-0">
-        <a href="{% url 'dashboard:add_widget' %}" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+    <div class="dashboard-controls flex justify-between mb-4">
+        <a href="{% url 'dashboard:add_widget' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
             <i class="fas fa-plus mr-2"></i> Добавить виджет
         </a>
         
-        <div class="dashboard-settings w-full sm:w-auto">
-            <a href="{% url 'dashboard:settings' %}" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition-colors">
+        <div class="dashboard-settings">
+            <a href="{% url 'dashboard:settings' %}" class="inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition-colors">
                 <i class="fas fa-cog mr-2"></i> Настройки
             </a>
         </div>
@@ -301,12 +179,12 @@
                 </div>
             {% endfor %}
         {% else %}
-            <div class="col-span-1 md:col-span-3 text-center py-8 sm:py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
-                <div class="no-data px-4">
-                    <i class="fas fa-chart-line text-4xl sm:text-5xl mb-4 text-gray-300 dark:text-gray-600"></i>
-                    <h3 class="text-xl sm:text-2xl font-semibold mb-2 dark:text-gray-200">Добавьте свой первый виджет</h3>
-                    <p class="text-gray-600 dark:text-gray-400 mb-4 sm:mb-6 text-sm sm:text-base">Настройте дашборд под свои потребности, добавив полезные виджеты</p>
-                    <a href="{% url 'dashboard:add_widget' %}" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+            <div class="col-span-12 text-center py-12 bg-white rounded-lg shadow">
+                <div class="no-data">
+                    <i class="fas fa-chart-line text-5xl mb-4 text-gray-300"></i>
+                    <h3 class="text-2xl font-semibold mb-2">Добавьте свой первый виджет</h3>
+                    <p class="text-gray-600 mb-6">Настройте дашборд под свои потребности, добавив полезные виджеты</p>
+                    <a href="{% url 'dashboard:add_widget' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
                         <i class="fas fa-plus mr-2"></i> Добавить виджет
                     </a>
                 </div>
