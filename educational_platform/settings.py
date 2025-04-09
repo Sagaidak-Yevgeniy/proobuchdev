@@ -16,6 +16,20 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1', 'dd7133e5-0784-467d-88f8-1237e43ae485-00-2c1y8rxcc28wd.worf.replit.dev', '.replit.dev', '.repl.co']
 
+# CSRF protection settings
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SAMESITE = None
+SESSION_COOKIE_SAMESITE = None
+CSRF_TRUSTED_ORIGINS = [
+    'https://dd7133e5-0784-467d-88f8-1237e43ae485-00-2c1y8rxcc28wd.worf.replit.dev',
+    'https://*.replit.dev',
+    'https://*.repl.co',
+    'http://dd7133e5-0784-467d-88f8-1237e43ae485-00-2c1y8rxcc28wd.worf.replit.dev',
+    'http://*.replit.dev',
+    'http://*.repl.co',
+]
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -40,6 +54,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Эти настройки уже включены выше
 
 ROOT_URLCONF = 'educational_platform.urls'
 

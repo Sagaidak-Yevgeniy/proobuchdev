@@ -1,9 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
-from .forms import CustomUserCreationForm, ProfileUpdateForm, UserUpdateForm
+from django.views.decorators.csrf import ensure_csrf_cookie
+from .forms import CustomUserCreationForm, ProfileUpdateForm, UserUpdateForm, CustomAuthenticationForm
 from .models import CustomUser, Profile
+from educational_platform.csrf_hack import ensure_csrf_cookie as custom_ensure_csrf_cookie
 
+@ensure_csrf_cookie
 def register(request):
     """Регистрация нового пользователя"""
     if request.method == 'POST':
@@ -49,3 +53,25 @@ def user_profile(request, username):
     """Просмотр профиля другого пользователя"""
     user = get_object_or_404(CustomUser, username=username)
     return render(request, 'users/user_profile.html', {'user': user})
+    
+@ensure_csrf_cookie
+def custom_login(request):
+    """Кастомное представление для входа в систему"""
+    if request.method == 'POST':
+        form = CustomAuthenticationForm(request=request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, f'Вы успешно вошли как {username}.')
+                next_url = request.GET.get('next', 'home')
+                return redirect(next_url)
+            else:
+                messages.error(request, 'Ошибка аутентификации. Пожалуйста, проверьте имя пользователя и пароль.')
+        else:
+            messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
+    else:
+        form = CustomAuthenticationForm()
+    return render(request, 'users/login.html', {'form': form})

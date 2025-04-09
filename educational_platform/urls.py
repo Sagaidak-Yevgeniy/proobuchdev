@@ -6,6 +6,10 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
+from .admin_views import AdminLoginView
+
+# Переопределяем URL для входа в административный интерфейс
+admin.site.login = AdminLoginView.as_view()
 
 urlpatterns = [
     path('admin/', admin.site.urls),
