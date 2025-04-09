@@ -15,7 +15,7 @@ urlpatterns = [
     path('olympiad/<slug:slug>/leaderboard/', views.olympiad_leaderboard, name='olympiad_leaderboard'),
     
     # Административные страницы
-    path('olympiad/create/', views.olympiad_create, name='olympiad_create'),
+    path('create/', views.olympiad_create, name='olympiad_create'),
     path('olympiad/<slug:slug>/edit/', views.olympiad_edit, name='olympiad_edit'),
     path('olympiad/<slug:slug>/delete/', views.olympiad_delete, name='olympiad_delete'),
     path('olympiad/<slug:slug>/publish/', views.olympiad_publish, name='olympiad_publish'),

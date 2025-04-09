@@ -105,9 +105,9 @@
         {% if user.profile.is_teacher %}
         <div id="created-content" class="tab-pane hidden">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-semibold">Созданные мною курсы</h2>
-                <a href="{% url 'course_create' %}" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
-                    <i class="fas fa-plus mr-2"></i>Создать новый курс
+                <h2 class="text-lg sm:text-xl font-semibold">Созданные мною курсы</h2>
+                <a href="{% url 'course_create' %}" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 text-sm sm:text-base">
+                    <i class="fas fa-plus mr-2"></i><span class="sm:inline">Создать новый курс</span><span class="inline sm:hidden">Создать курс</span>
                 </a>
             </div>
             
