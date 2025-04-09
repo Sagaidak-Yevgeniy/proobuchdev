@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ notification.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notification-icon {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 1.5rem;
+    }
+    
+    .notification-icon.info { background-color: #dbeafe; color: #2563eb; }
+    .notification-icon.success { background-color: #dcfce7; color: #16a34a; }
+    .notification-icon.warning { background-color: #fef3c7; color: #d97706; }
+    .notification-icon.error { background-color: #fee2e2; color: #dc2626; }
+    .notification-icon.achievement { background-color: #fae8ff; color: #a21caf; }
+    .notification-icon.course { background-color: #dbeafe; color: #1d4ed8; }
+    .notification-icon.lesson { background-color: #f0fdf4; color: #15803d; }
+    .notification-icon.assignment { background-color: #ede9fe; color: #6d28d9; }
+    .notification-icon.message { background-color: #dbeafe; color: #2563eb; }
+    .notification-icon.system { background-color: #f3f4f6; color: #4b5563; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Просмотр уведомления</h1>
+            <a href="{% url 'notifications:list' %}" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                <i class="fas fa-arrow-left mr-2"></i>К списку уведомлений
+            </a>
+        </div>
+        
+        <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+            <div class="flex items-start">
+                <div class="notification-icon {{ notification.notification_type }} mr-6 flex-shrink-0">
+                    {% if notification.notification_type == 'info' %}
+                        <i class="fas fa-info"></i>
+                    {% elif notification.notification_type == 'success' %}
+                        <i class="fas fa-check"></i>
+                    {% elif notification.notification_type == 'warning' %}
+                        <i class="fas fa-exclamation"></i>
+                    {% elif notification.notification_type == 'error' %}
+                        <i class="fas fa-times"></i>
+                    {% elif notification.notification_type == 'achievement' %}
+                        <i class="fas fa-trophy"></i>
+                    {% elif notification.notification_type == 'course' %}
+                        <i class="fas fa-book"></i>
+                    {% elif notification.notification_type == 'lesson' %}
+                        <i class="fas fa-book-open"></i>
+                    {% elif notification.notification_type == 'assignment' %}
+                        <i class="fas fa-tasks"></i>
+                    {% elif notification.notification_type == 'message' %}
+                        <i class="fas fa-envelope"></i>
+                    {% else %}
+                        <i class="fas fa-bell"></i>
+                    {% endif %}
+                </div>
+                <div class="flex-grow">
+                    <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                        {{ notification.title }}
+                    </h2>
+                    
+                    <div class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        {{ notification.created_at|date:"d.m.Y H:i" }}
+                        {% if notification.is_read %}
+                        <span class="ml-2 text-green-600 dark:text-green-400">
+                            <i class="fas fa-check-double mr-1"></i>Прочитано
+                        </span>
+                        {% else %}
+                        <span class="ml-2 text-blue-600 dark:text-blue-400">
+                            <i class="fas fa-circle mr-1"></i>Новое
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="prose dark:prose-invert mb-4">
+                        <p>{{ notification.message|linebreaks }}</p>
+                    </div>
+                    
+                    {% if notification.sender %}
+                    <div class="mt-4 p-3 bg-gray-100 dark:bg-gray-600 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 mr-3">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-gray-800 dark:text-gray-200">От: {{ notification.sender.username }}</div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ notification.sender.email }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-6 flex items-center space-x-4">
+                        {% if notification.url %}
+                        <a href="{{ notification.url }}" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                            <i class="fas fa-external-link-alt mr-2"></i>Перейти по ссылке
+                        </a>
+                        {% endif %}
+                        
+                        <form method="post" action="{% url 'notifications:delete' notification_id=notification.id %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700" onclick="return confirm('Вы уверены, что хотите удалить это уведомление?')">
+                                <i class="fas fa-trash-alt mr-2"></i>Удалить
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ru" {% if user.is_authenticated and user.interface.theme == 'dark' %}class="dark"{% endif %}>
 <head>
@@ -99,6 +100,8 @@
                 <div class="flex items-center space-x-4">
                     {% if user.is_authenticated %}
                         <a href="{% url 'my_courses' %}" class="hover:text-blue-200">Мои курсы</a>
+                        <!-- Компонент уведомлений -->
+                        {% include "components/notification_dropdown.html" %}
                         <div class="relative">
                             <button class="flex items-center hover:text-blue-200" onclick="toggleDropdown()">
                                 {{ user.username }} ({{ user.profile.get_role_display }}) <i class="fas fa-chevron-down ml-1 text-xs"></i>
@@ -201,6 +204,9 @@
     
     <!-- Скрипты -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    {% if user.is_authenticated %}
+    <script src="{% static 'js/notifications.js' %}"></script>
+    {% endif %}
     {% block extra_js %}{% endblock %}
 </body>
 </html>

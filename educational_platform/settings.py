@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'assignments.apps.AssignmentsConfig',
     'gamification.apps.GamificationConfig',
     'ai_assistant.apps.AiAssistantConfig',
+    'notifications.apps.NotificationsConfig',
 ]
 
 MIDDLEWARE = [
