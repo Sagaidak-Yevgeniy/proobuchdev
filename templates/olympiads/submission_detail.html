@@ -198,7 +198,7 @@
     </div>
     
     <!-- Детали тестирования -->
-    {% if test_results and (show_details or is_creator) %}
+    {% if test_results and show_details or test_results and is_creator %}
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
         <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
             <h2 class="text-xl font-semibold">Детали тестирования</h2>
