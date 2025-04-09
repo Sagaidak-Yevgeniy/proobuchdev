@@ -110,8 +110,8 @@ class NotificationSettings(models.Model):
     
     # Тихие часы
     quiet_hours_enabled = models.BooleanField(default=False, verbose_name=_('Включить тихие часы'))
-    quiet_hours_start = models.TimeField(blank=True, null=True, verbose_name=_('Начало тихих часов'))
-    quiet_hours_end = models.TimeField(blank=True, null=True, verbose_name=_('Конец тихих часов'))
+    quiet_hours_start = models.TimeField(blank=True, null=True, default='22:00', verbose_name=_('Начало тихих часов'))
+    quiet_hours_end = models.TimeField(blank=True, null=True, default='08:00', verbose_name=_('Конец тихих часов'))
     
     # Дни недели для уведомлений
     weekdays_only = models.BooleanField(default=False, verbose_name=_('Только по будням'))

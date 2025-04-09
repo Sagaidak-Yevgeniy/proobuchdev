@@ -5,16 +5,22 @@ from .models import CustomUser, Profile, UserInterface
 @receiver(post_save, sender=CustomUser)
 def create_profile(sender, instance, created, **kwargs):
     """Создает профиль пользователя при создании нового пользователя"""
-    if created:
+    # Если профиль уже создан в форме регистрации, не будем его пересоздавать
+    if created and not hasattr(instance, 'profile'):
         Profile.objects.create(user=instance)
 
 @receiver(post_save, sender=CustomUser)
 def save_profile(sender, instance, **kwargs):
     """Сохраняет профиль пользователя при обновлении пользователя"""
-    try:
+    # Проверяем, существует ли профиль, чтобы не перезаписывать его
+    if hasattr(instance, 'profile'):
         instance.profile.save()
-    except Profile.DoesNotExist:
-        Profile.objects.create(user=instance)
+    else:
+        try:
+            profile = Profile.objects.get(user=instance)
+            profile.save()
+        except Profile.DoesNotExist:
+            Profile.objects.create(user=instance)
 
 @receiver(post_save, sender=CustomUser)
 def create_user_interface(sender, instance, created, **kwargs):
