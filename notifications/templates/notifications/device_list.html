@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Список устройств{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 sm:py-8">
+    <div class="max-w-3xl mx-auto">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6">
+            <h1 class="text-xl sm:text-2xl font-bold">Управление устройствами</h1>
+            <a href="{% url 'notifications:register_device' %}" class="btn-primary text-sm sm:text-base w-full sm:w-auto">
+                <i class="fas fa-plus mr-2"></i> Добавить устройство
+            </a>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
+            {% if devices %}
+                <div class="overflow-x-auto -mx-4 sm:mx-0">
+                    <table class="min-w-full table-auto">
+                        <thead class="hidden sm:table-header-group">
+                            <tr class="bg-gray-100 dark:bg-gray-700">
+                                <th class="px-4 py-2 text-left">Название</th>
+                                <th class="px-4 py-2 text-left">Тип</th>
+                                <th class="px-4 py-2 text-left">Статус</th>
+                                <th class="px-4 py-2 text-left">Добавлено</th>
+                                <th class="px-4 py-2 text-right">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for device in devices %}
+                                <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 sm:table-row flex flex-col">
+                                    <td class="px-4 py-3 sm:p-3 flex flex-col sm:table-cell">
+                                        <span class="font-medium sm:hidden">Название:</span>
+                                        <span>{{ device.device_name }}</span>
+                                    </td>
+                                    <td class="px-4 py-3 sm:p-3 flex flex-col sm:table-cell">
+                                        <span class="font-medium sm:hidden mb-1">Тип:</span>
+                                        {% if device.device_type == 'web' %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                                                <i class="fas fa-globe mr-1"></i> Веб-браузер
+                                            </span>
+                                        {% elif device.device_type == 'android' %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                                                <i class="fab fa-android mr-1"></i> Android
+                                            </span>
+                                        {% elif device.device_type == 'ios' %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                                <i class="fab fa-apple mr-1"></i> iOS
+                                            </span>
+                                        {% else %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100">
+                                                <i class="fas fa-mobile-alt mr-1"></i> {{ device.device_type }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 sm:p-3 flex flex-col sm:table-cell">
+                                        <span class="font-medium sm:hidden mb-1">Статус:</span>
+                                        {% if device.is_active %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                                                <i class="fas fa-check-circle mr-1"></i> Активно
+                                            </span>
+                                        {% else %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">
+                                                <i class="fas fa-times-circle mr-1"></i> Отключено
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 sm:p-3 flex flex-col sm:table-cell text-sm text-gray-500 dark:text-gray-400">
+                                        <span class="font-medium sm:hidden mb-1">Добавлено:</span>
+                                        {{ device.created_at|date:"d.m.Y" }}
+                                    </td>
+                                    <td class="px-4 py-3 sm:p-3 flex flex-col sm:table-cell sm:text-right">
+                                        <span class="font-medium sm:hidden mb-1">Действия:</span>
+                                        {% if device.is_active %}
+                                            <form method="post" action="{% url 'notifications:remove_device' %}" class="w-full sm:inline-block">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="device_id" value="{{ device.id }}">
+                                                <button type="submit" class="btn-danger-sm w-full sm:w-auto text-sm">
+                                                    <i class="fas fa-trash-alt mr-1"></i> Отключить
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <button type="button" class="btn-secondary-sm w-full sm:w-auto text-sm" disabled>
+                                                <i class="fas fa-ban mr-1"></i> Отключено
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-8">
+                    <div class="text-gray-400 dark:text-gray-500 mb-4">
+                        <i class="fas fa-mobile-alt text-4xl sm:text-5xl"></i>
+                    </div>
+                    <h3 class="text-base sm:text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Нет зарегистрированных устройств</h3>
+                    <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-6">
+                        Зарегистрируйте устройство, чтобы получать уведомления даже когда вы не на сайте
+                    </p>
+                    <a href="{% url 'notifications:register_device' %}" class="btn-primary text-sm sm:text-base">
+                        <i class="fas fa-plus mr-2"></i> Добавить устройство
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+            <h2 class="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">О push-уведомлениях</h2>
+            <p class="text-sm sm:text-base mb-3 text-gray-700 dark:text-gray-300">
+                Push-уведомления позволяют получать мгновенные оповещения о важных событиях на вашем устройстве,
+                даже когда вы не находитесь на сайте.
+            </p>
+            <p class="text-sm sm:text-base mb-3 text-gray-700 dark:text-gray-300">
+                Вы можете зарегистрировать несколько устройств и получать уведомления на всех из них одновременно.
+            </p>
+            <p class="text-sm sm:text-base text-gray-700 dark:text-gray-300">
+                В любой момент вы можете отключить уведомления для конкретного устройства, нажав на кнопку "Отключить".
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

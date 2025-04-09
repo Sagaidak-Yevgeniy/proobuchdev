@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Регистрация устройства{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 sm:py-8">
+    <div class="max-w-3xl mx-auto">
+        <h1 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Регистрация устройства для уведомлений</h1>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
+            <form method="post" id="deviceForm" class="space-y-3 sm:space-y-4">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="{{ form.token.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ form.token.label }}
+                    </label>
+                    {{ form.token }}
+                    {% if form.token.errors %}
+                        <div class="text-red-500 text-sm mt-1">{{ form.token.errors }}</div>
+                    {% endif %}
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Уникальный идентификатор устройства.</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.device_type.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ form.device_type.label }}
+                    </label>
+                    {{ form.device_type }}
+                    {% if form.device_type.errors %}
+                        <div class="text-red-500 text-sm mt-1">{{ form.device_type.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.device_name.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ form.device_name.label }}
+                    </label>
+                    {{ form.device_name }}
+                    {% if form.device_name.errors %}
+                        <div class="text-red-500 text-sm mt-1">{{ form.device_name.errors }}</div>
+                    {% endif %}
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Понятное вам название устройства (например, "Мой ноутбук").</p>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row justify-end gap-3 mt-6">
+                    <a href="{% url 'notifications:notification_settings' %}" class="btn-secondary w-full sm:w-auto order-2 sm:order-1 text-center">Отмена</a>
+                    <button type="submit" class="btn-primary w-full sm:w-auto order-1 sm:order-2">Зарегистрировать</button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+            <h2 class="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Что такое регистрация устройства?</h2>
+            <p class="text-sm sm:text-base mb-3 text-gray-700 dark:text-gray-300">
+                Регистрация устройства позволяет получать уведомления о важных событиях на вашем устройстве, 
+                даже когда вы не находитесь на сайте.
+            </p>
+            <p class="text-sm sm:text-base mb-3 text-gray-700 dark:text-gray-300">
+                После регистрации вы сможете получать уведомления о новых курсах, уроках, сообщениях и других событиях.
+            </p>
+            <p class="text-sm sm:text-base text-gray-700 dark:text-gray-300">
+                Вы всегда можете отключить уведомления в настройках или удалить устройство из списка.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Если поддерживаются push-уведомления браузера, предлагаем автоматическую регистрацию
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+        const generateDeviceBtn = document.createElement('button');
+        generateDeviceBtn.type = 'button';
+        generateDeviceBtn.className = 'btn-success w-full text-center py-3 mb-4 rounded-md text-sm sm:text-base';
+        generateDeviceBtn.textContent = 'Использовать этот браузер';
+        
+        const form = document.getElementById('deviceForm');
+        form.insertBefore(generateDeviceBtn, form.firstChild);
+        
+        generateDeviceBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Генерируем случайный токен для идентификации этого браузера
+            const token = 'browser_' + Math.random().toString(36).substring(2, 15);
+            
+            // Заполняем форму
+            document.getElementById('{{ form.token.id_for_label }}').value = token;
+            document.getElementById('{{ form.device_type.id_for_label }}').value = 'web';
+            
+            // Определяем имя браузера
+            const userAgent = navigator.userAgent;
+            let browserName = 'Веб-браузер';
+            
+            if (userAgent.indexOf('Firefox') > -1) {
+                browserName = 'Firefox';
+            } else if (userAgent.indexOf('Chrome') > -1) {
+                browserName = 'Chrome';
+            } else if (userAgent.indexOf('Safari') > -1) {
+                browserName = 'Safari';
+            } else if (userAgent.indexOf('Edge') > -1 || userAgent.indexOf('Edg') > -1) {
+                browserName = 'Edge';
+            } else if (userAgent.indexOf('Opera') > -1 || userAgent.indexOf('OPR') > -1) {
+                browserName = 'Opera';
+            }
+            
+            document.getElementById('{{ form.device_name.id_for_label }}').value = browserName;
+        });
+    }
+});
+</script>
+{% endblock %}
