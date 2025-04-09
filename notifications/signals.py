@@ -1,12 +1,15 @@
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext as _
 
-from .models import NotificationSettings
-from gamification.models import Achievement, Badge
-from courses.models import Course, Lesson, Enrollment, LessonCompletion
-from assignments.models import Assignment, AssignmentSubmission
+from .models import Notification, NotificationSettings
+from users.models import CustomUser
+from gamification.models import Achievement, UserAchievement, Badge, UserBadge
+from courses.models import Course
+# Закомментируем импорт, так как модели пока не используются
+# from assignments.models import Assignment, AssignmentSubmission
+
 
 User = get_user_model()
 
@@ -18,287 +21,286 @@ def create_notification_settings(sender, instance, created, **kwargs):
         NotificationSettings.objects.create(user=instance)
 
 
-@receiver(post_save, sender=Achievement)
-def notify_achievement(sender, instance, created, **kwargs):
+@receiver(post_save, sender=UserAchievement)
+def notify_achievement_earned(sender, instance, created, **kwargs):
     """Отправляет уведомление о получении достижения"""
-    from .models import Notification
-    
-    if created:  # Только для новых достижений
-        # Получаем настройки уведомлений пользователя
+    if created:
+        achievement = instance.achievement
+        user = instance.user
+        
+        # Проверяем настройки пользователя
         try:
-            settings = NotificationSettings.objects.get(user=instance.user)
-            
-            # Проверяем, может ли пользователь получить уведомление этого типа
-            if settings.can_receive_notification('achievement', instance.is_significant):
-                # Создаем уведомление
-                Notification.objects.create(
-                    user=instance.user,
-                    title=_('Новое достижение получено!'),
-                    message=f'Вы получили достижение "{instance.title}". {instance.description}',
-                    notification_type='achievement',
-                    is_high_priority=instance.is_significant,
-                    content_type=instance.content_type,
-                    object_id=instance.object_id
-                )
+            settings = NotificationSettings.objects.get(user=user)
+            if not settings.should_receive('achievement', False):
+                return
         except NotificationSettings.DoesNotExist:
-            # Если настроек нет, просто создаем их, но уведомление не отправляем
-            NotificationSettings.objects.create(user=instance.user)
+            pass
+        
+        Notification.objects.create(
+            user=user,
+            title=_('Новое достижение!'),
+            message=_(f'Вы получили достижение "{achievement.name}": {achievement.description}'),
+            notification_type='achievement',
+            is_high_priority=False,
+            url=f'/gamification/achievements/'
+        )
 
 
-@receiver(post_save, sender=Badge)
-def notify_badge(sender, instance, created, **kwargs):
+@receiver(post_save, sender=UserBadge)
+def notify_badge_earned(sender, instance, created, **kwargs):
     """Отправляет уведомление о получении значка"""
-    from .models import Notification
-    
-    if instance.is_awarded and not instance.notification_sent:
-        # Получаем настройки уведомлений пользователя
+    if created:
+        badge = instance.badge
+        user = instance.user
+        
+        # Проверяем настройки пользователя
         try:
-            settings = NotificationSettings.objects.get(user=instance.user)
-            
-            # Проверяем, может ли пользователь получить уведомление этого типа
-            if settings.can_receive_notification('achievement', True):  # Значки всегда высокоприоритетны
-                # Создаем уведомление
-                Notification.objects.create(
-                    user=instance.user,
-                    title=_('Новый значок получен!'),
-                    message=f'Вы получили значок "{instance.title}". {instance.description}',
-                    notification_type='achievement',
-                    is_high_priority=True
-                )
-                
-                # Отмечаем, что уведомление о значке отправлено
-                instance.notification_sent = True
-                instance.save(update_fields=['notification_sent'])
+            settings = NotificationSettings.objects.get(user=user)
+            if not settings.should_receive('achievement', True):
+                return
         except NotificationSettings.DoesNotExist:
-            # Если настроек нет, просто создаем их, но уведомление не отправляем
-            NotificationSettings.objects.create(user=instance.user)
+            pass
+        
+        Notification.objects.create(
+            user=user,
+            title=_('Новый значок!'),
+            message=_(f'Вы получили значок "{badge.name}" за ваши достижения! {badge.description}'),
+            notification_type='achievement',
+            is_high_priority=True,
+            url=f'/gamification/badges/'
+        )
+
+
+@receiver(post_save, sender=Course)
+def notify_course_creation(sender, instance, created, **kwargs):
+    """Отправляет уведомление о создании нового курса"""
+    if created and instance.is_published:
+        # Получаем пользователей, которые должны получать уведомления о курсах
+        users_settings = NotificationSettings.objects.filter(receive_course=True, receive_all=True)
+        
+        for settings in users_settings:
+            # Если пользователь настроил получение только важных, пропускаем
+            if settings.notify_only_high_priority:
+                continue
+                
+            Notification.objects.create(
+                user=settings.user,
+                title=_('Новый курс!'),
+                message=_(f'Появился новый курс "{instance.title}". {instance.description[:100]}...'),
+                notification_type='course',
+                is_high_priority=False,
+                url=f'/courses/{instance.slug}/'
+            )
 
 
 @receiver(post_save, sender=Course)
 def notify_course_update(sender, instance, created, **kwargs):
-    """Отправляет уведомление об обновлении курса всем учащимся"""
-    from .models import Notification
-    from django.db.models import Q
-    
-    # Если курс не опубликован, уведомления не отправляем
-    if not instance.is_published:
-        return
+    """Отправляет уведомление об обновлении курса его участникам"""
+    if not created and instance.is_published:
+        # Получаем студентов, которые записаны на этот курс
+        enrolled_users = instance.students.all()
         
-    # Определяем тип события
-    if created:
-        title = _('Новый курс доступен')
-        message = f'Опубликован новый курс "{instance.title}". {instance.short_description}'
-    else:
-        # Если это не новый курс, проверяем, отмечен ли он как обновленный
-        if not getattr(instance, 'updated_flag', False):
-            return
-            
-        title = _('Курс обновлен')
-        message = f'Курс "{instance.title}" был обновлен. Проверьте новое содержимое.'
-    
-    # Получаем всех пользователей, записанных на курс
-    enrollments = Enrollment.objects.filter(course=instance, is_active=True)
-    
-    # Отправляем уведомление каждому пользователю
-    for enrollment in enrollments:
-        try:
-            settings = NotificationSettings.objects.get(user=enrollment.student)
-            
-            # Проверяем, может ли пользователь получить уведомление этого типа
-            if settings.can_receive_notification('course', False):
-                # Создаем уведомление
-                Notification.objects.create(
-                    user=enrollment.student,
-                    title=title,
-                    message=message,
-                    notification_type='course',
-                    is_high_priority=False,
-                    content_type=instance.content_type,
-                    object_id=instance.id,
-                    url=f'/courses/{instance.id}/'
-                )
-        except NotificationSettings.DoesNotExist:
-            # Если настроек нет, просто создаем их, но уведомление не отправляем
-            NotificationSettings.objects.create(user=enrollment.student)
-
-
-@receiver(post_save, sender=Lesson)
-def notify_lesson_update(sender, instance, created, **kwargs):
-    """Отправляет уведомление о новом уроке всем учащимся курса"""
-    from .models import Notification
-    
-    # Если урок не опубликован или курс не опубликован, уведомления не отправляем
-    if not instance.is_published or not instance.course.is_published:
-        return
-        
-    # Определяем тип события
-    if created:
-        title = _('Новый урок доступен')
-        message = f'В курсе "{instance.course.title}" добавлен новый урок "{instance.title}".'
-    else:
-        # Если это не новый урок, проверяем, отмечен ли он как обновленный
-        if not getattr(instance, 'updated_flag', False):
-            return
-            
-        title = _('Урок обновлен')
-        message = f'Урок "{instance.title}" в курсе "{instance.course.title}" был обновлен.'
-    
-    # Получаем всех пользователей, записанных на курс
-    enrollments = Enrollment.objects.filter(course=instance.course, is_active=True)
-    
-    # Отправляем уведомление каждому пользователю
-    for enrollment in enrollments:
-        try:
-            settings = NotificationSettings.objects.get(user=enrollment.student)
-            
-            # Проверяем, может ли пользователь получить уведомление этого типа
-            if settings.can_receive_notification('lesson', False):
-                # Создаем уведомление
-                Notification.objects.create(
-                    user=enrollment.student,
-                    title=title,
-                    message=message,
-                    notification_type='lesson',
-                    is_high_priority=False,
-                    content_type=instance.content_type,
-                    object_id=instance.id,
-                    url=f'/courses/{instance.course.id}/lessons/{instance.id}/'
-                )
-        except NotificationSettings.DoesNotExist:
-            # Если настроек нет, просто создаем их, но уведомление не отправляем
-            NotificationSettings.objects.create(user=enrollment.student)
-
-
-@receiver(post_save, sender=AssignmentSubmission)
-def notify_assignment_submission(sender, instance, created, **kwargs):
-    """Отправляет уведомление о проверке решения задания"""
-    from .models import Notification
-    
-    # Нас интересуют только изменения статуса существующих отправок
-    if created:
-        return
-        
-    # Проверяем, изменился ли статус (например, на "проверено")
-    if not getattr(instance, 'status_changed', False):
-        return
-        
-    # Определяем сообщение в зависимости от статуса
-    if instance.status == 'approved':
-        title = _('Решение задания одобрено')
-        message = f'Ваше решение задания "{instance.assignment.title}" было одобрено!'
-        is_high_priority = True
-    elif instance.status == 'rejected':
-        title = _('Решение задания требует доработки')
-        message = f'Ваше решение задания "{instance.assignment.title}" требует доработки. Проверьте комментарии преподавателя.'
-        is_high_priority = True
-    elif instance.status == 'checking':
-        title = _('Решение задания на проверке')
-        message = f'Ваше решение задания "{instance.assignment.title}" принято на проверку.'
-        is_high_priority = False
-    else:
-        # Для других статусов уведомления не отправляем
-        return
-    
-    try:
-        settings = NotificationSettings.objects.get(user=instance.user)
-        
-        # Проверяем, может ли пользователь получить уведомление этого типа
-        if settings.can_receive_notification('assignment', is_high_priority):
-            # Создаем уведомление
-            Notification.objects.create(
-                user=instance.user,
-                title=title,
-                message=message,
-                notification_type='assignment',
-                is_high_priority=is_high_priority,
-                content_type=instance.content_type,
-                object_id=instance.id,
-                url=f'/assignments/{instance.assignment.id}/submissions/{instance.id}/'
-            )
-    except NotificationSettings.DoesNotExist:
-        # Если настроек нет, просто создаем их, но уведомление не отправляем
-        NotificationSettings.objects.create(user=instance.user)
-
-
-# Функция отправки email-уведомлений
-def send_email_notification(notification):
-    """Отправляет уведомление на email пользователя"""
-    from django.core.mail import send_mail
-    from django.conf import settings as django_settings
-    
-    # Проверяем настройки уведомлений пользователя
-    try:
-        user_settings = NotificationSettings.objects.get(user=notification.user)
-        
-        # Если email-уведомления отключены, ничего не делаем
-        if not user_settings.email_notifications:
-            return
-            
-        # Если уведомления только для важных, и это не важное, ничего не делаем
-        if user_settings.notify_only_high_priority and not notification.is_high_priority:
-            return
-    except NotificationSettings.DoesNotExist:
-        # Если настроек нет, ничего не делаем
-        return
-    
-    # Получаем email пользователя
-    user_email = notification.user.email
-    
-    # Если email не указан, ничего не делаем
-    if not user_email:
-        return
-    
-    # Формируем тему и текст письма
-    subject = f'ПроОбучение: {notification.title}'
-    
-    # Формируем текст письма
-    message = f"""
-    Здравствуйте, {notification.user.get_full_name() or notification.user.username}!
-    
-    {notification.message}
-    
-    ------------------------------
-    Это автоматическое уведомление от платформы ПроОбучение.
-    Для изменения настроек уведомлений перейдите по ссылке: {django_settings.SITE_URL}/notifications/settings/
-    """
-    
-    # Отправляем письмо
-    try:
-        # Если настроен SendGrid, используем его
-        if hasattr(django_settings, 'SENDGRID_API_KEY') and django_settings.SENDGRID_API_KEY:
-            from sendgrid import SendGridAPIClient
-            from sendgrid.helpers.mail import Mail
-            
-            message = Mail(
-                from_email=django_settings.DEFAULT_FROM_EMAIL,
-                to_emails=user_email,
-                subject=subject,
-                plain_text_content=message
-            )
-            
+        for user in enrolled_users:
             try:
-                sg = SendGridAPIClient(django_settings.SENDGRID_API_KEY)
-                sg.send(message)
-            except Exception as e:
-                # Логгируем ошибку, но не прерываем выполнение
-                print(f"Ошибка отправки через SendGrid: {e}")
-        else:
-            # Используем стандартную отправку Django
-            send_mail(
-                subject=subject,
-                message=message,
-                from_email=django_settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user_email]
+                settings = NotificationSettings.objects.get(user=user)
+                if not settings.should_receive('course', False):
+                    continue
+            except NotificationSettings.DoesNotExist:
+                continue
+            
+            Notification.objects.create(
+                user=user,
+                title=_('Обновление курса'),
+                message=_(f'Курс "{instance.title}" был обновлен.'),
+                notification_type='course',
+                is_high_priority=False,
+                url=f'/courses/{instance.slug}/'
             )
+
+
+# Комментирую уведомления для уроков, так как модель Lesson не определена
+# @receiver(post_save, sender=Lesson)
+# def notify_lesson_creation(sender, instance, created, **kwargs):
+#     """Отправляет уведомление о создании нового урока студентам курса"""
+#     if created and hasattr(instance, 'course') and instance.course.is_published:
+#         # Получаем студентов, которые записаны на этот курс
+#         enrolled_users = instance.course.students.all()
+#         
+#         for user in enrolled_users:
+#             try:
+#                 settings = NotificationSettings.objects.get(user=user)
+#                 if not settings.should_receive('lesson', False):
+#                     continue
+#             except NotificationSettings.DoesNotExist:
+#                 continue
+#             
+#             Notification.objects.create(
+#                 user=user,
+#                 title=_('Новый урок в курсе'),
+#                 message=_(f'В курсе "{instance.course.title}" появился новый урок: "{instance.title}"'),
+#                 notification_type='lesson',
+#                 is_high_priority=False,
+#                 url=f'/courses/{instance.course.slug}/lessons/{instance.slug}/'
+#             )
+
+
+# @receiver(post_save, sender=Lesson)
+# def notify_lesson_update(sender, instance, created, **kwargs):
+#     """Отправляет уведомление об обновлении урока студентам"""
+#     if not created and hasattr(instance, 'course') and instance.course.is_published:
+#         # Получаем студентов, которые записаны на этот курс
+#         enrolled_users = instance.course.students.all()
+#         
+#         for user in enrolled_users:
+#             try:
+#                 settings = NotificationSettings.objects.get(user=user)
+#                 if not settings.should_receive('lesson', False):
+#                     continue
+#             except NotificationSettings.DoesNotExist:
+#                 continue
+#             
+#             Notification.objects.create(
+#                 user=user,
+#                 title=_('Обновление урока'),
+#                 message=_(f'Урок "{instance.title}" в курсе "{instance.course.title}" был обновлен.'),
+#                 notification_type='lesson',
+#                 is_high_priority=False,
+#                 url=f'/courses/{instance.course.slug}/lessons/{instance.slug}/'
+#             )
+
+
+# Комментирую уведомления для заданий, так как модели не полностью доступны
+# @receiver(post_save, sender=Assignment)
+# def notify_assignment_creation(sender, instance, created, **kwargs):
+#     """Отправляет уведомление о создании нового задания студентам"""
+#     if created and instance.lesson_content and instance.lesson_content.lesson:
+#         lesson = instance.lesson_content.lesson
+#         course = lesson.course
+#         
+#         if course.is_published:
+#             # Получаем студентов курса
+#             enrolled_users = course.students.all()
+#             
+#             for user in enrolled_users:
+#                 try:
+#                     settings = NotificationSettings.objects.get(user=user)
+#                     if not settings.should_receive('assignment', True):
+#                         continue
+#                 except NotificationSettings.DoesNotExist:
+#                     continue
+#                 
+#                 Notification.objects.create(
+#                     user=user,
+#                     title=_('Новое задание'),
+#                     message=_(f'В уроке "{lesson.title}" появилось новое задание: "{instance.title}"'),
+#                     notification_type='assignment',
+#                     is_high_priority=True,
+#                     url=f'/courses/{course.slug}/lessons/{lesson.slug}/#assignment-{instance.id}'
+#                 )
+
+
+# @receiver(post_save, sender=AssignmentSubmission)
+# def notify_submission_graded(sender, instance, **kwargs):
+#     """Отправляет уведомление студенту о проверке его решения"""
+#     if instance.status in ['passed', 'failed'] and not instance.is_auto_checked:
+#         # Уведомление отправляется только если статус изменился на "проверено"
+#         # и оценка была выставлена преподавателем, а не автоматически
+#         
+#         user = instance.user
+#         assignment = instance.assignment
+#         
+#         try:
+#             settings = NotificationSettings.objects.get(user=user)
+#             if not settings.should_receive('assignment', True):
+#                 return
+#         except NotificationSettings.DoesNotExist:
+#             pass
+#         
+#         lesson_content = assignment.lesson_content
+#         lesson = lesson_content.lesson
+#         course = lesson.course
+#         
+#         status_text = _("принято") if instance.status == 'passed' else _("не принято")
+#         
+#         Notification.objects.create(
+#             user=user,
+#             title=_('Задание проверено'),
+#             message=_(f'Ваше решение задания "{assignment.title}" было проверено. Статус: {status_text}'),
+#             notification_type='assignment',
+#             is_high_priority=True,
+#             url=f'/courses/{course.slug}/lessons/{lesson.slug}/#assignment-{assignment.id}'
+#         )
+
+
+# Функции для отправки Email-уведомлений
+
+from django.core.mail import send_mail
+from django.conf import settings
+
+
+def send_email_notification(user, subject, message, html_message=None):
+    """Отправляет email уведомление пользователю"""
+    try:
+        # Проверяем настройки пользователя
+        user_settings = NotificationSettings.objects.get(user=user)
+        if not user_settings.email_notifications:
+            return False
+            
+        # Если у пользователя нет email, отправка невозможна
+        if not user.email:
+            return False
+            
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=html_message,
+            fail_silently=True
+        )
+        return True
     except Exception as e:
-        # Логгируем ошибку, но не прерываем выполнение
-        print(f"Ошибка отправки email: {e}")
+        print(f"Ошибка отправки email: {str(e)}")
+        return False
 
 
-# Регистрируем сигнал для отправки email при создании уведомления
-@receiver(post_save, sender='notifications.Notification')
-def send_notification_email(sender, instance, created, **kwargs):
-    """Отправляет email при создании нового уведомления"""
-    if created:
-        # Отправляем email
-        send_email_notification(instance)
+# SendGrid для более продвинутых email-уведомлений
+def send_sendgrid_email(user, subject, text_content, html_content=None):
+    """Отправляет красивое HTML-уведомление через SendGrid"""
+    try:
+        import sendgrid
+        from sendgrid.helpers.mail import Mail, Email, To, Content
+
+        # Проверяем настройки пользователя
+        user_settings = NotificationSettings.objects.get(user=user)
+        if not user_settings.email_notifications:
+            return False
+            
+        # Если у пользователя нет email, отправка невозможна
+        if not user.email:
+            return False
+        
+        # Получаем API ключ из настроек
+        if not hasattr(settings, 'SENDGRID_API_KEY') or not settings.SENDGRID_API_KEY:
+            # Если нет ключа SendGrid, используем обычную отправку
+            return send_email_notification(user, subject, text_content, html_content)
+        
+        sg = sendgrid.SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
+        
+        from_email = Email(settings.DEFAULT_FROM_EMAIL)
+        to_email = To(user.email)
+        
+        if html_content:
+            content = Content("text/html", html_content)
+        else:
+            content = Content("text/plain", text_content)
+            
+        mail = Mail(from_email, to_email, subject, content)
+        
+        # Отправляем сообщение
+        response = sg.client.mail.send.post(request_body=mail.get())
+        
+        return response.status_code in [200, 201, 202]
+    except Exception as e:
+        print(f"Ошибка отправки SendGrid email: {str(e)}")
+        return False

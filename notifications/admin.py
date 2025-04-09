@@ -8,56 +8,54 @@ class NotificationAdmin(admin.ModelAdmin):
     list_filter = ('notification_type', 'is_read', 'is_high_priority', 'created_at')
     search_fields = ('title', 'message', 'user__username')
     readonly_fields = ('created_at', 'updated_at')
-    raw_id_fields = ('user', 'content_type')
     date_hierarchy = 'created_at'
-    list_per_page = 50
     
     fieldsets = (
-        ('Основная информация', {
-            'fields': ('user', 'title', 'message')
+        (None, {
+            'fields': ('user', 'title', 'message', 'notification_type')
         }),
-        ('Настройки', {
-            'fields': ('notification_type', 'is_read', 'is_high_priority', 'url')
+        ('Состояние', {
+            'fields': ('is_read', 'is_high_priority')
         }),
-        ('Связанный объект', {
-            'fields': ('content_type', 'object_id'),
-            'classes': ('collapse',)
+        ('Ссылки', {
+            'fields': ('url', 'content_type', 'object_id')
         }),
         ('Метаданные', {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
-        }),
+        })
     )
     
-    actions = ['mark_as_read', 'mark_as_unread']
+    def get_queryset(self, request):
+        """Оптимизация запросов с select_related для связанных моделей"""
+        return super().get_queryset(request).select_related('user', 'content_type')
     
-    def mark_as_read(self, request, queryset):
-        updated = queryset.update(is_read=True)
-        self.message_user(request, f'{updated} уведомлений отмечено как прочитанные.')
-    mark_as_read.short_description = "Отметить как прочитанные"
+    def get_user_display(self, obj):
+        """Отображает имя пользователя"""
+        return obj.user.get_full_name() or obj.user.username
+    get_user_display.short_description = 'Пользователь'
     
-    def mark_as_unread(self, request, queryset):
-        updated = queryset.update(is_read=False)
-        self.message_user(request, f'{updated} уведомлений отмечено как непрочитанные.')
-    mark_as_unread.short_description = "Отметить как непрочитанные"
+    def get_type_display(self, obj):
+        """Отображает тип уведомления с цветным индикатором"""
+        return obj.get_notification_type_display()
+    get_type_display.short_description = 'Тип'
 
 
 @admin.register(NotificationSettings)
 class NotificationSettingsAdmin(admin.ModelAdmin):
     list_display = ('user', 'receive_all', 'notify_only_high_priority', 'email_notifications', 'updated_at')
-    list_filter = ('receive_all', 'notify_only_high_priority', 'email_notifications', 'email_digest')
-    search_fields = ('user__username',)
+    list_filter = ('receive_all', 'notify_only_high_priority', 'email_notifications', 'updated_at')
+    search_fields = ('user__username', 'user__email')
     readonly_fields = ('created_at', 'updated_at')
-    raw_id_fields = ('user',)
     
     fieldsets = (
-        ('Пользователь', {
+        (None, {
             'fields': ('user',)
         }),
         ('Общие настройки', {
             'fields': ('receive_all', 'notify_only_high_priority')
         }),
-        ('Настройки по типам', {
+        ('Типы уведомлений', {
             'fields': ('receive_achievement', 'receive_course', 'receive_lesson', 'receive_assignment', 'receive_message')
         }),
         ('Email-уведомления', {
@@ -66,5 +64,9 @@ class NotificationSettingsAdmin(admin.ModelAdmin):
         ('Метаданные', {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
-        }),
+        })
     )
+    
+    def get_queryset(self, request):
+        """Оптимизация запросов с select_related для связанных моделей"""
+        return super().get_queryset(request).select_related('user')

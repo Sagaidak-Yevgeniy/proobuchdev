@@ -1,11 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, HttpResponseBadRequest
+from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.db.models import Q
 from django.urls import reverse
 from django.utils import timezone
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.decorators.http import require_POST
 
 from .models import Notification, NotificationSettings
@@ -14,19 +14,29 @@ from .forms import NotificationSettingsForm
 
 @login_required
 def notification_list(request):
-    """Отображает список уведомлений пользователя"""
-    # Получаем все уведомления пользователя, отсортированные по дате (новые сверху)
+    """Отображает страницу со списком уведомлений пользователя"""
+    # Получаем уведомления текущего пользователя
     notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
     
-    # Подсчитываем количество непрочитанных уведомлений
+    # Получаем количество непрочитанных уведомлений
     unread_count = notifications.filter(is_read=False).count()
     
-    # Если запрос требует JSON-ответа (для API)
+    # Пагинация
+    page = request.GET.get('page', 1)
+    paginator = Paginator(notifications, 10)  # 10 уведомлений на страницу
+    
+    try:
+        notifications_page = paginator.page(page)
+    except PageNotAnInteger:
+        notifications_page = paginator.page(1)
+    except EmptyPage:
+        notifications_page = paginator.page(paginator.num_pages)
+    
+    # Если запрос требует JSON-ответа
     if request.GET.get('format') == 'json':
         notifications_data = []
         
-        # Конвертируем уведомления в JSON
-        for notification in notifications[:10]:  # Возвращаем только 10 последних уведомлений
+        for notification in notifications_page:
             notifications_data.append({
                 'id': notification.id,
                 'title': notification.title,
@@ -38,66 +48,52 @@ def notification_list(request):
                 'created_at': notification.created_at.isoformat(),
             })
         
-        # Возвращаем JSON-ответ
         return JsonResponse({
             'notifications': notifications_data,
             'unread_count': unread_count,
+            'has_next': notifications_page.has_next(),
+            'has_previous': notifications_page.has_previous(),
+            'total_pages': paginator.num_pages,
+            'current_page': notifications_page.number,
         })
     
-    # Пагинация для обычного HTML-ответа
-    paginator = Paginator(notifications, 10)  # 10 уведомлений на страницу
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
-    
-    # Отображение шаблона
+    # Если обычный запрос HTML-страницы
     return render(request, 'notifications/notification_list.html', {
-        'notifications': page_obj,
+        'notifications': notifications_page,
         'unread_count': unread_count,
-        'has_unread': unread_count > 0,
     })
 
 
 @login_required
 def notification_count(request):
-    """Возвращает количество непрочитанных уведомлений для API"""
+    """Возвращает количество непрочитанных уведомлений для AJAX-запроса"""
     count = Notification.objects.filter(user=request.user, is_read=False).count()
-    
-    return JsonResponse({
-        'count': count
-    })
+    return JsonResponse({'count': count})
 
 
 @login_required
 @require_POST
-def mark_notification_as_read(request, notification_id):
+def mark_notification_read(request, notification_id):
     """Отмечает уведомление как прочитанное"""
     notification = get_object_or_404(Notification, id=notification_id, user=request.user)
-    
-    # Отмечаем как прочитанное
-    notification.is_read = True
-    notification.save(update_fields=['is_read', 'updated_at'])
+    notification.mark_as_read()
     
     # Возвращаем обновленное количество непрочитанных уведомлений
     unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
     
-    return JsonResponse({
-        'success': True,
-        'unread_count': unread_count
-    })
+    return JsonResponse({'success': True, 'unread_count': unread_count})
 
 
 @login_required
 @require_POST
-def mark_all_as_read(request):
+def mark_all_read(request):
     """Отмечает все уведомления пользователя как прочитанные"""
-    # Получаем все непрочитанные уведомления и отмечаем их как прочитанные
-    notifications = Notification.objects.filter(user=request.user, is_read=False)
-    notifications.update(is_read=True, updated_at=timezone.now())
+    Notification.objects.filter(user=request.user, is_read=False).update(
+        is_read=True, 
+        updated_at=timezone.now()
+    )
     
-    return JsonResponse({
-        'success': True,
-        'count': notifications.count()
-    })
+    return JsonResponse({'success': True})
 
 
 @login_required
@@ -105,36 +101,31 @@ def mark_all_as_read(request):
 def delete_notification(request, notification_id):
     """Удаляет уведомление"""
     notification = get_object_or_404(Notification, id=notification_id, user=request.user)
-    
-    # Удаляем уведомление
     notification.delete()
     
     # Возвращаем обновленное количество непрочитанных уведомлений
     unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
     
-    return JsonResponse({
-        'success': True,
-        'unread_count': unread_count
-    })
+    return JsonResponse({'success': True, 'unread_count': unread_count})
 
 
 @login_required
 def notification_settings(request):
-    """Страница настроек уведомлений пользователя"""
-    # Получаем или создаем настройки уведомлений пользователя
-    settings, created = NotificationSettings.objects.get_or_create(user=request.user)
+    """Отображает страницу с настройками уведомлений"""
+    try:
+        settings = NotificationSettings.objects.get(user=request.user)
+    except NotificationSettings.DoesNotExist:
+        settings = NotificationSettings.objects.create(user=request.user)
     
     if request.method == 'POST':
         form = NotificationSettingsForm(request.POST, instance=settings)
-        
         if form.is_valid():
             form.save()
-            messages.success(request, 'Настройки уведомлений успешно сохранены')
+            messages.success(request, 'Настройки уведомлений успешно сохранены.')
             return redirect('notifications:notification_settings')
-        
     else:
         form = NotificationSettingsForm(instance=settings)
     
     return render(request, 'notifications/notification_settings.html', {
-        'form': form
+        'form': form,
     })
