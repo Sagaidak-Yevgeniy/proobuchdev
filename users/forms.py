@@ -1,9 +1,26 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.core.validators import RegexValidator
+from django.utils.translation import gettext_lazy as _
 from .models import CustomUser, Profile, UserInterface
 
 class CustomUserCreationForm(UserCreationForm):
     """Форма для регистрации нового пользователя"""
+    
+    # Переопределяем поле username для разрешения пробелов в ФИО
+    username = forms.CharField(
+        label='ФИО',
+        max_length=150,
+        help_text=_('Введите ваше полное имя, отчество и фамилию'),
+        validators=[
+            RegexValidator(
+                regex=r'^[\w\s.@+-]+$',
+                message=_('ФИО может содержать буквы, цифры, пробелы и символы @/./+/-/_'),
+                code='invalid_username'
+            ),
+        ],
+        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Введите ФИО полностью'})
+    )
     
     email = forms.EmailField(
         label='Email',
@@ -27,12 +44,6 @@ class CustomUserCreationForm(UserCreationForm):
     class Meta:
         model = CustomUser
         fields = ('username', 'email', 'password1', 'password2')
-        widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Введите ФИО полностью'}),
-        }
-        labels = {
-            'username': 'ФИО',
-        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -83,6 +94,13 @@ class CustomAuthenticationForm(AuthenticationForm):
     
     username = forms.CharField(
         label='ФИО или Email',
+        validators=[
+            RegexValidator(
+                regex=r'^[\w\s.@+-]+$',
+                message=_('ФИО может содержать буквы, цифры, пробелы и символы @/./+/-/_'),
+                code='invalid_username'
+            ),
+        ],
         widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'ФИО или Email'})
     )
     password = forms.CharField(
