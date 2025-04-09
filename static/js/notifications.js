@@ -28,8 +28,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Позиционирует выпадающее меню относительно кнопки
     function positionDropdown() {
-        // На мобильных устройствах оставляем правое выравнивание (по умолчанию)
         if (window.innerWidth < 640) {
+            // На мобильных устройствах позиционируем по правому краю экрана с небольшим отступом
+            notificationDropdown.style.left = 'auto';
+            notificationDropdown.style.right = '10px';
+            
+            // Ограничиваем ширину выпадающего меню на мобильных устройствах
+            const maxWidth = window.innerWidth - 20; // 10px отступ с каждой стороны
+            notificationDropdown.style.maxWidth = `${maxWidth}px`;
+            
             return;
         }
         
@@ -40,6 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Устанавливаем положение меню так, чтобы оно было выровнено по левому краю кнопки
         notificationDropdown.style.left = `${leftOffset}px`;
+        notificationDropdown.style.right = 'auto';
     }
     
     // Скрывает выпадающее меню
