@@ -262,11 +262,32 @@ def submit_solution(request, olympiad_slug, problem_id):
             submission.olympiad = olympiad
             submission.save()
             
-            # Здесь можно добавить запуск асинхронной задачи для проверки решения
-            # from .tasks import check_submission
-            # check_submission.delay(submission.id)
+            # Проверяем безопасность кода
+            from .code_checker import check_code_safety
+            is_safe, safety_message = check_code_safety(submission.code)
             
-            messages.success(request, "Ваше решение отправлено на проверку.")
+            if is_safe:
+                # Запускаем проверку решения
+                from .code_checker import check_submission
+                
+                try:
+                    # Создаем отдельный поток для проверки
+                    import threading
+                    thread = threading.Thread(target=check_submission, args=(submission,))
+                    thread.daemon = True
+                    thread.start()
+                    
+                    messages.success(request, "Ваше решение отправлено на проверку.")
+                except Exception as e:
+                    submission.status = 'system_error'
+                    submission.error_message = f"Ошибка при запуске проверки: {str(e)}"
+                    submission.save(update_fields=['status', 'error_message'])
+                    messages.warning(request, "Произошла ошибка при запуске проверки. Попробуйте позже.")
+            else:
+                submission.status = 'system_error'
+                submission.error_message = safety_message
+                submission.save(update_fields=['status', 'error_message'])
+                messages.error(request, f"Ваш код содержит запрещенные операции: {safety_message}")
             return redirect('submission_detail', olympiad_slug=olympiad_slug, submission_id=submission.id)
     else:
         form = SubmissionForm()
