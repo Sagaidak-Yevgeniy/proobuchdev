@@ -33,6 +33,34 @@
         </div>
         
         <div class="mb-4">
+            <label for="{{ form.first_name.id_for_label }}" class="block text-gray-700 font-medium mb-2">
+                Имя <span class="text-red-500">*</span>
+            </label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}
+            <div class="text-red-500 text-sm mt-1">
+                {% for error in form.first_name.errors %}
+                {{ error }}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="mb-4">
+            <label for="{{ form.last_name.id_for_label }}" class="block text-gray-700 font-medium mb-2">
+                Фамилия <span class="text-red-500">*</span>
+            </label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}
+            <div class="text-red-500 text-sm mt-1">
+                {% for error in form.last_name.errors %}
+                {{ error }}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="mb-4">
             <label for="{{ form.email.id_for_label }}" class="block text-gray-700 font-medium mb-2">
                 Email <span class="text-red-500">*</span>
             </label>

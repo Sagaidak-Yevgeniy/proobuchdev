@@ -20,7 +20,10 @@ def create_notification_settings(sender, instance, created, **kwargs):
     if created:
         NotificationSettings.objects.create(
             user=instance,
-            push_notifications=False
+            push_notifications=False,
+            quiet_hours_enabled=False,
+            weekdays_only=False,
+            weekend_only=False
         )
 
 
