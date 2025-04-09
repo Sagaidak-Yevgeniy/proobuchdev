@@ -15,6 +15,7 @@ class Lesson(models.Model):
     title = models.CharField(max_length=200, verbose_name='Название')
     description = models.TextField(blank=True, verbose_name='Описание')
     order = models.PositiveIntegerField(default=1, verbose_name='Порядок отображения')
+    is_published = models.BooleanField(default=False, verbose_name='Опубликован')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
     
