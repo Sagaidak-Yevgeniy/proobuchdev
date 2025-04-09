@@ -82,9 +82,11 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ entry.total_points }}</div>
-                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2 overflow-hidden">
                                 {% with max_points=leaderboard_users.0.total_points %}
-                                <div class="bg-blue-600 h-2 rounded-full" style="width: {{ entry.total_points|floatformat:0|default:0|safe }}0%"></div>
+                                {% with percentage=entry.total_points|floatformat:0|default:0|safe|multiply:100|divide:max_points %}
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: {% if percentage > 100 %}100{% else %}{{ percentage }}{% endif %}%"></div>
+                                {% endwith %}
                                 {% endwith %}
                             </div>
                         </td>

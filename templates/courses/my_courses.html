@@ -67,8 +67,8 @@
                                 <span>Прогресс</span>
                                 <span>{{ enrollment.progress|floatformat:0 }}%</span>
                             </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ enrollment.progress }}%"></div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {% if enrollment.progress > 100 %}100{% else %}{{ enrollment.progress }}{% endif %}%"></div>
                             </div>
                         </div>
                         

@@ -367,9 +367,9 @@
                                 <span>${course.completed_lessons} из ${course.total_lessons} уроков</span>
                             </div>
                         </div>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar" style="width: ${course.progress_percent}%"></div>
-                            <span class="progress-text">${course.progress_percent}%</span>
+                        <div class="progress-bar-container w-full bg-gray-200 rounded-full h-2.5 relative mt-2 mb-2 overflow-hidden">
+                            <div class="progress-bar bg-blue-600 h-2.5 rounded-full" style="width: ${Math.min(course.progress_percent, 100)}%"></div>
+                            <span class="progress-text text-xs mt-1 text-right block">${course.progress_percent}%</span>
                         </div>
                     </div>
                 `;

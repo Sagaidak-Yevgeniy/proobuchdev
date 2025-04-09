@@ -6,8 +6,8 @@
                     <h4 class="text-base font-medium">{{ course.title }}</h4>
                     <span class="text-sm">{{ course.completed_lessons }}/{{ course.total_lessons }}</span>
                 </div>
-                <div class="progress-bar">
-                    <div class="progress-value" style="width: {{ course.progress_percent }}%"></div>
+                <div class="progress-bar w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                    <div class="progress-value bg-blue-600 h-2.5 rounded-full" style="width: {% if course.progress_percent > 100 %}100{% else %}{{ course.progress_percent }}{% endif %}%"></div>
                 </div>
                 <div class="flex justify-between items-center text-sm text-gray-500">
                     <span>{{ course.progress_percent }}% завершено</span>
