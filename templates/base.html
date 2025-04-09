@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Образовательная платформа{% endblock %}</title>
+    <title>{% block title %}ПроОбучение{% endblock %}</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -28,7 +28,7 @@
         <div class="container mx-auto px-4 py-3">
             <div class="flex justify-between items-center">
                 <div class="flex items-center space-x-4">
-                    <a href="{% url 'home' %}" class="text-xl font-bold">Учебная платформа</a>
+                    <a href="{% url 'home' %}" class="text-xl font-bold">ПроОбучение</a>
                     <a href="{% url 'course_list' %}" class="hover:text-blue-200">Курсы</a>
                     {% if user.is_authenticated and user.profile.is_teacher %}
                     <a href="{% url 'course_create' %}" class="hover:text-blue-200">Создать курс</a>
@@ -81,7 +81,7 @@
         <div class="container mx-auto px-4">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="mb-4 md:mb-0">
-                    <h2 class="text-xl font-bold">Учебная платформа</h2>
+                    <h2 class="text-xl font-bold">ПроОбучение</h2>
                     <p class="text-gray-400 mt-1">Учитесь с удовольствием</p>
                 </div>
                 
@@ -92,7 +92,7 @@
                 </div>
             </div>
             <div class="mt-6 text-center text-gray-400 text-sm">
-                &copy; {% now "Y" %} Учебная платформа. Все права защищены.
+                &copy; 2024-{% now "Y" %} CodeMastersPRO. Все права защищены.
             </div>
         </div>
     </footer>

@@ -35,10 +35,10 @@ class CustomUserCreationForm(UserCreationForm):
         user.email = self.cleaned_data['email']
         if commit:
             user.save()
-            # Создаем профиль пользователя с выбранной ролью
-            profile = Profile.objects.create(
+            # Создаем профиль пользователя с выбранной ролью, если он еще не существует
+            Profile.objects.get_or_create(
                 user=user,
-                role=self.cleaned_data['role']
+                defaults={'role': self.cleaned_data['role']}
             )
         return user
 
