@@ -120,19 +120,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${iconSvg}
                 </div>
                 <div class="flex-1 min-w-0">
-                    <div class="flex justify-between">
-                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                            ${notification.title}
-                            ${notification.is_high_priority ? '<span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Важно</span>' : ''}
+                    <div class="flex flex-col sm:flex-row sm:justify-between">
+                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate mb-1 sm:mb-0 flex flex-wrap items-center">
+                            <span class="mr-1">${notification.title}</span>
+                            ${notification.is_high_priority ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Важно</span>' : ''}
                         </p>
-                        <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap mb-1 sm:mb-0">
                             ${formattedDate}
                         </span>
                     </div>
                     <p class="mt-1 text-sm text-gray-600 dark:text-gray-400 truncate">
                         ${notification.message}
                     </p>
-                    <div class="mt-2 flex justify-end space-x-2">
+                    <div class="mt-2 flex flex-wrap justify-end gap-2">
                         ${!notification.is_read ? 
                             `<button class="mark-read-button text-xs text-blue-600 dark:text-blue-400 hover:underline" data-id="${notification.id}">
                                 <i class="fas fa-check mr-1"></i> Прочитано
