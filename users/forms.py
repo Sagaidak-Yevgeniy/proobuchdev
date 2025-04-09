@@ -3,6 +3,79 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
 from .models import CustomUser, Profile, UserInterface
+import random
+import uuid
+from django.core.cache import cache
+
+
+class MathCaptchaField(forms.Field):
+    """Поле для проверки, что пользователь не робот, с помощью простого математического вопроса"""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.required = True
+        self.widget = forms.TextInput(attrs={
+            'class': 'form-input', 
+            'placeholder': 'Введите ответ на вопрос',
+            'autocomplete': 'off'
+        })
+        self.captcha_key = str(uuid.uuid4())
+        self.generate_captcha()
+    
+    def generate_captcha(self):
+        """Генерирует простой математический вопрос и сохраняет ответ в кеше"""
+        # Создаем переменные для вопроса
+        num1 = random.randint(1, 20)
+        num2 = random.randint(1, 10)
+        operation = random.choice(['+', '-', '*'])
+        
+        # Вычисляем ответ
+        if operation == '+':
+            answer = num1 + num2
+            question = f"Сколько будет {num1} + {num2}?"
+        elif operation == '-':
+            # Сделаем так, чтобы ответ был положительным
+            if num1 < num2:
+                num1, num2 = num2, num1
+            answer = num1 - num2
+            question = f"Сколько будет {num1} - {num2}?"
+        else:  # operation == '*'
+            answer = num1 * num2
+            question = f"Сколько будет {num1} × {num2}?"
+        
+        # Сохраняем вопрос и ответ в кеше
+        cache.set(f"captcha_{self.captcha_key}", str(answer), timeout=300)  # 5 минут
+        
+        # Сохраняем вопрос
+        self.question = question
+        
+    def clean(self, value):
+        """Проверяет ответ пользователя"""
+        value = super().clean(value)
+        
+        # Получаем правильный ответ из кеша
+        correct_answer = cache.get(f"captcha_{self.captcha_key}")
+        
+        if not correct_answer:
+            # Если ответ не найден в кеше, генерируем новую капчу
+            self.generate_captcha()
+            raise forms.ValidationError(
+                _("Время проверки истекло. Пожалуйста, ответьте на новый вопрос."),
+                code='captcha_expired'
+            )
+        
+        if value != correct_answer:
+            # Генерируем новую капчу для следующей попытки
+            self.generate_captcha()
+            raise forms.ValidationError(
+                _("Неправильный ответ на вопрос. Пожалуйста, попробуйте снова."),
+                code='captcha_invalid'
+            )
+        
+        # Удаляем использованный ответ из кеша
+        cache.delete(f"captcha_{self.captcha_key}")
+        
+        return value
 
 class CustomUserCreationForm(UserCreationForm):
     """Форма для регистрации нового пользователя"""
@@ -56,10 +129,16 @@ class CustomUserCreationForm(UserCreationForm):
         required=True,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    
+    # Добавляем капчу
+    captcha = MathCaptchaField(
+        label='Проверка на робота',
+        help_text=_('Введите ответ на вопрос, чтобы подтвердить, что вы не робот')
+    )
 
     class Meta:
         model = CustomUser
-        fields = ('username', 'email', 'password1', 'password2')
+        fields = ('username', 'email', 'password1', 'password2', 'role', 'captcha')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
