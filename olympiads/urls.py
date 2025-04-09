@@ -6,7 +6,7 @@ urlpatterns = [
     path('', views.olympiad_list, name='olympiad_list'),
     path('olympiad/<slug:slug>/', views.olympiad_detail, name='olympiad_detail'),
     path('olympiad/<slug:slug>/register/', views.olympiad_register, name='olympiad_register'),
-    path('olympiad/<slug:slug>/problem/<int:pk>/', views.problem_detail, name='problem_detail'),
+    path('olympiad/<slug:olympiad_slug>/problem/<int:pk>/', views.problem_detail, name='problem_detail'),
     path('olympiad/<slug:olympiad_slug>/problem/<int:problem_id>/submit/', 
          views.submit_solution, name='submit_solution'),
     path('olympiad/<slug:slug>/submissions/', views.submission_list, name='submission_list'),
