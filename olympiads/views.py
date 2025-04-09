@@ -109,7 +109,9 @@ def olympiad_detail(request, slug):
     user_submissions = {}
     solved_problems = 0
     total_points = 0
-    total_available_points = problems.aggregate(total=sum(p.points for p in problems))['total'] or 0
+    # Правильно использовать Sum из django.db.models.functions
+    from django.db.models import Sum
+    total_available_points = problems.aggregate(total=Sum('points'))['total'] or 0
     
     if request.user.is_authenticated and (is_participating or olympiad.is_past() or request.user.is_staff):
         # Получение лучших отправок пользователя по каждой задаче
