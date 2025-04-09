@@ -17,52 +17,48 @@ def grant_welcome_achievement(user):
     
     Args:
         user (CustomUser): Пользователь, которому нужно выдать достижение
+    Returns:
+        bool: True если достижение выдано успешно, False в противном случае
     """
-    # Определяем тип достижения в зависимости от фактической роли пользователя
-    current_role = user.profile.role
-    achievement_name = ""
-    
-    if current_role == 'student':
-        achievement_name = "Новый студент"
-    elif current_role == 'teacher':
-        achievement_name = "Новый преподаватель"
-    else:
-        # Для других ролей не выдаем достижение
-        print(f"DEBUG: Роль {current_role} не предусматривает выдачу достижения")
-        return False
-    
     try:
-        # Удаляем неправильные достижения, если они есть
-        # Например, если у преподавателя есть достижение "Новый студент", удаляем его
-        wrong_achievement_name = "Новый студент" if current_role == "teacher" else "Новый преподаватель"
-        wrong_achievements = UserAchievement.objects.filter(
+        # Определяем тип достижения в зависимости от текущей роли пользователя
+        current_role = user.profile.role
+        
+        if current_role == 'student':
+            achievement_name = "Новый студент"
+        elif current_role == 'teacher':
+            achievement_name = "Новый преподаватель"
+        else:
+            # Для других ролей (например admin) не выдаем достижение
+            print(f"DEBUG: Роль {current_role} не предусматривает выдачу достижения")
+            return False
+        
+        # Удаляем ВСЕ существующие достижения связанные с регистрацией
+        # Это решает проблему, когда у пользователя есть несоответствующие достижения
+        existing_achievements = UserAchievement.objects.filter(
             user=user, 
-            achievement__name=wrong_achievement_name
+            achievement__name__in=["Новый студент", "Новый преподаватель"]
         )
         
-        if wrong_achievements.exists():
-            print(f"DEBUG: Удаляем неподходящее достижение {wrong_achievement_name} у пользователя {user.username}")
-            wrong_achievements.delete()
+        if existing_achievements.exists():
+            print(f"DEBUG: Удаляем существующие достижения для пользователя {user.username}")
+            existing_achievements.delete()
             
-            # Также удаляем уведомления о неправильных достижениях
+            # Также удаляем соответствующие уведомления
+            print(f"DEBUG: Удаляем соответствующие уведомления о достижениях")
             Notification.objects.filter(
                 user=user, 
-                title__contains=wrong_achievement_name,
+                title__contains="Новое достижение",
+                message__contains__in=["Новый студент", "Новый преподаватель"],
                 notification_type='achievement'
             ).delete()
         
-        # Проверяем, есть ли уже правильное достижение у пользователя
-        existing_correct_achievement = UserAchievement.objects.filter(
-            user=user, 
-            achievement__name=achievement_name
-        ).exists()
-        
-        if existing_correct_achievement:
-            print(f"DEBUG: Пользователь {user.username} уже имеет правильное достижение {achievement_name}")
-            return False
-            
         # Находим соответствующее достижение
-        achievement = Achievement.objects.get(name=achievement_name)
+        try:
+            achievement = Achievement.objects.get(name=achievement_name)
+        except Achievement.DoesNotExist:
+            print(f"DEBUG: Достижение {achievement_name} не найдено в системе")
+            return False
         
         # Выдаем достижение
         user_achievement = UserAchievement.objects.create(
@@ -90,15 +86,11 @@ def grant_welcome_achievement(user):
         
         print(f"DEBUG: Выдано достижение {achievement_name} пользователю {user.username}")
         return True
-    except Achievement.DoesNotExist:
-        # Достижение не найдено, пропускаем
-        print(f"DEBUG: Достижение {achievement_name} не найдено в системе")
-        pass
+        
     except Exception as e:
         # Логируем ошибку, но не прерываем процесс регистрации
         print(f"ERROR: Ошибка при выдаче достижения: {str(e)}")
-    
-    return False
+        return False
 
 @ensure_csrf_cookie
 def register(request):

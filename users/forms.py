@@ -163,36 +163,83 @@ class CustomUserCreationForm(UserCreationForm):
         print(f"DEBUG: Creating user with role: {selected_role}")
         
         if commit:
-            # Отключаем сигналы перед сохранением пользователя, чтобы избежать 
-            # автоматического создания профиля с ролью по умолчанию
-            from django.db.models.signals import post_save
-            from .signals import create_profile
-            post_save.disconnect(create_profile, sender=CustomUser)
+            # Отключаем все сигналы перед сохранением пользователя
+            from .signals import DISABLE_SIGNALS
+            original_disable_signals = DISABLE_SIGNALS
             
-            # Сохраняем пользователя
+            # Устанавливаем временное значение для отключения сигналов
+            import sys
+            modules = sys.modules
+            modules['users.signals'].DISABLE_SIGNALS = True
+            
+            # Сохраняем пользователя (сигналы отключены)
             user.save()
             
-            # Восстанавливаем сигналы
-            post_save.connect(create_profile, sender=CustomUser)
+            # Создаем профиль пользователя с выбранной ролью
+            profile = Profile.objects.create(user=user, role=selected_role)
+            print(f"DEBUG: Profile created with role: {selected_role}")
+            
+            # Создаем настройки уведомлений для пользователя с безопасными значениями по умолчанию
+            from notifications.models import NotificationSettings
             
             try:
-                # Создаем профиль пользователя с выбранной ролью
-                profile = Profile(user=user, role=selected_role)
-                profile.save()
-                print(f"DEBUG: Profile created with role: {profile.role}")
-                
-                # Создаем настройки уведомлений для пользователя с безопасными значениями по умолчанию
-                from notifications.models import NotificationSettings
-                
-                try:
-                    # Используем безопасный метод создания с явными значениями по умолчанию
-                    if not NotificationSettings.objects.filter(user=user).exists():
-                        NotificationSettings.create_with_defaults(user)
-                        print(f"DEBUG: Created safe notification settings for user {user.username}")
-                except Exception as e:
-                    print(f"ERROR: Failed to create notification settings: {str(e)}")
+                # Используем безопасный метод создания с явными значениями по умолчанию
+                if not NotificationSettings.objects.filter(user=user).exists():
+                    NotificationSettings.create_with_defaults(user)
+                    print(f"DEBUG: Created safe notification settings for user {user.username}")
             except Exception as e:
-                print(f"ERROR: Error during profile and notification setup: {str(e)}")
+                print(f"ERROR: Failed to create notification settings: {str(e)}")
+                
+            # Создаем настройки интерфейса
+            from .models import UserInterface
+            if not UserInterface.objects.filter(user=user).exists():
+                UserInterface.objects.create(user=user)
+                print(f"DEBUG: Created user interface settings")
+            
+            # Включаем сигналы обратно
+            modules['users.signals'].DISABLE_SIGNALS = original_disable_signals
+            
+            # Теперь вручную создаем приветственное уведомление
+            from notifications.models import Notification
+            
+            if selected_role == Profile.STUDENT:
+                welcome_title = "Добро пожаловать на платформу!"
+                welcome_message = (
+                    f"Здравствуйте, {full_name}! Мы рады приветствовать вас на нашей образовательной платформе. "
+                    f"Здесь вы можете изучать курсы, выполнять задания и развивать свои навыки программирования. "
+                    f"Желаем вам успехов в обучении!"
+                )
+                icon = "fa-graduation-cap"
+            elif selected_role == Profile.TEACHER:
+                welcome_title = "Добро пожаловать на платформу!"
+                welcome_message = (
+                    f"Здравствуйте, {full_name}! Рады приветствовать вас на нашей образовательной платформе. "
+                    f"Как преподаватель, вы можете создавать курсы, уроки и задания для студентов. "
+                    f"Мы надеемся, что платформа будет полезна в вашей педагогической деятельности!"
+                )
+                icon = "fa-chalkboard-teacher"
+            else:
+                welcome_title = "Добро пожаловать на платформу!"
+                welcome_message = (
+                    f"Здравствуйте, {full_name}! Спасибо за регистрацию на нашей образовательной платформе. "
+                    f"Мы рады видеть вас в нашем сообществе!"
+                )
+                icon = "fa-user"
+                
+            # Создаем уведомление только если его еще нет
+            if not Notification.objects.filter(user=user, title=welcome_title).exists():
+                notification = Notification.objects.create(
+                    user=user,
+                    title=welcome_title,
+                    message=welcome_message,
+                    notification_type='info',
+                    is_read=False,
+                    is_high_priority=True,
+                    url='/',
+                    importance='high',
+                    icon=icon
+                )
+                print(f"DEBUG: Created welcome notification for user {user.username}")
             
         return user
 

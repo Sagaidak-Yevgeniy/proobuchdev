@@ -3,71 +3,41 @@ from django.dispatch import receiver
 from .models import CustomUser, Profile, UserInterface
 from notifications.models import Notification
 
-@receiver(post_save, sender=CustomUser)
-def create_profile(sender, instance, created, **kwargs):
-    """Создает профиль пользователя при создании нового пользователя"""
-    # Если профиль уже создан в форме регистрации, не будем его пересоздавать
-    if created:
-        # Проверяем, существует ли уже профиль для этого пользователя
-        if not Profile.objects.filter(user=instance).exists():
-            # Только если профиль ещё не создан, создаем его с ролью студента по умолчанию
-            print(f"DEBUG Signal: Creating default profile for user {instance.username}")
-            Profile.objects.create(user=instance, role=Profile.STUDENT)
-        else:
-            print(f"DEBUG Signal: Profile already exists for user {instance.username}, not creating default")
-
-@receiver(post_save, sender=CustomUser)
-def save_profile(sender, instance, **kwargs):
-    """Сохраняет профиль пользователя при обновлении пользователя"""
-    # Проверяем, существует ли профиль, чтобы не перезаписывать его
-    if hasattr(instance, 'profile'):
-        # Если у нас уже есть связь с профилем, просто сохраняем его
-        # Но не вызываем save() чтобы не срабатывал сигнал post_save для профиля
-        print(f"DEBUG Signal: Profile relation exists for user {instance.username}")
-    else:
-        try:
-            # Пробуем найти профиль в базе данных
-            profile = Profile.objects.get(user=instance)
-            print(f"DEBUG Signal: Found profile for user {instance.username}")
-        except Profile.DoesNotExist:
-            # Профиль не найден, создаем новый с ролью студента по умолчанию
-            print(f"DEBUG Signal: Creating missing profile for user {instance.username}")
-            Profile.objects.create(user=instance, role=Profile.STUDENT)
+# Переменная для контроля отключения сигналов
+DISABLE_SIGNALS = False
 
 @receiver(post_save, sender=CustomUser)
 def create_user_interface(sender, instance, created, **kwargs):
     """Создает настройки интерфейса при создании нового пользователя"""
-    if created:
-        UserInterface.objects.create(user=instance)
-
-@receiver(post_save, sender=CustomUser)
-def save_user_interface(sender, instance, **kwargs):
-    """Сохраняет настройки интерфейса при обновлении пользователя"""
-    try:
-        instance.interface.save()
-    except UserInterface.DoesNotExist:
-        UserInterface.objects.create(user=instance)
+    if created and not DISABLE_SIGNALS:
+        # Проверяем, существуют ли уже настройки интерфейса
+        if not UserInterface.objects.filter(user=instance).exists():
+            UserInterface.objects.create(user=instance)
+            print(f"DEBUG Signal: Created user interface settings for {instance.username}")
 
 @receiver(post_save, sender=Profile)
 def send_welcome_notification(sender, instance, created, **kwargs):
     """Отправляет приветственное уведомление пользователю в зависимости от его роли"""
-    # Если профиль был только что создан - отправляем уведомление
-    # Иначе (при обновлениях) не отправляем дополнительных уведомлений
-    if not created:
+    # Если сигналы отключены или это не новый профиль, не отправляем уведомление
+    if DISABLE_SIGNALS or not created:
         return None
         
     # Получаем пользователя и его полное имя
     user = instance.user
     full_name = user.get_full_name() or user.username
     
-    # Проверяем наличие приветственных уведомлений для этого пользователя
+    # Проверяем наличие любых приветственных уведомлений для этого пользователя
     if Notification.objects.filter(
         user=user,
         title__startswith="Добро пожаловать"
     ).exists():
-        # Если уже есть приветственное уведомление, не создаем новое
-        print(f"DEBUG Signal: Welcome notification already exists for {user.username}")
-        return None
+        # Если уже есть приветственное уведомление, удаляем его и создаем новое
+        # соответствующее текущей роли пользователя
+        print(f"DEBUG Signal: Deleting existing welcome notifications for {user.username}")
+        Notification.objects.filter(
+            user=user,
+            title__startswith="Добро пожаловать"
+        ).delete()
     
     # Подготовка сообщений в зависимости от роли
     if instance.role == Profile.STUDENT:
