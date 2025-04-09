@@ -5,18 +5,6 @@ from .models import CustomUser, Profile, UserInterface
 class CustomUserCreationForm(UserCreationForm):
     """Форма для регистрации нового пользователя"""
     
-    first_name = forms.CharField(
-        label='Имя',
-        required=True,
-        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Имя'})
-    )
-    
-    last_name = forms.CharField(
-        label='Фамилия',
-        required=True,
-        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Фамилия'})
-    )
-    
     email = forms.EmailField(
         label='Email',
         required=True,
@@ -38,9 +26,12 @@ class CustomUserCreationForm(UserCreationForm):
 
     class Meta:
         model = CustomUser
-        fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2')
+        fields = ('username', 'email', 'password1', 'password2')
         widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Имя пользователя'}),
+            'username': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Введите ФИО полностью'}),
+        }
+        labels = {
+            'username': 'ФИО',
         }
 
     def __init__(self, *args, **kwargs):
@@ -51,8 +42,16 @@ class CustomUserCreationForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
-        user.first_name = self.cleaned_data['first_name']
-        user.last_name = self.cleaned_data['last_name']
+        # Извлекаем и устанавливаем имя и фамилию из ФИО (username)
+        full_name = self.cleaned_data['username'].strip()
+        name_parts = full_name.split(' ', 1)
+        if len(name_parts) > 1:
+            user.first_name = name_parts[0]
+            user.last_name = name_parts[1]
+        else:
+            user.first_name = full_name
+            user.last_name = ''
+            
         selected_role = self.cleaned_data['role']
         print(f"DEBUG: Creating user with role: {selected_role}")
         
@@ -77,8 +76,8 @@ class CustomAuthenticationForm(AuthenticationForm):
     """Форма для авторизации пользователя"""
     
     username = forms.CharField(
-        label='Имя пользователя или Email',
-        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Имя пользователя или Email'})
+        label='ФИО или Email',
+        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'ФИО или Email'})
     )
     password = forms.CharField(
         label='Пароль',

@@ -19,7 +19,7 @@
         
         <div class="mb-4">
             <label for="{{ form.username.id_for_label }}" class="block text-gray-700 font-medium mb-2">
-                Имя пользователя <span class="text-red-500">*</span>
+                ФИО <span class="text-red-500">*</span>
             </label>
             {{ form.username }}
             {% if form.username.errors %}
@@ -29,35 +29,7 @@
                 {% endfor %}
             </div>
             {% endif %}
-            <p class="text-gray-500 text-xs mt-1">Имя пользователя может содержать буквы, цифры и символы @/./+/-/_</p>
-        </div>
-        
-        <div class="mb-4">
-            <label for="{{ form.first_name.id_for_label }}" class="block text-gray-700 font-medium mb-2">
-                Имя <span class="text-red-500">*</span>
-            </label>
-            {{ form.first_name }}
-            {% if form.first_name.errors %}
-            <div class="text-red-500 text-sm mt-1">
-                {% for error in form.first_name.errors %}
-                {{ error }}
-                {% endfor %}
-            </div>
-            {% endif %}
-        </div>
-        
-        <div class="mb-4">
-            <label for="{{ form.last_name.id_for_label }}" class="block text-gray-700 font-medium mb-2">
-                Фамилия <span class="text-red-500">*</span>
-            </label>
-            {{ form.last_name }}
-            {% if form.last_name.errors %}
-            <div class="text-red-500 text-sm mt-1">
-                {% for error in form.last_name.errors %}
-                {{ error }}
-                {% endfor %}
-            </div>
-            {% endif %}
+            <p class="text-gray-500 text-xs mt-1">Введите полное ФИО (будет использоваться для авторизации)</p>
         </div>
         
         <div class="mb-4">
