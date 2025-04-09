@@ -69,7 +69,7 @@ def course_detail(request, slug):
 def course_create(request):
     """Создание нового курса (только для преподавателей и администраторов)"""
     # Проверка прав доступа
-    if not request.user.profile.is_teacher():
+    if not (request.user.profile.role == 'teacher' or request.user.profile.role == 'admin'):
         messages.error(request, 'У вас нет прав для создания курсов.')
         return redirect('course_list')
     
@@ -97,7 +97,7 @@ def course_edit(request, slug):
     course = get_object_or_404(Course, slug=slug)
     
     # Проверка прав доступа
-    if request.user != course.author and not request.user.profile.is_admin():
+    if request.user != course.author and not request.user.profile.role == 'admin':
         messages.error(request, 'У вас нет прав для редактирования этого курса.')
         return redirect('course_detail', slug=course.slug)
     
@@ -124,7 +124,7 @@ def course_delete(request, slug):
     course = get_object_or_404(Course, slug=slug)
     
     # Проверка прав доступа
-    if request.user != course.author and not request.user.profile.is_admin():
+    if request.user != course.author and not request.user.profile.role == 'admin':
         messages.error(request, 'У вас нет прав для удаления этого курса.')
         return redirect('course_detail', slug=course.slug)
     

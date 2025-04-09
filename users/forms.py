@@ -33,13 +33,24 @@ class CustomUserCreationForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
+        selected_role = self.cleaned_data['role']
+        print(f"DEBUG: Creating user with role: {selected_role}")
+        
         if commit:
             user.save()
-            # Создаем профиль пользователя с выбранной ролью, если он еще не существует
-            Profile.objects.get_or_create(
+            # Создаем или обновляем профиль пользователя с выбранной ролью
+            profile, created = Profile.objects.get_or_create(
                 user=user,
-                defaults={'role': self.cleaned_data['role']}
+                defaults={'role': selected_role}
             )
+            
+            # Если профиль уже существовал, обновляем роль
+            if not created:
+                profile.role = selected_role
+                profile.save()
+                
+            print(f"DEBUG: Profile {'created' if created else 'updated'} with role: {profile.role}")
+            
         return user
 
 class CustomAuthenticationForm(AuthenticationForm):

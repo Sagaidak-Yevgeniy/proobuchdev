@@ -13,8 +13,14 @@ def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            form.save()
+            user = form.save()
             username = form.cleaned_data.get('username')
+            selected_role = form.cleaned_data.get('role')
+            
+            # Добавляем отладочную информацию
+            print(f"DEBUG: User {username} созданный с ролью {selected_role}")
+            print(f"DEBUG: Проверка профиля - роль в профиле: {user.profile.role}")
+            
             messages.success(request, f'Аккаунт {username} успешно создан! Теперь вы можете войти.')
             return redirect('login')
     else:

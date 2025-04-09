@@ -30,26 +30,54 @@
                 <div class="flex items-center space-x-4">
                     <a href="{% url 'home' %}" class="text-xl font-bold">ПроОбучение</a>
                     <a href="{% url 'course_list' %}" class="hover:text-blue-200">Курсы</a>
-                    {% if user.is_authenticated and user.profile.is_teacher %}
-                    <a href="{% url 'course_create' %}" class="hover:text-blue-200">Создать курс</a>
+                    {% if user.is_authenticated %}
+                        {% if user.profile.is_teacher %}
+                        <a href="{% url 'course_create' %}" class="hover:text-blue-200">Создать курс</a>
+                        {% endif %}
                     {% endif %}
                 </div>
                 
                 <div class="flex items-center space-x-4">
                     {% if user.is_authenticated %}
                         <a href="{% url 'my_courses' %}" class="hover:text-blue-200">Мои курсы</a>
-                        <div class="relative group">
-                            <button class="flex items-center hover:text-blue-200">
-                                {{ user.username }} <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                        <div class="relative">
+                            <button class="flex items-center hover:text-blue-200" onclick="toggleDropdown()">
+                                {{ user.username }} ({{ user.profile.get_role_display }}) <i class="fas fa-chevron-down ml-1 text-xs"></i>
                             </button>
-                            <div class="absolute right-0 hidden group-hover:block bg-white text-gray-800 shadow-lg rounded-lg mt-2 py-2 w-48 z-10">
+                            <div id="userDropdown" class="absolute right-0 hidden bg-white text-gray-800 shadow-lg rounded-lg mt-2 py-2 w-48 z-10">
                                 <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100">Мой профиль</a>
-                                {% if user.is_staff %}
+                                {% if user.is_staff or user.profile.is_admin %}
                                 <a href="{% url 'admin:index' %}" class="block px-4 py-2 hover:bg-gray-100">Админ-панель</a>
                                 {% endif %}
                                 <a href="{% url 'logout' %}" class="block px-4 py-2 hover:bg-gray-100">Выйти</a>
                             </div>
                         </div>
+                        <script>
+                        let isDropdownOpen = false;
+                        
+                        function toggleDropdown() {
+                            const dropdown = document.getElementById("userDropdown");
+                            isDropdownOpen = !isDropdownOpen;
+                            
+                            if (isDropdownOpen) {
+                                dropdown.classList.remove("hidden");
+                            } else {
+                                dropdown.classList.add("hidden");
+                            }
+                        }
+                        
+                        // Закрыть выпадающий список при клике вне его
+                        document.addEventListener('click', function(event) {
+                            const dropdown = document.getElementById("userDropdown");
+                            const button = event.target.closest('button');
+                            
+                            // Если клик был не по кнопке и не по выпадающему меню, закрываем меню
+                            if (!button && !event.target.closest('#userDropdown') && !dropdown.classList.contains('hidden')) {
+                                dropdown.classList.add('hidden');
+                                isDropdownOpen = false;
+                            }
+                        });
+                        </script>
                     {% else %}
                         <a href="{% url 'login' %}" class="hover:text-blue-200">Войти</a>
                         <a href="{% url 'register' %}" class="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-100">Регистрация</a>

@@ -66,7 +66,9 @@ class Profile(models.Model):
         return f'Профиль пользователя {self.user.username}'
     
     def is_teacher(self):
-        return self.role == self.TEACHER or self.role == self.ADMIN
+        """Проверяет, является ли пользователь преподавателем или администратором"""
+        return self.role in [self.TEACHER, self.ADMIN]
     
     def is_admin(self):
+        """Проверяет, является ли пользователь администратором"""
         return self.role == self.ADMIN
