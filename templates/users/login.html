@@ -16,6 +16,20 @@
         
         <form class="mt-8 space-y-6" method="post" action="{% url 'login' %}">
             {% csrf_token %}
+            <script>
+                // Функция для обеспечения правильной работы CSRF в среде Replit
+                document.addEventListener('DOMContentLoaded', function() {
+                    var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                    var formElement = document.querySelector('form');
+                    
+                    formElement.addEventListener('submit', function() {
+                        // Добавляем csrftoken в заголовки запроса
+                        var xhr = new XMLHttpRequest();
+                        xhr.open('POST', formElement.action || window.location.href, false);
+                        xhr.setRequestHeader('X-CSRFToken', csrftoken);
+                    });
+                });
+            </script>
             
             {% if form.non_field_errors %}
             <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md" role="alert">
