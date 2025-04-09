@@ -29,13 +29,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Позиционирует выпадающее меню относительно кнопки
     function positionDropdown() {
         if (window.innerWidth < 640) {
-            // На мобильных устройствах позиционируем по правому краю экрана с небольшим отступом
-            notificationDropdown.style.left = 'auto';
-            notificationDropdown.style.right = '10px';
+            // На мобильных устройствах используем фиксированное позиционирование
+            // Позиционирование задано через CSS классы в HTML
             
-            // Ограничиваем ширину выпадающего меню на мобильных устройствах
-            const maxWidth = window.innerWidth - 20; // 10px отступ с каждой стороны
-            notificationDropdown.style.maxWidth = `${maxWidth}px`;
+            // Устанавливаем максимальную высоту для мобильных устройств
+            const maxHeight = window.innerHeight * 0.8; // 80% от высоты экрана
+            notificationDropdown.style.maxHeight = `${maxHeight}px`;
+            
+            // Устанавливаем максимальную высоту для внутреннего контейнера с уведомлениями
+            const listContainer = notificationDropdown.querySelector('.overflow-y-auto');
+            if (listContainer) {
+                listContainer.style.maxHeight = `${maxHeight - 120}px`; // за вычетом высоты шапки и футера
+            }
             
             return;
         }
@@ -48,11 +53,29 @@ document.addEventListener('DOMContentLoaded', function() {
         // Устанавливаем положение меню так, чтобы оно было выровнено по левому краю кнопки
         notificationDropdown.style.left = `${leftOffset}px`;
         notificationDropdown.style.right = 'auto';
+        notificationDropdown.style.maxHeight = '80vh';
+        
+        // Сбрасываем высоту внутреннего контейнера
+        const listContainer = notificationDropdown.querySelector('.overflow-y-auto');
+        if (listContainer) {
+            listContainer.style.maxHeight = '60vh';
+        }
     }
     
     // Скрывает выпадающее меню
     function hideDropdown() {
         notificationDropdown.classList.add('hidden');
+        
+        // Сбрасываем стили для плавного перехода при следующем открытии
+        if (window.innerWidth < 640) {
+            setTimeout(() => {
+                notificationDropdown.style.maxHeight = '';
+                const listContainer = notificationDropdown.querySelector('.overflow-y-auto');
+                if (listContainer) {
+                    listContainer.style.maxHeight = '';
+                }
+            }, 300);
+        }
     }
     
     // Загружает список уведомлений через API
@@ -142,21 +165,21 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Формируем HTML уведомления
         let html = `
-            <div class="flex items-start" data-id="${notification.id}">
-                <div class="flex-shrink-0 mr-3">
+            <div class="flex items-start flex-nowrap" data-id="${notification.id}">
+                <div class="flex-shrink-0 mr-2">
                     ${iconSvg}
                 </div>
-                <div class="flex-1 min-w-0">
+                <div class="flex-1 min-w-0 overflow-hidden">
                     <div class="flex flex-col sm:flex-row sm:justify-between">
                         <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate mb-1 sm:mb-0 flex flex-wrap items-center">
                             <span class="mr-1">${notification.title}</span>
-                            ${notification.is_high_priority ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Важно</span>' : ''}
+                            ${notification.is_high_priority ? '<span class="inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Важно</span>' : ''}
                         </p>
                         <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap mb-1 sm:mb-0">
                             ${formattedDate}
                         </span>
                     </div>
-                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400 truncate">
+                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400 line-clamp-2 break-words">
                         ${notification.message}
                     </p>
                     <div class="mt-2 flex flex-wrap justify-end gap-2">
