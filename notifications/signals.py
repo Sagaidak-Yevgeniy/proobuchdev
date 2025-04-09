@@ -18,13 +18,31 @@ User = get_user_model()
 def create_notification_settings(sender, instance, created, **kwargs):
     """Создает настройки уведомлений для нового пользователя"""
     if created:
-        NotificationSettings.objects.create(
-            user=instance,
-            push_notifications=False,
-            quiet_hours_enabled=False,
-            weekdays_only=False,
-            weekend_only=False
-        )
+        # Проверяем, существуют ли уже настройки
+        if not NotificationSettings.objects.filter(user=instance).exists():
+            try:
+                # Используем наш безопасный метод создания настроек
+                NotificationSettings.create_with_defaults(instance)
+                print(f"DEBUG: Created safe notification settings for user {instance.username}")
+            except Exception as e:
+                print(f"ERROR: Failed to create notification settings: {str(e)}")
+                # Если произошла ошибка, попробуем традиционный способ создания
+                NotificationSettings.objects.create(
+                    user=instance,
+                    receive_all=True,
+                    notify_only_high_priority=False,
+                    receive_achievement=True,
+                    receive_course=True,
+                    receive_lesson=True,
+                    receive_assignment=True,
+                    receive_message=True,
+                    receive_system=True,
+                    receive_deadline=True,
+                    email_notifications=True,
+                    email_digest=False,
+                    push_notifications=False,
+                    quiet_hours_enabled=False
+                )
 
 
 @receiver(post_save, sender=UserAchievement)

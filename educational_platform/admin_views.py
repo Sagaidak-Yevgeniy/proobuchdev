@@ -12,8 +12,6 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
 
-from .csrf_hack import ensure_csrf_cookie as custom_ensure_csrf_cookie
-
 
 class AdminLoginView(LoginView):
     """

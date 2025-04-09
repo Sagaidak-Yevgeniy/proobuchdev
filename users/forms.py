@@ -84,24 +84,35 @@ class CustomUserCreationForm(UserCreationForm):
         print(f"DEBUG: Creating user with role: {selected_role}")
         
         if commit:
+            # Сначала сохраняем пользователя
             user.save()
             
-            # Создаем или обновляем профиль пользователя с выбранной ролью
-            profile, created = Profile.objects.get_or_create(
-                user=user,
-                defaults={'role': selected_role}
-            )
-            
-            # Если профиль уже существовал, обновляем роль
-            if not created:
-                profile.role = selected_role
-                profile.save()
-            
-            # Создаем настройки уведомлений для пользователя
-            from notifications.models import NotificationSettings
-            NotificationSettings.objects.get_or_create(user=user)
+            try:
+                # Создаем или обновляем профиль пользователя с выбранной ролью
+                profile, created = Profile.objects.get_or_create(
+                    user=user,
+                    defaults={'role': selected_role}
+                )
                 
-            print(f"DEBUG: Profile {'created' if created else 'updated'} with role: {profile.role}")
+                # Если профиль уже существовал, обновляем роль
+                if not created:
+                    profile.role = selected_role
+                    profile.save()
+                
+                print(f"DEBUG: Profile {'created' if created else 'updated'} with role: {profile.role}")
+                
+                # Создаем настройки уведомлений для пользователя с безопасными значениями по умолчанию
+                from notifications.models import NotificationSettings
+                
+                try:
+                    # Используем безопасный метод создания с явными значениями по умолчанию
+                    if not NotificationSettings.objects.filter(user=user).exists():
+                        NotificationSettings.create_with_defaults(user)
+                        print(f"DEBUG: Created safe notification settings for user {user.username}")
+                except Exception as e:
+                    print(f"ERROR: Failed to create notification settings: {str(e)}")
+            except Exception as e:
+                print(f"ERROR: Error during profile and notification setup: {str(e)}")
             
         return user
 

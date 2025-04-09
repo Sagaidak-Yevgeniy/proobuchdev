@@ -54,7 +54,9 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # Заменяем стандартный CSRF-middleware на наш кастомный
+    'educational_platform.csrf_hack.CustomCsrfMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',  # закомментировано, т.к. используем кастомный
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -136,3 +138,9 @@ AUTH_USER_MODEL = 'users.CustomUser'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 LOGIN_URL = 'login'
+
+# CSRF settings
+CSRF_FAILURE_VIEW = 'educational_platform.csrf_hack.csrf_failure_view'
+CSRF_COOKIE_SECURE = not DEBUG  # Включаем только для production
+CSRF_USE_SESSIONS = False       # Храним CSRF токен в cookie
+CSRF_COOKIE_HTTPONLY = False    # Разрешаем доступ к куки из JavaScript

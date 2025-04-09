@@ -6,21 +6,34 @@ from .models import CustomUser, Profile, UserInterface
 def create_profile(sender, instance, created, **kwargs):
     """Создает профиль пользователя при создании нового пользователя"""
     # Если профиль уже создан в форме регистрации, не будем его пересоздавать
-    if created and not hasattr(instance, 'profile'):
-        Profile.objects.create(user=instance)
+    if created:
+        # Проверяем, существует ли уже профиль для этого пользователя
+        if not Profile.objects.filter(user=instance).exists():
+            # Только если профиль ещё не создан, создаем его с ролью студента по умолчанию
+            print(f"DEBUG Signal: Creating default profile for user {instance.username}")
+            Profile.objects.create(user=instance, role=Profile.STUDENT)
+        else:
+            print(f"DEBUG Signal: Profile already exists for user {instance.username}, not creating default")
 
 @receiver(post_save, sender=CustomUser)
 def save_profile(sender, instance, **kwargs):
     """Сохраняет профиль пользователя при обновлении пользователя"""
     # Проверяем, существует ли профиль, чтобы не перезаписывать его
     if hasattr(instance, 'profile'):
+        # Если у нас уже есть связь с профилем, просто сохраняем его
         instance.profile.save()
+        print(f"DEBUG Signal: Saving existing profile relation for user {instance.username}")
     else:
         try:
+            # Пробуем найти профиль в базе данных
             profile = Profile.objects.get(user=instance)
+            # Нашли профиль, сохраняем его
             profile.save()
+            print(f"DEBUG Signal: Saving found profile for user {instance.username}")
         except Profile.DoesNotExist:
-            Profile.objects.create(user=instance)
+            # Профиль не найден, создаем новый с ролью студента по умолчанию
+            print(f"DEBUG Signal: Creating missing profile for user {instance.username}")
+            Profile.objects.create(user=instance, role=Profile.STUDENT)
 
 @receiver(post_save, sender=CustomUser)
 def create_user_interface(sender, instance, created, **kwargs):

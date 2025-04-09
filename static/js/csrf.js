@@ -1,123 +1,158 @@
-// Улучшенная функция для обеспечения правильной работы CSRF в среде Replit
-document.addEventListener('DOMContentLoaded', function() {
-    /**
-     * Получаем CSRF-токен из куки
-     * @param {string} name - Имя куки
-     * @returns {string} - Значение куки или null, если не найдено
-     */
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
+/**
+ * Модуль для обеспечения CSRF-защиты во всех AJAX-запросах и формах
+ * Решает проблемы с токенами CSRF в среде Replit
+ */
+
+// Функция для получения CSRF-токена из cookie
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
         }
-        return cookieValue;
     }
+    return cookieValue;
+}
+
+// Глобальный CSRF-токен
+const csrftoken = getCookie('csrftoken');
+
+// Функция для обновления CSRF-токенов в формах
+function updateCsrfTokens() {
+    console.log('Updating CSRF tokens in all forms');
+    const csrfInputs = document.querySelectorAll('input[name="csrfmiddlewaretoken"]');
+    const token = getCookie('csrftoken');
     
-    // Функция для обновления CSRF токена
-    function updateCSRFToken() {
-        // Получаем актуальный токен из куки или из формы
-        const newToken = getCookie('csrftoken') || document.querySelector('[name=csrfmiddlewaretoken]')?.value;
-        
-        if (newToken) {
-            // Обновляем все существующие скрытые поля CSRF токенов в формах
-            document.querySelectorAll('input[name="csrfmiddlewaretoken"]').forEach(input => {
-                input.value = newToken;
-            });
-            
-            return newToken;
-        } else {
-            console.warn('CSRF токен не найден. Это может вызвать проблемы при отправке форм.');
-            return null;
+    if (token) {
+        csrfInputs.forEach(input => {
+            input.value = token;
+        });
+    } else {
+        console.warn('No CSRF token found in cookies');
+    }
+}
+
+// Добавляем CSRF-токены ко всем AJAX-запросам
+function setupAjaxCsrf() {
+    // Добавляем CSRF-токен ко всем AJAX-запросам
+    document.addEventListener('DOMContentLoaded', function() {
+        const token = getCookie('csrftoken');
+        if (!token) {
+            console.warn('CSRF token not found in cookies. AJAX requests may fail.');
+            return;
         }
-    }
-    
-    // Получаем начальный CSRF токен
-    let csrftoken = updateCSRFToken();
-    
-    if (csrftoken) {
-        // Переопределяем метод отправки XMLHttpRequest для автоматического добавления CSRF-токена
-        const xhrOpen = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function() {
-            const result = xhrOpen.apply(this, arguments);
-            
-            // Получаем актуальный токен перед каждым запросом
-            const currentToken = updateCSRFToken() || csrftoken;
-            
-            this.setRequestHeader('X-CSRFToken', currentToken);
-            return result;
+
+        // Перехватываем все fetch-запросы и добавляем CSRF-токен
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+            // Для POST, PUT, DELETE запросов добавляем CSRF-токен
+            if (options.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method.toUpperCase())) {
+                if (!options.headers) {
+                    options.headers = {};
+                }
+                
+                // Преобразуем заголовки в формат, который можно модифицировать
+                if (options.headers instanceof Headers) {
+                    const newHeaders = {};
+                    for (const [key, value] of options.headers.entries()) {
+                        newHeaders[key] = value;
+                    }
+                    options.headers = newHeaders;
+                }
+
+                // Добавляем CSRF-токен, если он не был добавлен ранее
+                if (!options.headers['X-CSRFToken']) {
+                    options.headers['X-CSRFToken'] = token;
+                }
+            }
+            return originalFetch(url, options);
         };
         
-        // Обработка существующих форм
-        function setupForms() {
-            document.querySelectorAll('form').forEach(form => {
-                if (form.method.toLowerCase() === 'post' && !form.hasAttribute('data-csrf-handled')) {
-                    // Помечаем форму как обработанную
-                    form.setAttribute('data-csrf-handled', 'true');
-                    
-                    // Проверяем, есть ли уже поле csrfmiddlewaretoken
-                    let csrfInput = form.querySelector('input[name="csrfmiddlewaretoken"]');
-                    
-                    if (!csrfInput) {
-                        // Если нет, создаем новое поле
-                        csrfInput = document.createElement('input');
-                        csrfInput.type = 'hidden';
-                        csrfInput.name = 'csrfmiddlewaretoken';
-                        form.appendChild(csrfInput);
-                    }
-                    
-                    // Добавляем CSRF-токен в данные формы при отправке
-                    form.addEventListener('submit', function(e) {
-                        // Обновляем токен перед отправкой
-                        const currentToken = updateCSRFToken() || csrftoken;
-                        
-                        // Обновляем значение поля
-                        csrfInput.value = currentToken;
-                    });
-                }
-            });
-        }
-        
-        // Настраиваем существующие формы при загрузке страницы
-        setupForms();
-        
-        // Настраиваем MutationObserver для обработки динамически добавленных форм
-        const observer = new MutationObserver(function(mutations) {
-            let shouldCheckForms = false;
+        // Отслеживаем все XMLHttpRequest запросы
+        const originalOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function(method, url) {
+            const xhr = this;
+            const originalSetRequestHeader = xhr.setRequestHeader;
             
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                    // Проверяем, были ли добавлены новые формы или элементы, содержащие формы
-                    mutation.addedNodes.forEach(function(node) {
-                        if (node.nodeName === 'FORM' || 
-                            (node.nodeType === 1 && node.querySelector('form'))) {
-                            shouldCheckForms = true;
+            // Для POST, PUT, DELETE запросов добавляем CSRF-токен
+            if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase())) {
+                xhr.setRequestHeader = function(header, value) {
+                    if (header.toLowerCase() === 'x-csrftoken') {
+                        // Если заголовок уже задан, не переопределяем
+                        originalSetRequestHeader.apply(this, arguments);
+                    } else {
+                        originalSetRequestHeader.apply(this, arguments);
+                        // Добавляем CSRF токен только один раз
+                        if (header.toLowerCase() === 'content-type') {
+                            originalSetRequestHeader.call(this, 'X-CSRFToken', token);
                         }
-                    });
+                    }
+                };
+            }
+            
+            originalOpen.apply(this, arguments);
+        };
+    });
+}
+
+// Функция для добавления обработчиков отправки форм
+function setupFormSubmitHandlers() {
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            // Не обрабатываем формы, у которых уже есть специальный обработчик
+            // или формы с атрибутом data-no-csrf
+            if (form.getAttribute('data-no-csrf') === 'true') {
+                return;
+            }
+            
+            form.addEventListener('submit', function(e) {
+                // Обновляем токен перед отправкой
+                const tokenInput = form.querySelector('input[name="csrfmiddlewaretoken"]');
+                const token = getCookie('csrftoken');
+                
+                if (token && tokenInput) {
+                    tokenInput.value = token;
+                } else if (token && !tokenInput && (form.method || 'GET').toUpperCase() === 'POST') {
+                    // Если токена нет, но форма отправляется как POST, добавляем токен
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'csrfmiddlewaretoken';
+                    input.value = token;
+                    form.appendChild(input);
                 }
             });
-            
-            // Если были добавлены новые формы, настраиваем их
-            if (shouldCheckForms) {
-                setupForms();
-            }
         });
-        
-        // Запускаем наблюдение за изменениями DOM
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-        
-        // Периодически обновляем CSRF токен для долго живущих страниц
-        setInterval(function() {
-            csrftoken = updateCSRFToken() || csrftoken;
-        }, 300000); // Обновление каждые 5 минут
-    }
-});
+    });
+}
+
+// Функция периодического обновления токенов в случае, если они меняются
+function setupTokenRefresh() {
+    // Обновляем токены каждые 5 минут на случай, если сессия обновится
+    setInterval(updateCsrfTokens, 5 * 60 * 1000);
+    
+    // Также обновляем при фокусировке на странице после переключения с другой вкладки
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+            updateCsrfTokens();
+        }
+    });
+}
+
+// Инициализация всех функций CSRF-защиты
+function initCsrfProtection() {
+    updateCsrfTokens();
+    setupAjaxCsrf();
+    setupFormSubmitHandlers();
+    setupTokenRefresh();
+    
+    console.log('CSRF protection initialized');
+}
+
+// Запускаем инициализацию при загрузке страницы
+document.addEventListener('DOMContentLoaded', initCsrfProtection);

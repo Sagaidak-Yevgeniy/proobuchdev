@@ -1,31 +1,100 @@
 """
-Этот модуль содержит утилиты для работы с CSRF на платформе Replit.
-
-ВНИМАНИЕ: Ранее здесь был хак для обхода CSRF защиты, 
-но теперь мы используем стандартный подход Django с правильными настройками.
+Модуль для решения проблем с CSRF в среде Replit через кастомный middleware.
 """
 
-import functools
-from django.middleware.csrf import get_token
+from django.middleware.csrf import CsrfViewMiddleware, get_token
+from django.views.decorators.csrf import ensure_csrf_cookie as django_ensure_csrf_cookie
+from django.conf import settings
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from django.contrib import messages
+from functools import wraps
 
-def ensure_csrf_cookie(view_func):
+# Реэкспортируем стандартную функцию ensure_csrf_cookie для совместимости
+ensure_csrf_cookie = django_ensure_csrf_cookie
+
+
+class CustomCsrfMiddleware(CsrfViewMiddleware):
     """
-    Декоратор, который гарантирует, что CSRF-токен доступен в куки.
+    Кастомный middleware, который перехватывает ошибки CSRF и
+    перенаправляет пользователя на предыдущую страницу с сообщением об ошибке,
+    вместо показа стандартной страницы с ошибкой 403.
+    """
     
-    Это помогает обеспечить наличие CSRF-токена даже при первом запросе,
-    что может быть полезно для систем, которые полагаются на JavaScript
-    для отправки форм.
-    """
-    @functools.wraps(view_func)
-    def wrapper(request, *args, **kwargs):
-        # Генерируем CSRF-токен явно, чтобы он был установлен в куки
-        get_token(request)
+    def process_view(self, request, callback, callback_args, callback_kwargs):
+        """
+        Переопределяем стандартную обработку CSRF для более дружественного UX.
+        """
+        # Вызываем стандартную проверку CSRF
+        result = super().process_view(request, callback, callback_args, callback_kwargs)
         
-        # Вызываем оригинальное представление
-        return view_func(request, *args, **kwargs)
-    
-    return wrapper
+        # Если нет ошибки CSRF (result = None), просто пропускаем запрос
+        if result is None:
+            return None
+        
+        # Если ошибка в запросе не POST, обрабатываем по умолчанию
+        if request.method != 'POST':
+            return result
+        
+        # Если есть ошибка CSRF и это POST-запрос, делаем редирект
+        # с информативным сообщением
+        referer = request.META.get('HTTP_REFERER', '/')
+        
+        # Логируем ошибку CSRF для отладки
+        if settings.DEBUG:
+            print(f"CSRF Error: {request.path}, Referer: {referer}")
+            print(f"CSRF Cookie: {request.COOKIES.get('csrftoken')}")
+            print(f"CSRF Token in POST: {request.POST.get('csrfmiddlewaretoken')}")
+        
+        # Добавляем сообщение об ошибке
+        if hasattr(request, '_messages'):
+            messages.error(
+                request,
+                "Произошла ошибка безопасности (CSRF). "
+                "Пожалуйста, повторите отправку формы."
+            )
+        
+        # Для форм авторизации перенаправляем на страницу входа
+        if request.path == reverse('login'):
+            return HttpResponseRedirect(reverse('login'))
+        
+        # Для форм регистрации перенаправляем на страницу регистрации
+        if request.path == reverse('register'):
+            return HttpResponseRedirect(reverse('register'))
+            
+        # В остальных случаях возвращаем на предыдущую страницу или на главную
+        return HttpResponseRedirect(referer)
 
-# Обратная совместимость со старым кодом
-# В новом коде рекомендуется использовать ensure_csrf_cookie
-csrf_exempt_with_token = ensure_csrf_cookie
+
+def csrf_failure_view(request, reason=""):
+    """
+    Кастомная обработка ошибок CSRF для более дружественного UX.
+    Перенаправляет пользователя на предыдущую страницу с сообщением об ошибке.
+    """
+    # Получаем предыдущую страницу или используем главную страницу
+    referer = request.META.get('HTTP_REFERER', '/')
+    
+    # Логируем ошибку CSRF для отладки
+    if settings.DEBUG:
+        print(f"CSRF Failure View: {request.path}, Reason: {reason}")
+        print(f"Referer: {referer}")
+        print(f"CSRF Cookie: {request.COOKIES.get('csrftoken')}")
+    
+    # Добавляем сообщение об ошибке
+    if hasattr(request, '_messages'):
+        messages.error(
+            request,
+            "Произошла ошибка безопасности (CSRF). "
+            "Пожалуйста, повторите отправку формы."
+        )
+    
+    # Для форм авторизации перенаправляем на страницу входа
+    if request.path == reverse('login'):
+        return HttpResponseRedirect(reverse('login'))
+    
+    # Для форм регистрации перенаправляем на страницу регистрации
+    if request.path == reverse('register'):
+        return HttpResponseRedirect(reverse('register'))
+        
+    # В остальных случаях возвращаем на предыдущую страницу или на главную
+    return HttpResponseRedirect(referer)

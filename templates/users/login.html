@@ -15,8 +15,10 @@
             </p>
         </div>
         
-        <form class="mt-8 space-y-6" method="post" action="{% url 'login' %}">
+        <form class="mt-8 space-y-6" method="post" action="{% url 'login' %}" id="login-form">
             {% csrf_token %}
+            <!-- Дополнительный CSRF токен для Replit -->
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" id="csrf-token-input">
             <script>
                 // Функция для обеспечения правильной работы CSRF в среде Replit
                 document.addEventListener('DOMContentLoaded', function() {
@@ -36,24 +38,31 @@
                         return cookieValue;
                     }
                     
-                    // Получаем CSRF токен из куки или из скрытого поля формы
-                    var csrftoken = getCookie('csrftoken') || document.querySelector('[name=csrfmiddlewaretoken]').value;
-                    var formElement = document.querySelector('form');
+                    // Получаем CSRF токен
+                    var csrftoken = getCookie('csrftoken');
+                    var tokenInput = document.getElementById('csrf-token-input');
+                    var formElement = document.getElementById('login-form');
                     
-                    // Обеспечиваем правильную отправку формы
+                    // Устанавливаем текущее значение токена из куки, если он доступен
+                    if (csrftoken && tokenInput) {
+                        tokenInput.value = csrftoken;
+                        console.log('CSRF token updated from cookie');
+                    }
+                    
+                    // Обработчик отправки формы
                     formElement.addEventListener('submit', function(e) {
-                        // Проверяем наличие CSRF токена в форме
-                        var tokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
-                        if (!tokenInput) {
-                            // Если токена нет, добавляем его
-                            tokenInput = document.createElement('input');
-                            tokenInput.type = 'hidden';
-                            tokenInput.name = 'csrfmiddlewaretoken';
-                            tokenInput.value = csrftoken;
-                            formElement.appendChild(tokenInput);
-                        } else {
+                        // Получаем самый свежий токен из cookie
+                        var freshToken = getCookie('csrftoken');
+                        
+                        if (freshToken && tokenInput) {
                             // Если токен есть, обновляем его
-                            tokenInput.value = csrftoken;
+                            tokenInput.value = freshToken;
+                            console.log('CSRF token updated before submit');
+                        } else if (!tokenInput.value) {
+                            // Если токен не существует, предотвращаем отправку
+                            e.preventDefault();
+                            console.error('CSRF token not found. Form submission blocked.');
+                            alert('Ошибка безопасности: CSRF токен не найден. Пожалуйста, обновите страницу и попробуйте снова.');
                         }
                     });
                     

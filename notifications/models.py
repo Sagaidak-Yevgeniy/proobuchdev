@@ -128,6 +128,32 @@ class NotificationSettings(models.Model):
     
     def __str__(self):
         return f"Настройки уведомлений - {self.user.username}"
+        
+    @classmethod
+    def create_with_defaults(cls, user):
+        """Создает настройки уведомлений с безопасными значениями по умолчанию"""
+        obj = cls(
+            user=user,
+            receive_all=True,
+            notify_only_high_priority=False,
+            receive_achievement=True,
+            receive_course=True,
+            receive_lesson=True,
+            receive_assignment=True,
+            receive_message=True,
+            receive_system=True,
+            receive_deadline=True,
+            email_notifications=True,
+            email_digest=False,
+            push_notifications=False,
+            quiet_hours_enabled=False,
+            quiet_hours_start="22:00:00",
+            quiet_hours_end="08:00:00",
+            weekdays_only=False,
+            weekend_only=False
+        )
+        obj.save()
+        return obj
     
     def should_receive(self, notification_type, is_high_priority=False):
         """Проверяет, должен ли пользователь получать уведомление данного типа"""
