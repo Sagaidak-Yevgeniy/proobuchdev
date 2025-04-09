@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.http import Http404, JsonResponse
 from django.utils import timezone
-from django.db.models import Max, Q
+from django.db.models import Max, Q, Case, When, Value, IntegerField
 from django.urls import reverse
 
 from .models import Olympiad, Problem, TestCase, Submission, OlympiadParticipant, TestResult
@@ -41,13 +41,22 @@ def olympiad_list(request):
         )
     
     # Сортировка: сначала активные, затем предстоящие, затем завершенные
-    olympiads = olympiads.order_by(
-        # Сортируем активные олимпиады по времени окончания
-        -Q(start_time__lte=timezone.now(), end_time__gte=timezone.now()) * 2,
-        # Затем предстоящие по времени начала
-        -Q(start_time__gt=timezone.now()) * 1,
-        'start_time'
-    )
+    # Создаем новое поле для сортировки
+    olympiads = olympiads.annotate(
+        sort_order=Case(
+            When(
+                start_time__lte=timezone.now(), 
+                end_time__gte=timezone.now(), 
+                then=Value(0)
+            ),
+            When(
+                start_time__gt=timezone.now(), 
+                then=Value(1)
+            ),
+            default=Value(2),
+            output_field=IntegerField()
+        )
+    ).order_by('sort_order', 'start_time')
     
     # Пагинация
     paginator = Paginator(olympiads, 9)  # 9 олимпиад на странице
