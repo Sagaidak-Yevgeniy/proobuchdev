@@ -18,9 +18,28 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Показывает выпадающее меню
     function showDropdown() {
+        // Позиционируем выпадающее меню
+        positionDropdown();
+        
         notificationDropdown.classList.remove('hidden');
         // Загружаем список уведомлений
         loadNotifications();
+    }
+    
+    // Позиционирует выпадающее меню относительно кнопки
+    function positionDropdown() {
+        // На мобильных устройствах оставляем правое выравнивание (по умолчанию)
+        if (window.innerWidth < 640) {
+            return;
+        }
+        
+        // На десктопе позиционируем меню относительно кнопки
+        const buttonRect = notificationButton.getBoundingClientRect();
+        const parentRect = notificationButton.closest('.relative').getBoundingClientRect();
+        const leftOffset = buttonRect.left - parentRect.left;
+        
+        // Устанавливаем положение меню так, чтобы оно было выровнено по левому краю кнопки
+        notificationDropdown.style.left = `${leftOffset}px`;
     }
     
     // Скрывает выпадающее меню
@@ -376,6 +395,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(event) {
         if (!notificationDropdown.contains(event.target) && !notificationButton.contains(event.target)) {
             hideDropdown();
+        }
+    });
+    
+    // Пересчитывать позицию при изменении размера окна
+    window.addEventListener('resize', function() {
+        if (!notificationDropdown.classList.contains('hidden')) {
+            positionDropdown();
         }
     });
     
