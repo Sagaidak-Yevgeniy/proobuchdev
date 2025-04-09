@@ -20,14 +20,41 @@
             <script>
                 // Функция для обеспечения правильной работы CSRF в среде Replit
                 document.addEventListener('DOMContentLoaded', function() {
-                    var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                    // Получение CSRF токена из куки
+                    function getCookie(name) {
+                        let cookieValue = null;
+                        if (document.cookie && document.cookie !== '') {
+                            const cookies = document.cookie.split(';');
+                            for (let i = 0; i < cookies.length; i++) {
+                                const cookie = cookies[i].trim();
+                                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                    break;
+                                }
+                            }
+                        }
+                        return cookieValue;
+                    }
+                    
+                    // Получаем CSRF токен из куки или из скрытого поля формы
+                    var csrftoken = getCookie('csrftoken') || document.querySelector('[name=csrfmiddlewaretoken]').value;
                     var formElement = document.querySelector('form');
                     
-                    formElement.addEventListener('submit', function() {
-                        // Добавляем csrftoken в заголовки запроса
-                        var xhr = new XMLHttpRequest();
-                        xhr.open('POST', formElement.action || window.location.href, false);
-                        xhr.setRequestHeader('X-CSRFToken', csrftoken);
+                    // Обеспечиваем правильную отправку формы
+                    formElement.addEventListener('submit', function(e) {
+                        // Проверяем наличие CSRF токена в форме
+                        var tokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+                        if (!tokenInput) {
+                            // Если токена нет, добавляем его
+                            tokenInput = document.createElement('input');
+                            tokenInput.type = 'hidden';
+                            tokenInput.name = 'csrfmiddlewaretoken';
+                            tokenInput.value = csrftoken;
+                            formElement.appendChild(tokenInput);
+                        } else {
+                            // Если токен есть, обновляем его
+                            tokenInput.value = csrftoken;
+                        }
                     });
                     
                     // Функционал переключения видимости пароля
