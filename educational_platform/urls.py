@@ -22,6 +22,7 @@ urlpatterns = [
     path('ai/', include('ai_assistant.urls')),
     path('notifications/', include('notifications.urls', namespace='notifications')),
     path('dashboard/', include('dashboard.urls')),
+    path('olympiads/', include('olympiads.urls')),
 ]
 
 # Добавляем обработку медиа-файлов в режиме разработки

@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'ai_assistant.apps.AiAssistantConfig',
     'notifications.apps.NotificationsConfig',
     'dashboard.apps.DashboardConfig',
+    'olympiads.apps.OlympiadsConfig',
 ]
 
 MIDDLEWARE = [
