@@ -31,12 +31,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Загружает список уведомлений через API
     function loadNotifications() {
         fetch('/notifications/list/?format=json')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Сетевая ошибка');
+                }
+                return response.json();
+            })
             .then(data => {
                 // Очищаем список
                 notificationList.innerHTML = '';
                 
-                if (data.notifications.length === 0) {
+                if (!data.notifications || data.notifications.length === 0) {
                     // Если уведомлений нет, показываем сообщение "Нет уведомлений"
                     notificationNoItems.classList.remove('hidden');
                 } else {
@@ -50,12 +55,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 // Обновляем счетчик непрочитанных уведомлений
-                updateNotificationCount(data.unread_count);
+                if (data.unread_count !== undefined) {
+                    updateNotificationCount(data.unread_count);
+                }
             })
             .catch(error => {
                 console.error('Ошибка при загрузке списка уведомлений:', error);
                 // Показываем сообщение об ошибке
                 notificationList.innerHTML = '<li class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">Ошибка загрузки уведомлений</li>';
+                notificationNoItems.classList.add('hidden');
             });
     }
     
@@ -321,9 +329,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Загружает количество непрочитанных уведомлений
     function loadNotificationCount() {
         fetch('/notifications/count/')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Сетевая ошибка');
+                }
+                return response.json();
+            })
             .then(data => {
-                updateNotificationCount(data.count);
+                if (data && data.count !== undefined) {
+                    updateNotificationCount(data.count);
+                }
             })
             .catch(error => {
                 console.error('Ошибка при загрузке количества уведомлений:', error);
