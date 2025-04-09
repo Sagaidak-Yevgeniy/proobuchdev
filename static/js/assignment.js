@@ -24,9 +24,32 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
         
         // Обновляем содержимое поля textarea перед отправкой формы
-        document.querySelector('form').addEventListener('submit', function() {
-            editor.save();
-        });
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                // Убедимся, что CodeMirror обновляет textarea перед отправкой
+                editor.save();
+                
+                // Проверяем, что код не пустой
+                if (!codeEditor.value || codeEditor.value.trim() === '') {
+                    e.preventDefault();
+                    alert('Пожалуйста, введите код для решения задания.');
+                    return false;
+                }
+            });
+        }
+        
+        // Добавляем обработчик для кнопки отправки, если форма не найдена
+        const submitButton = document.querySelector('button[type="submit"]');
+        if (submitButton && !form) {
+            submitButton.addEventListener('click', function() {
+                editor.save();
+                const submissionForm = document.getElementById('submission-form');
+                if (submissionForm) {
+                    submissionForm.submit();
+                }
+            });
+        }
     }
     
     // Подсветка синтаксиса для предварительного просмотра кода

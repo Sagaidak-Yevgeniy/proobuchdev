@@ -153,6 +153,7 @@ class Submission(models.Model):
         ('pending', 'В обработке'),
         ('testing', 'Тестируется'),
         ('accepted', 'Принято'),
+        ('partial', 'Частично верно'),
         ('wrong_answer', 'Неправильный ответ'),
         ('time_limit', 'Превышено время выполнения'),
         ('memory_limit', 'Превышен лимит памяти'),
@@ -201,6 +202,7 @@ class Submission(models.Model):
             'pending': 'gray',
             'testing': 'blue',
             'accepted': 'green',
+            'partial': 'yellow',
             'wrong_answer': 'red',
             'time_limit': 'orange',
             'memory_limit': 'orange',
@@ -282,14 +284,16 @@ class OlympiadParticipant(models.Model):
         )
         
         for problem in self.olympiad.problems.all():
-            # Находим лучшую отправку для каждой задачи
+            # Для каждой задачи находим лучшую отправку по баллам
             best_submission = submissions.filter(
-                problem=problem,
-                status='accepted'
+                problem=problem
             ).order_by('-points', 'submitted_at').first()
             
             if best_submission:
-                solved_problems.add(best_submission.problem_id)
+                # Считаем задачу полностью решенной только для статуса accepted
+                if best_submission.status == 'accepted':
+                    solved_problems.add(best_submission.problem_id)
+                # Накапливаем баллы со всех задач, даже если они решены частично
                 total_points += best_submission.points
         
         self.solved_problems = len(solved_problems)

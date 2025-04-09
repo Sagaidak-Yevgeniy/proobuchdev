@@ -203,6 +203,10 @@ def check_submission(submission):
             # Вычисляем очки по весам тестов
             percentage = total_weighted_score / total_weight
             submission.points = int(percentage * submission.problem.points)
+            
+            # Обновляем статус, если пользователь набрал хоть какие-то баллы
+            if submission.points > 0:
+                submission.status = 'partial'
         else:
             submission.points = 0
     
