@@ -121,7 +121,7 @@
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen flex flex-col transition-colors duration-200">
     <!-- Мобильное меню -->
     <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
-    <div class="mobile-menu-container dark:bg-gray-800 dark:text-white" id="mobileMenu">
+    <div class="mobile-menu-container dark:bg-gray-800 dark:text-white" id="mobileMenu" style="left:-100%">
         <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
             <a href="{% url 'home' %}" class="text-xl font-bold flex items-center">
                 <i class="fas fa-graduation-cap mr-2"></i>ПроОбучение
@@ -324,6 +324,19 @@
             document.body.style.overflow = '';
         }
     }
+    
+    // Убедимся, что меню не открыто при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        const menu = document.getElementById('mobileMenu');
+        const overlay = document.getElementById('mobileOverlay');
+        
+        // Закрываем меню при загрузке страницы, если оно открыто
+        if (menu.classList.contains('active')) {
+            menu.classList.remove('active');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    });
     
     let isDropdownOpen = false;
     
