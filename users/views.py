@@ -6,6 +6,102 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from .forms import CustomUserCreationForm, ProfileUpdateForm, UserUpdateForm, CustomAuthenticationForm, UserInterfaceForm
 from .models import CustomUser, Profile, UserInterface
 from educational_platform.csrf_hack import ensure_csrf_cookie as custom_ensure_csrf_cookie
+from gamification.models import Achievement, UserAchievement, PointsHistory
+from notifications.models import Notification
+from django.urls import reverse
+
+
+def grant_welcome_achievement(user):
+    """
+    Выдает приветственное достижение новому пользователю в зависимости от его роли
+    и отправляет соответствующее уведомление
+    
+    Args:
+        user (CustomUser): Пользователь, которому нужно выдать достижение
+    """
+    # Определяем тип достижения в зависимости от роли пользователя
+    achievement_name = ""
+    welcome_title = ""
+    welcome_message = ""
+    
+    if user.profile.role == 'student':
+        achievement_name = "Новый студент"
+        welcome_title = "Добро пожаловать, студент!"
+        welcome_message = (
+            f"Приветствуем вас, {user.username}, на нашей образовательной платформе! "
+            f"Вы успешно зарегистрировались как студент. "
+            f"\n\nВот несколько полезных советов для начала работы:\n"
+            f"• Исследуйте каталог курсов и выберите интересующие вас темы\n"
+            f"• Установите цели обучения в своем профиле\n"
+            f"• Настройте уведомления для эффективного обучения\n"
+            f"• Выполняйте задания регулярно для получения дополнительных достижений\n"
+            f"\nЖелаем успехов в обучении!"
+        )
+    elif user.profile.role == 'teacher':
+        achievement_name = "Новый преподаватель"
+        welcome_title = "Добро пожаловать, преподаватель!"
+        welcome_message = (
+            f"Приветствуем вас, {user.username}, на нашей образовательной платформе! "
+            f"Вы успешно зарегистрировались как преподаватель. "
+            f"\n\nВот несколько полезных советов для начала работы:\n"
+            f"• Создайте свой первый курс в разделе управления курсами\n"
+            f"• Добавьте уроки и интерактивные задания для студентов\n"
+            f"• Настройте тестовые задания с автоматической проверкой\n"
+            f"• Отслеживайте прогресс ваших студентов в личном кабинете\n"
+            f"\nЖелаем успехов в преподавании!"
+        )
+    else:
+        # Для других ролей не выдаем достижение
+        return
+    
+    try:
+        # Находим соответствующее достижение
+        achievement = Achievement.objects.get(name=achievement_name)
+        
+        # Проверяем, нет ли уже этого достижения у пользователя
+        if not UserAchievement.objects.filter(user=user, achievement=achievement).exists():
+            # Выдаем достижение
+            user_achievement = UserAchievement.objects.create(
+                user=user,
+                achievement=achievement
+            )
+            
+            # Добавляем историю начисления очков
+            PointsHistory.objects.create(
+                user=user,
+                points=achievement.points,
+                action='achievement',
+                description=f"Получено достижение: {achievement.name}"
+            )
+            
+            # Создаем уведомление о достижении
+            achievement_notification = Notification.objects.create(
+                user=user,
+                title=f"Новое достижение: {achievement.name}",
+                message=f"Вы получили достижение '{achievement.name}' и {achievement.points} очков!",
+                notification_type='achievement',
+                is_high_priority=True,
+                url=reverse('achievement_list')
+            )
+            
+            # Создаем приветственное уведомление с инструкциями
+            welcome_notification = Notification.objects.create(
+                user=user,
+                title=welcome_title,
+                message=welcome_message,
+                notification_type='info',
+                is_high_priority=True
+            )
+            
+            return True
+    except Achievement.DoesNotExist:
+        # Достижение не найдено, пропускаем
+        pass
+    except Exception as e:
+        # Логируем ошибку, но не прерываем процесс регистрации
+        print(f"ERROR: Ошибка при выдаче достижения: {str(e)}")
+    
+    return False
 
 @ensure_csrf_cookie
 def register(request):
@@ -20,6 +116,15 @@ def register(request):
             # Добавляем отладочную информацию
             print(f"DEBUG: User {username} созданный с ролью {selected_role}")
             print(f"DEBUG: Проверка профиля - роль в профиле: {user.profile.role}")
+            
+            # Выдаем достижение и отправляем приветственное уведомление
+            try:
+                achievement_granted = grant_welcome_achievement(user)
+                if achievement_granted:
+                    print(f"DEBUG: Welcome achievement granted to {username}")
+            except Exception as e:
+                # Логируем ошибку, но не прерываем процесс регистрации
+                print(f"ERROR: Failed to grant welcome achievement: {str(e)}")
             
             messages.success(request, f'Аккаунт {username} успешно создан! Теперь вы можете войти.')
             return redirect('login')
@@ -98,6 +203,28 @@ def custom_login(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
+                
+                # Проверяем, был ли это первый вход
+                first_login = False
+                if user.last_login is None or (user.date_joined and (user.last_login - user.date_joined).total_seconds() < 60):
+                    first_login = True
+                
+                # Если это первый вход, проверяем наличие достижений и при необходимости выдаем
+                if first_login:
+                    try:
+                        # Проверяем, есть ли у пользователя достижение Новый студент/преподаватель
+                        achievement_name = "Новый студент" if user.profile.role == 'student' else "Новый преподаватель"
+                        try:
+                            achievement = Achievement.objects.get(name=achievement_name)
+                            if not UserAchievement.objects.filter(user=user, achievement=achievement).exists():
+                                # Если достижения нет, выдаем его
+                                grant_welcome_achievement(user)
+                        except Achievement.DoesNotExist:
+                            pass
+                    except Exception as e:
+                        # Логируем ошибку, но не прерываем процесс входа
+                        print(f"ERROR: Failed to check/grant achievements on login: {str(e)}")
+                
                 messages.success(request, f'Вы успешно вошли как {username}.')
                 next_url = request.GET.get('next', 'home')
                 return redirect(next_url)
