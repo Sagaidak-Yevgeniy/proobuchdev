@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from .models import CustomUser, Profile
+from .models import CustomUser, Profile, UserInterface
 
 class CustomUserCreationForm(UserCreationForm):
     """Форма для регистрации нового пользователя"""
@@ -95,4 +95,26 @@ class UserUpdateForm(forms.ModelForm):
             'first_name': 'Имя',
             'last_name': 'Фамилия',
             'email': 'Email'
+        }
+
+
+class UserInterfaceForm(forms.ModelForm):
+    """Форма для настройки интерфейса пользователя"""
+    
+    class Meta:
+        model = UserInterface
+        fields = ('theme', 'font_size', 'layout', 'enable_animations', 'high_contrast')
+        widgets = {
+            'theme': forms.Select(attrs={'class': 'form-select'}),
+            'font_size': forms.Select(attrs={'class': 'form-select'}),
+            'layout': forms.Select(attrs={'class': 'form-select'}),
+            'enable_animations': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'high_contrast': forms.CheckboxInput(attrs={'class': 'form-checkbox'})
+        }
+        labels = {
+            'theme': 'Тема оформления',
+            'font_size': 'Размер шрифта',
+            'layout': 'Макет интерфейса',
+            'enable_animations': 'Включить анимации',
+            'high_contrast': 'Высокий контраст'
         }

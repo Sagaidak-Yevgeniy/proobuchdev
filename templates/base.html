@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" {% if user.is_authenticated and user.interface.theme == 'dark' %}class="dark"{% endif %}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +7,26 @@
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontSize: {
+                        // Базовые размеры шрифтов
+                        'base': '1rem',
+                        'xl': '1.25rem',
+                        'xs': '0.75rem',
+                        // Размеры для адаптивного интерфейса
+                        'small': '0.875rem',
+                        'normal': '1rem',
+                        'large': '1.125rem',
+                        'x-large': '1.25rem',
+                    },
+                }
+            }
+        }
+    </script>
     
     <!-- Font Awesome для иконок -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -20,11 +40,47 @@
     <!-- Пользовательские стили -->
     <link rel="stylesheet" href="/static/css/main.css">
     
+    <style>
+        /* Адаптивные стили в зависимости от настроек пользователя */
+        {% if user.is_authenticated %}
+            {% if user.interface.font_size == 'small' %}
+            body { font-size: 0.875rem; }
+            {% elif user.interface.font_size == 'large' %}
+            body { font-size: 1.125rem; }
+            {% elif user.interface.font_size == 'x-large' %}
+            body { font-size: 1.25rem; }
+            {% endif %}
+            
+            {% if user.interface.high_contrast %}
+            .dark { --tw-text-opacity: 1; color: rgba(255, 255, 255, var(--tw-text-opacity)); }
+            .dark .text-gray-400 { --tw-text-opacity: 1; color: rgba(255, 255, 255, var(--tw-text-opacity)); }
+            .dark .text-gray-300 { --tw-text-opacity: 1; color: rgba(255, 255, 255, var(--tw-text-opacity)); }
+            {% endif %}
+            
+            {% if not user.interface.enable_animations %}
+            * { 
+                transition-property: none !important;
+                animation: none !important;
+            }
+            {% endif %}
+        {% endif %}
+        
+        /* Темная тема */
+        .dark { background-color: #121212; color: #e0e0e0; }
+        .dark .bg-white { background-color: #1e1e1e; }
+        .dark .bg-gray-100 { background-color: #121212; }
+        .dark .bg-gray-50 { background-color: #1e1e1e; }
+        .dark .text-gray-800 { color: #e0e0e0; }
+        .dark .text-gray-700 { color: #c0c0c0; }
+        .dark .border-gray-300 { border-color: #333; }
+        .dark .shadow-md { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); }
+    </style>
+    
     {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen flex flex-col transition-colors duration-200">
     <!-- Навигационная панель -->
-    <nav class="bg-blue-600 text-white shadow-lg">
+    <nav class="bg-blue-600 text-white shadow-lg dark:bg-gray-800">
         <div class="container mx-auto px-4 py-3">
             <div class="flex justify-between items-center">
                 <div class="flex items-center space-x-4">
@@ -44,12 +100,13 @@
                             <button class="flex items-center hover:text-blue-200" onclick="toggleDropdown()">
                                 {{ user.username }} ({{ user.profile.get_role_display }}) <i class="fas fa-chevron-down ml-1 text-xs"></i>
                             </button>
-                            <div id="userDropdown" class="absolute right-0 hidden bg-white text-gray-800 shadow-lg rounded-lg mt-2 py-2 w-48 z-10">
-                                <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100">Мой профиль</a>
+                            <div id="userDropdown" class="absolute right-0 hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-lg rounded-lg mt-2 py-2 w-48 z-10">
+                                <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">Мой профиль</a>
+                                <a href="{% url 'interface_settings' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">Настройки интерфейса</a>
                                 {% if user.is_staff or user.profile.is_admin %}
-                                <a href="{% url 'admin:index' %}" class="block px-4 py-2 hover:bg-gray-100">Админ-панель</a>
+                                <a href="{% url 'admin:index' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">Админ-панель</a>
                                 {% endif %}
-                                <a href="{% url 'logout' %}" class="block px-4 py-2 hover:bg-gray-100">Выйти</a>
+                                <a href="{% url 'logout' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">Выйти</a>
                             </div>
                         </div>
                         <script>

@@ -3,8 +3,8 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
-from .forms import CustomUserCreationForm, ProfileUpdateForm, UserUpdateForm, CustomAuthenticationForm
-from .models import CustomUser, Profile
+from .forms import CustomUserCreationForm, ProfileUpdateForm, UserUpdateForm, CustomAuthenticationForm, UserInterfaceForm
+from .models import CustomUser, Profile, UserInterface
 from educational_platform.csrf_hack import ensure_csrf_cookie as custom_ensure_csrf_cookie
 
 @ensure_csrf_cookie
@@ -67,6 +67,26 @@ def logout_view(request):
     messages.success(request, 'Вы успешно вышли из системы.')
     return redirect('home')
     
+@ensure_csrf_cookie
+@login_required
+def interface_settings(request):
+    """Настройка интерфейса пользователя"""
+    if request.method == 'POST':
+        form = UserInterfaceForm(request.POST, instance=request.user.interface)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Настройки интерфейса успешно сохранены!')
+            return redirect('profile')
+    else:
+        form = UserInterfaceForm(instance=request.user.interface)
+    
+    context = {
+        'form': form,
+        'title': 'Настройки интерфейса'
+    }
+    
+    return render(request, 'users/interface_settings.html', context)
+
 @ensure_csrf_cookie
 def custom_login(request):
     """Кастомное представление для входа в систему"""

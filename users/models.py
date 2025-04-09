@@ -72,3 +72,87 @@ class Profile(models.Model):
     def is_admin(self):
         """Проверяет, является ли пользователь администратором"""
         return self.role == self.ADMIN
+
+
+class UserInterface(models.Model):
+    """Модель для хранения настроек интерфейса пользователя"""
+    
+    THEME_LIGHT = 'light'
+    THEME_DARK = 'dark'
+    THEME_AUTO = 'auto'
+    
+    THEME_CHOICES = [
+        (THEME_LIGHT, 'Светлая тема'),
+        (THEME_DARK, 'Темная тема'),
+        (THEME_AUTO, 'Системная настройка'),
+    ]
+    
+    FONT_SMALL = 'small'
+    FONT_MEDIUM = 'medium'
+    FONT_LARGE = 'large'
+    
+    FONT_SIZE_CHOICES = [
+        (FONT_SMALL, 'Мелкий шрифт'),
+        (FONT_MEDIUM, 'Средний шрифт'),
+        (FONT_LARGE, 'Крупный шрифт'),
+    ]
+    
+    LAYOUT_DEFAULT = 'default'
+    LAYOUT_COMPACT = 'compact'
+    LAYOUT_WIDE = 'wide'
+    
+    LAYOUT_CHOICES = [
+        (LAYOUT_DEFAULT, 'Стандартный макет'),
+        (LAYOUT_COMPACT, 'Компактный макет'),
+        (LAYOUT_WIDE, 'Широкий макет'),
+    ]
+    
+    user = models.OneToOneField(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='interface',
+        verbose_name='Пользователь'
+    )
+    
+    theme = models.CharField(
+        max_length=10,
+        choices=THEME_CHOICES,
+        default=THEME_LIGHT,
+        verbose_name='Тема оформления'
+    )
+    
+    font_size = models.CharField(
+        max_length=10,
+        choices=FONT_SIZE_CHOICES,
+        default=FONT_MEDIUM,
+        verbose_name='Размер шрифта'
+    )
+    
+    layout = models.CharField(
+        max_length=10,
+        choices=LAYOUT_CHOICES,
+        default=LAYOUT_DEFAULT,
+        verbose_name='Макет интерфейса'
+    )
+    
+    enable_animations = models.BooleanField(
+        default=True,
+        verbose_name='Включить анимации'
+    )
+    
+    high_contrast = models.BooleanField(
+        default=False,
+        verbose_name='Высокий контраст'
+    )
+    
+    last_updated = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Последнее обновление'
+    )
+    
+    class Meta:
+        verbose_name = 'Настройки интерфейса'
+        verbose_name_plural = 'Настройки интерфейса'
+    
+    def __str__(self):
+        return f'Настройки интерфейса пользователя {self.user.username}'
