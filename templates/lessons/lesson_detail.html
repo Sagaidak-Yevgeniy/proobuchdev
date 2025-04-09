@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ lesson.title }} - {{ course.title }} - Образовательная платформа{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Боковое меню с уроками курса -->
+        <div class="lg:col-span-1">
+            <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+                <h2 class="text-lg font-semibold mb-4 flex justify-between items-center">
+                    <span>Содержание курса</span>
+                    <a href="{% url 'course_detail' slug=course.slug %}" class="text-sm text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-arrow-left mr-1"></i> К курсу
+                    </a>
+                </h2>
+                
+                <div class="space-y-2">
+                    {% for lesson_item in course.lessons.all %}
+                    <div class="border rounded {% if lesson_item.id == lesson.id %}bg-blue-50 border-blue-300{% else %}border-gray-200{% endif %}">
+                        <a href="{% url 'lesson_detail' pk=lesson_item.id %}" class="block p-3 hover:bg-gray-50 {% if lesson_item.id == lesson.id %}text-blue-600 font-medium{% endif %}">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-{% if lesson_item.id == lesson.id %}blue{% else %}gray{% endif %}-100 text-{% if lesson_item.id == lesson.id %}blue{% else %}gray{% endif %}-600 flex items-center justify-center mr-2 text-xs">
+                                    {{ lesson_item.order }}
+                                </div>
+                                <span class="line-clamp-1">{{ lesson_item.title }}</span>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if is_author %}
+                <div class="mt-4 pt-4 border-t">
+                    <a href="{% url 'lesson_create' course_id=course.id %}" class="block w-full text-center bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                        <i class="fas fa-plus mr-1"></i> Добавить урок
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Основное содержимое урока -->
+        <div class="lg:col-span-3">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <!-- Шапка урока -->
+                <div class="p-6 bg-gray-50 border-b">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h1 class="text-2xl font-bold mb-2">{{ lesson.title }}</h1>
+                            {% if lesson.description %}
+                            <p class="text-gray-600">{{ lesson.description }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        {% if is_author %}
+                        <div class="flex space-x-2">
+                            <a href="{% url 'lesson_edit' pk=lesson.id %}" class="bg-blue-600 text-white py-1 px-3 rounded text-sm hover:bg-blue-700">
+                                <i class="fas fa-edit mr-1"></i> Редактировать
+                            </a>
+                            <a href="{% url 'lesson_delete' pk=lesson.id %}" class="bg-red-600 text-white py-1 px-3 rounded text-sm hover:bg-red-700">
+                                <i class="fas fa-trash mr-1"></i> Удалить
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Содержимое урока -->
+                <div class="p-6">
+                    {% if contents %}
+                    <div class="space-y-8">
+                        {% for content in contents %}
+                        <div class="border rounded-lg p-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-semibold">
+                                    {% if content.content_type == 'text' %}
+                                    <i class="fas fa-align-left text-gray-500 mr-2"></i> Текстовый блок
+                                    {% elif content.content_type == 'code' %}
+                                    <i class="fas fa-code text-gray-500 mr-2"></i> Блок кода
+                                    {% elif content.content_type == 'video' %}
+                                    <i class="fas fa-video text-gray-500 mr-2"></i> Видео
+                                    {% elif content.content_type == 'assignment' %}
+                                    <i class="fas fa-tasks text-gray-500 mr-2"></i> Задание
+                                    {% endif %}
+                                </h3>
+                                
+                                {% if is_author %}
+                                <div class="flex space-x-2">
+                                    <a href="{% url 'lesson_content_edit' pk=content.id %}" class="text-blue-600 hover:text-blue-800 text-sm">
+                                        <i class="fas fa-edit"></i> Редактировать
+                                    </a>
+                                    <a href="{% url 'lesson_content_delete' pk=content.id %}" class="text-red-600 hover:text-red-800 text-sm">
+                                        <i class="fas fa-trash"></i> Удалить
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mt-2">
+                                {% if content.content_type == 'text' %}
+                                <div class="content-text prose max-w-none">
+                                    {{ content.content|linebreaks }}
+                                </div>
+                                
+                                {% elif content.content_type == 'code' %}
+                                <div class="content-code bg-gray-100 p-4 rounded overflow-auto">
+                                    <pre><code>{{ content.content }}</code></pre>
+                                </div>
+                                
+                                {% elif content.content_type == 'video' %}
+                                <div class="content-video aspect-w-16 aspect-h-9">
+                                    <iframe src="{{ content.video_url|safe }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                </div>
+                                
+                                {% elif content.content_type == 'assignment' %}
+                                <div class="content-assignment">
+                                    <div class="prose max-w-none mb-4">
+                                        {{ content.content|linebreaks }}
+                                    </div>
+                                    <a href="{% url 'assignment_detail' pk=content.assignment.id %}" class="inline-block bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                                        Перейти к заданию
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if is_author %}
+                    <div class="mt-8 pt-6 border-t">
+                        <a href="{% url 'lesson_content_create' lesson_id=lesson.id %}" class="block w-full text-center bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                            <i class="fas fa-plus mr-1"></i> Добавить содержимое
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="text-center py-8">
+                        <div class="text-gray-400 mb-4">
+                            <i class="fas fa-file-alt fa-3x"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Урок не содержит контента</h3>
+                        {% if is_author %}
+                        <p class="text-gray-600 mb-6">Добавьте содержимое, чтобы заполнить урок.</p>
+                        <a href="{% url 'lesson_content_create' lesson_id=lesson.id %}" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                            <i class="fas fa-plus mr-1"></i> Добавить содержимое
+                        </a>
+                        {% else %}
+                        <p class="text-gray-600">Автор курса еще не добавил содержимое в этот урок.</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Навигация по урокам и кнопка отметки о завершении -->
+                <div class="p-6 bg-gray-50 border-t">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            {% if prev_lesson %}
+                            <a href="{% url 'lesson_detail' pk=prev_lesson.id %}" class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-50">
+                                <i class="fas fa-arrow-left mr-1"></i> Предыдущий урок
+                            </a>
+                            {% endif %}
+                        </div>
+                        
+                        {% if is_enrolled %}
+                        <form method="post" action="{% url 'lesson_complete' pk=lesson.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="{% if lesson_completion.completed %}bg-green-600{% else %}bg-blue-600{% endif %} text-white py-2 px-4 rounded hover:{% if lesson_completion.completed %}bg-green-700{% else %}bg-blue-700{% endif %}">
+                                {% if lesson_completion.completed %}
+                                <i class="fas fa-check-circle mr-1"></i> Урок завершен
+                                {% else %}
+                                <i class="fas fa-check mr-1"></i> Отметить как завершенный
+                                {% endif %}
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        <div>
+                            {% if next_lesson %}
+                            <a href="{% url 'lesson_detail' pk=next_lesson.id %}" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                                Следующий урок <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Информация о заданиях -->
+            {% if assignments %}
+            <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4">Задания к уроку</h2>
+                
+                <div class="space-y-4">
+                    {% for item in assignments %}
+                    <div class="border rounded-lg p-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-medium">{{ item.assignment.title }}</h3>
+                            
+                            <div>
+                                {% if item.submission %}
+                                <span class="inline-block px-3 py-1 text-sm rounded-full mr-2 
+                                    {% if item.submission.status == 'passed' %}bg-green-100 text-green-800
+                                    {% elif item.submission.status == 'failed' %}bg-red-100 text-red-800
+                                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    {% if item.submission.status == 'passed' %}
+                                    <i class="fas fa-check-circle mr-1"></i> Успешно
+                                    {% elif item.submission.status == 'failed' %}
+                                    <i class="fas fa-times-circle mr-1"></i> Не пройдено
+                                    {% elif item.submission.status == 'checking' %}
+                                    <i class="fas fa-spinner mr-1"></i> Проверяется
+                                    {% else %}
+                                    <i class="fas fa-exclamation-circle mr-1"></i> Ожидает проверки
+                                    {% endif %}
+                                </span>
+                                {% endif %}
+                                
+                                <a href="{% url 'assignment_solve' pk=item.assignment.id %}" class="inline-block bg-blue-600 text-white py-1 px-3 rounded text-sm hover:bg-blue-700">
+                                    {% if item.submission %}Повторить решение{% else %}Решить задание{% endif %}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/lesson.js"></script>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Профиль - {{ user.username }} - Образовательная платформа{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-blue-600 p-6 text-white">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="w-32 h-32 relative mb-4 md:mb-0 md:mr-6">
+                    {% if user.profile.avatar %}
+                    <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="rounded-full w-full h-full object-cover">
+                    {% else %}
+                    <div class="w-full h-full bg-blue-400 rounded-full flex items-center justify-center">
+                        <span class="text-4xl font-bold">{{ user.username.0|upper }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="text-center md:text-left">
+                    <h1 class="text-3xl font-bold">{{ user.username }}</h1>
+                    <p class="text-blue-200">{{ user.profile.get_role_display }}</p>
+                    {% if user.email %}
+                    <p class="mt-2"><i class="fas fa-envelope mr-2"></i>{{ user.email }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <div class="flex justify-end mb-6">
+                <a href="{% url 'profile_edit' %}" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                    <i class="fas fa-edit mr-2"></i>Редактировать профиль
+                </a>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h2 class="text-xl font-semibold mb-4">Основная информация</h2>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <div class="mb-3">
+                            <p class="text-gray-500 text-sm">Имя пользователя</p>
+                            <p>{{ user.username }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <p class="text-gray-500 text-sm">Полное имя</p>
+                            <p>{% if user.first_name or user.last_name %}{{ user.first_name }} {{ user.last_name }}{% else %}<span class="text-gray-400">Не указано</span>{% endif %}</p>
+                        </div>
+                        <div class="mb-3">
+                            <p class="text-gray-500 text-sm">Email</p>
+                            <p>{{ user.email }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-sm">Роль</p>
+                            <p>{{ user.profile.get_role_display }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h2 class="text-xl font-semibold mb-4">О себе</h2>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        {% if user.profile.bio %}
+                        <p>{{ user.profile.bio }}</p>
+                        {% else %}
+                        <p class="text-gray-400">Информация о себе не указана.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8">
+                <h2 class="text-xl font-semibold mb-4">Активность на платформе</h2>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-white p-4 rounded-lg shadow-sm text-center">
+                            <p class="text-3xl font-bold text-blue-600">{{ user.enrollments.count }}</p>
+                            <p class="text-gray-500">Курсов изучается</p>
+                        </div>
+                        {% if user.profile.is_teacher %}
+                        <div class="bg-white p-4 rounded-lg shadow-sm text-center">
+                            <p class="text-3xl font-bold text-blue-600">{{ user.courses.count }}</p>
+                            <p class="text-gray-500">Курсов создано</p>
+                        </div>
+                        {% endif %}
+                        <div class="bg-white p-4 rounded-lg shadow-sm text-center">
+                            <p class="text-3xl font-bold text-blue-600">{{ user.submissions.count }}</p>
+                            <p class="text-gray-500">Заданий выполнено</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

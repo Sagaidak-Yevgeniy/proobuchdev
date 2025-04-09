@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Каталог курсов - Образовательная платформа{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold">Каталог курсов</h1>
+        
+        {% if user.is_authenticated and user.profile.is_teacher %}
+        <a href="{% url 'course_create' %}" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+            <i class="fas fa-plus mr-2"></i>Создать курс
+        </a>
+        {% endif %}
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Боковая панель фильтров -->
+        <div class="lg:col-span-1">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">Фильтры</h2>
+                
+                <!-- Форма поиска -->
+                <form method="get" action="{% url 'course_list' %}" class="mb-6">
+                    <div class="relative">
+                        <input type="text" name="search" placeholder="Поиск курсов..." value="{{ search_query|default:'' }}" 
+                               class="w-full border-gray-300 rounded-md py-2 px-4 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <button type="submit" class="absolute right-3 top-2 text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Категории -->
+                <div>
+                    <h3 class="font-medium mb-3">Категории</h3>
+                    <ul class="space-y-2">
+                        <li>
+                            <a href="{% url 'course_list' %}" class="{% if not selected_category %}text-blue-600 font-medium{% else %}text-gray-600 hover:text-blue-600{% endif %}">
+                                Все курсы
+                            </a>
+                        </li>
+                        {% for category in categories %}
+                        <li>
+                            <a href="{% url 'course_list' %}?category={{ category.slug }}" class="{% if selected_category == category.slug %}text-blue-600 font-medium{% else %}text-gray-600 hover:text-blue-600{% endif %}">
+                                {{ category.name }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Список курсов -->
+        <div class="lg:col-span-3">
+            {% if page_obj %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for course in page_obj %}
+                <div class="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                    <div class="h-40 bg-gray-200 relative">
+                        {% if course.cover_image %}
+                        <img src="{{ course.cover_image.url }}" alt="{{ course.title }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center bg-blue-100 text-blue-500">
+                            <i class="fas fa-book text-5xl"></i>
+                        </div>
+                        {% endif %}
+                        
+                        {% if course.category %}
+                        <div class="absolute top-2 right-2">
+                            <span class="bg-blue-600 text-white text-xs py-1 px-2 rounded">{{ course.category.name }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="p-4">
+                        <h2 class="text-xl font-semibold mb-2">{{ course.title }}</h2>
+                        <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ course.description|truncatechars:100 }}</p>
+                        
+                        <div class="flex justify-between items-center text-sm text-gray-500 mb-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-user-graduate mr-1"></i> 
+                                {{ course.enrolled_students_count }}
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-book mr-1"></i> 
+                                {{ course.lessons_count }}
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-calendar mr-1"></i> 
+                                {{ course.created_at|date:"d.m.Y" }}
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mr-2">
+                                    {% if course.author.profile.avatar %}
+                                    <img src="{{ course.author.profile.avatar.url }}" alt="{{ course.author.username }}" class="w-full h-full object-cover">
+                                    {% else %}
+                                    <span class="font-semibold">{{ course.author.username.0|upper }}</span>
+                                    {% endif %}
+                                </div>
+                                <span class="text-sm">{{ course.author.username }}</span>
+                            </div>
+                            <a href="{% url 'course_detail' slug=course.slug %}" class="inline-block bg-blue-600 text-white text-sm py-1 px-4 rounded hover:bg-blue-700">
+                                Подробнее
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Пагинация -->
+            {% if page_obj.paginator.num_pages > 1 %}
+            <div class="mt-8 flex justify-center">
+                <div class="flex space-x-1">
+                    {% if page_obj.has_previous %}
+                    <a href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}page=1" class="px-4 py-2 border rounded hover:bg-gray-50 text-sm">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                    <a href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}page={{ page_obj.previous_page_number }}" class="px-4 py-2 border rounded hover:bg-gray-50 text-sm">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <span class="px-4 py-2 border rounded bg-blue-600 text-white text-sm">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}page={{ num }}" class="px-4 py-2 border rounded hover:bg-gray-50 text-sm">{{ num }}</a>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <a href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}page={{ page_obj.next_page_number }}" class="px-4 py-2 border rounded hover:bg-gray-50 text-sm">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                    <a href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}page={{ page_obj.paginator.num_pages }}" class="px-4 py-2 border rounded hover:bg-gray-50 text-sm">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="bg-white p-8 rounded-lg shadow-md text-center">
+                <div class="text-gray-400 mb-4">
+                    <i class="fas fa-search fa-3x"></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">Курсы не найдены</h3>
+                <p class="text-gray-600 mb-6">К сожалению, курсы по вашему запросу не найдены.</p>
+                <a href="{% url 'course_list' %}" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                    Показать все курсы
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

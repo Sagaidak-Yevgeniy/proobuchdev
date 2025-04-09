@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block title %}Редактирование профиля - Образовательная платформа{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-blue-600 p-6 text-white">
+            <h1 class="text-2xl font-bold">Редактирование профиля</h1>
+            <p class="text-blue-200">Обновите свою информацию и настройки профиля</p>
+        </div>
+        
+        <div class="p-6">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <h2 class="text-xl font-semibold mb-4">Основная информация</h2>
+                        
+                        <div class="mb-4">
+                            <label for="{{ user_form.first_name.id_for_label }}" class="block text-gray-700 font-medium mb-2">
+                                {{ user_form.first_name.label }}
+                            </label>
+                            {{ user_form.first_name }}
+                            {% if user_form.first_name.errors %}
+                            <div class="text-red-500 text-sm mt-1">
+                                {% for error in user_form.first_name.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="{{ user_form.last_name.id_for_label }}" class="block text-gray-700 font-medium mb-2">
+                                {{ user_form.last_name.label }}
+                            </label>
+                            {{ user_form.last_name }}
+                            {% if user_form.last_name.errors %}
+                            <div class="text-red-500 text-sm mt-1">
+                                {% for error in user_form.last_name.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="{{ user_form.email.id_for_label }}" class="block text-gray-700 font-medium mb-2">
+                                {{ user_form.email.label }}
+                            </label>
+                            {{ user_form.email }}
+                            {% if user_form.email.errors %}
+                            <div class="text-red-500 text-sm mt-1">
+                                {% for error in user_form.email.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h2 class="text-xl font-semibold mb-4">Профиль</h2>
+                        
+                        <div class="mb-4">
+                            <label for="{{ profile_form.avatar.id_for_label }}" class="block text-gray-700 font-medium mb-2">
+                                {{ profile_form.avatar.label }}
+                            </label>
+                            
+                            <div class="flex items-center mb-2">
+                                {% if user.profile.avatar %}
+                                <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="w-16 h-16 object-cover rounded-full mr-4">
+                                {% else %}
+                                <div class="w-16 h-16 bg-blue-400 rounded-full flex items-center justify-center mr-4">
+                                    <span class="text-2xl font-bold text-white">{{ user.username.0|upper }}</span>
+                                </div>
+                                {% endif %}
+                                
+                                {{ profile_form.avatar }}
+                            </div>
+                            
+                            {% if profile_form.avatar.errors %}
+                            <div class="text-red-500 text-sm mt-1">
+                                {% for error in profile_form.avatar.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="{{ profile_form.bio.id_for_label }}" class="block text-gray-700 font-medium mb-2">
+                                {{ profile_form.bio.label }}
+                            </label>
+                            {{ profile_form.bio }}
+                            {% if profile_form.bio.errors %}
+                            <div class="text-red-500 text-sm mt-1">
+                                {% for error in profile_form.bio.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between">
+                    <a href="{% url 'profile' %}" class="bg-gray-200 text-gray-800 py-2 px-4 rounded hover:bg-gray-300">
+                        Отмена
+                    </a>
+                    <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                        Сохранить изменения
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

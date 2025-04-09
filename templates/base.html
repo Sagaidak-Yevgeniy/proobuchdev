@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Образовательная платформа{% endblock %}</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome для иконок -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- CodeMirror для редактора кода -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    
+    <!-- Пользовательские стили -->
+    <link rel="stylesheet" href="/static/css/main.css">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <!-- Навигационная панель -->
+    <nav class="bg-blue-600 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'home' %}" class="text-xl font-bold">Учебная платформа</a>
+                    <a href="{% url 'course_list' %}" class="hover:text-blue-200">Курсы</a>
+                    {% if user.is_authenticated and user.profile.is_teacher %}
+                    <a href="{% url 'course_create' %}" class="hover:text-blue-200">Создать курс</a>
+                    {% endif %}
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'my_courses' %}" class="hover:text-blue-200">Мои курсы</a>
+                        <div class="relative group">
+                            <button class="flex items-center hover:text-blue-200">
+                                {{ user.username }} <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                            </button>
+                            <div class="absolute right-0 hidden group-hover:block bg-white text-gray-800 shadow-lg rounded-lg mt-2 py-2 w-48 z-10">
+                                <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100">Мой профиль</a>
+                                {% if user.is_staff %}
+                                <a href="{% url 'admin:index' %}" class="block px-4 py-2 hover:bg-gray-100">Админ-панель</a>
+                                {% endif %}
+                                <a href="{% url 'logout' %}" class="block px-4 py-2 hover:bg-gray-100">Выйти</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="hover:text-blue-200">Войти</a>
+                        <a href="{% url 'register' %}" class="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-100">Регистрация</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Сообщения -->
+    {% if messages %}
+    <div class="container mx-auto px-4 mt-4">
+        {% for message in messages %}
+        <div class="{% if message.tags == 'error' %}bg-red-100 border-red-300 text-red-700{% elif message.tags == 'success' %}bg-green-100 border-green-300 text-green-700{% elif message.tags == 'warning' %}bg-yellow-100 border-yellow-300 text-yellow-700{% else %}bg-blue-100 border-blue-300 text-blue-700{% endif %} border-l-4 p-4 mb-3 rounded">
+            {{ message }}
+            <button class="float-right" onclick="this.parentElement.style.display='none'">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Основное содержимое -->
+    <main class="container mx-auto px-4 py-6 flex-grow">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Подвал -->
+    <footer class="bg-gray-800 text-white py-6 mt-auto">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h2 class="text-xl font-bold">Учебная платформа</h2>
+                    <p class="text-gray-400 mt-1">Учитесь с удовольствием</p>
+                </div>
+                
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-github"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-telegram"></i></a>
+                </div>
+            </div>
+            <div class="mt-6 text-center text-gray-400 text-sm">
+                &copy; {% now "Y" %} Учебная платформа. Все права защищены.
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Скрипты -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

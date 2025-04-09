@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ content.get_content_type_display }} - {{ lesson.title }} - Образовательная платформа{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-6">
+        <a href="{% url 'lesson_detail' pk=lesson.pk %}" class="text-blue-600 hover:text-blue-800">
+            <i class="fas fa-arrow-left mr-1"></i> Вернуться к уроку
+        </a>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="p-6 bg-gray-50 border-b">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-2xl font-bold mb-2">{{ lesson.title }}</h1>
+                    <p class="text-gray-600">{{ content.get_content_type_display }}</p>
+                </div>
+                
+                {% if is_author or is_admin %}
+                <div class="flex space-x-2">
+                    <a href="{% url 'lesson_content_edit' pk=content.id %}" class="bg-blue-600 text-white py-1 px-3 rounded text-sm hover:bg-blue-700">
+                        <i class="fas fa-edit mr-1"></i> Редактировать
+                    </a>
+                    <a href="{% url 'lesson_content_delete' pk=content.id %}" class="bg-red-600 text-white py-1 px-3 rounded text-sm hover:bg-red-700">
+                        <i class="fas fa-trash mr-1"></i> Удалить
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="p-6">
+            {% if content.content_type == 'text' %}
+            <div class="content-text prose max-w-none">
+                {{ content.content|linebreaks }}
+            </div>
+            
+            {% elif content.content_type == 'code' %}
+            <div class="content-code bg-gray-100 p-4 rounded overflow-auto">
+                <pre><code>{{ content.content }}</code></pre>
+            </div>
+            
+            {% elif content.content_type == 'video' %}
+            <div class="content-video aspect-video rounded-lg overflow-hidden">
+                <iframe src="{{ content.video_url|safe }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="w-full h-full"></iframe>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="p-6 bg-gray-50 border-t">
+            <div class="flex justify-between">
+                <a href="{% url 'lesson_detail' pk=lesson.pk %}" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                    Вернуться к уроку
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

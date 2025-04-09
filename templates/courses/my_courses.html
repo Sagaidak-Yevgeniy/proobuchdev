@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+
+{% block title %}Мои курсы - Образовательная платформа{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <h1 class="text-3xl font-bold mb-8">Мои курсы</h1>
+    
+    <!-- Вкладки -->
+    <div class="border-b border-gray-200 mb-8">
+        <ul class="flex -mb-px" role="tablist">
+            <li class="mr-1">
+                <button id="enrolled-tab" class="inline-block py-2 px-4 text-blue-600 border-blue-600 border-b-2 font-medium rounded-t-lg" 
+                        role="tab" aria-selected="true" onclick="switchTab('enrolled')">
+                    Курсы, на которые я записан
+                </button>
+            </li>
+            {% if user.profile.is_teacher %}
+            <li class="mr-1">
+                <button id="created-tab" class="inline-block py-2 px-4 text-gray-500 hover:text-gray-600 border-transparent border-b-2 font-medium rounded-t-lg"
+                        role="tab" aria-selected="false" onclick="switchTab('created')">
+                    Созданные мною курсы
+                </button>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+    
+    <!-- Содержимое вкладок -->
+    <div class="tab-content">
+        <!-- Вкладка с курсами, на которые записан пользователь -->
+        <div id="enrolled-content" class="tab-pane">
+            {% if enrollments %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for enrollment in enrollments %}
+                <div class="bg-white rounded-lg overflow-hidden shadow-md">
+                    <div class="h-40 bg-gray-200 relative">
+                        {% if enrollment.course.cover_image %}
+                        <img src="{{ enrollment.course.cover_image.url }}" alt="{{ enrollment.course.title }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center bg-blue-100 text-blue-500">
+                            <i class="fas fa-book text-5xl"></i>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent">
+                            <div class="flex justify-between items-center">
+                                {% if enrollment.course.category %}
+                                <span class="text-white text-xs bg-blue-600 px-2 py-1 rounded">{{ enrollment.course.category.name }}</span>
+                                {% endif %}
+                                
+                                {% if enrollment.is_completed %}
+                                <span class="text-white text-xs bg-green-600 px-2 py-1 rounded flex items-center">
+                                    <i class="fas fa-check-circle mr-1"></i> Завершен
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4">
+                        <h3 class="text-lg font-semibold mb-2">{{ enrollment.course.title }}</h3>
+                        
+                        <!-- Прогресс прохождения курса -->
+                        <div class="mt-2 mb-4">
+                            <div class="flex justify-between text-sm text-gray-600 mb-1">
+                                <span>Прогресс</span>
+                                <span>{{ enrollment.progress|floatformat:0 }}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ enrollment.progress }}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center text-gray-500 text-sm">
+                                <i class="fas fa-calendar-alt mr-1"></i>
+                                <span>{{ enrollment.enrolled_at|date:"d.m.Y" }}</span>
+                            </div>
+                            <a href="{% url 'course_detail' slug=enrollment.course.slug %}" class="text-blue-600 hover:text-blue-800">
+                                Перейти к курсу
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="bg-white p-8 rounded-lg shadow-md text-center">
+                <div class="text-gray-400 mb-4">
+                    <i class="fas fa-graduation-cap fa-3x"></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">Вы не записаны ни на один курс</h3>
+                <p class="text-gray-600 mb-6">Запишитесь на интересующие вас курсы, чтобы начать обучение.</p>
+                <a href="{% url 'course_list' %}" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                    Перейти к каталогу курсов
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Вкладка с созданными пользователем курсами -->
+        {% if user.profile.is_teacher %}
+        <div id="created-content" class="tab-pane hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold">Созданные мною курсы</h2>
+                <a href="{% url 'course_create' %}" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                    <i class="fas fa-plus mr-2"></i>Создать новый курс
+                </a>
+            </div>
+            
+            {% if created_courses %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for course in created_courses %}
+                <div class="bg-white rounded-lg overflow-hidden shadow-md">
+                    <div class="h-40 bg-gray-200 relative">
+                        {% if course.cover_image %}
+                        <img src="{{ course.cover_image.url }}" alt="{{ course.title }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center bg-blue-100 text-blue-500">
+                            <i class="fas fa-book text-5xl"></i>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent">
+                            <div class="flex justify-between items-center">
+                                {% if course.category %}
+                                <span class="text-white text-xs bg-blue-600 px-2 py-1 rounded">{{ course.category.name }}</span>
+                                {% endif %}
+                                
+                                {% if course.is_published %}
+                                <span class="text-white text-xs bg-green-600 px-2 py-1 rounded">Опубликован</span>
+                                {% else %}
+                                <span class="text-white text-xs bg-yellow-600 px-2 py-1 rounded">Черновик</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4">
+                        <h3 class="text-lg font-semibold mb-2">{{ course.title }}</h3>
+                        
+                        <div class="grid grid-cols-2 gap-2 mb-4 text-sm text-gray-500">
+                            <div class="flex items-center">
+                                <i class="fas fa-user-graduate mr-1"></i>
+                                <span>{{ course.enrollments.count }} учащихся</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-book mr-1"></i>
+                                <span>{{ course.lessons.count }} уроков</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-calendar-alt mr-1"></i>
+                                <span>{{ course.created_at|date:"d.m.Y" }}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-clock mr-1"></i>
+                                <span>{{ course.updated_at|date:"d.m.Y" }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between">
+                            <a href="{% url 'course_edit' slug=course.slug %}" class="text-gray-600 hover:text-gray-800">
+                                <i class="fas fa-edit mr-1"></i> Редактировать
+                            </a>
+                            <a href="{% url 'course_detail' slug=course.slug %}" class="text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-external-link-alt mr-1"></i> Просмотр
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="bg-white p-8 rounded-lg shadow-md text-center">
+                <div class="text-gray-400 mb-4">
+                    <i class="fas fa-chalkboard-teacher fa-3x"></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">У вас пока нет созданных курсов</h3>
+                <p class="text-gray-600 mb-6">Создайте свой первый курс, чтобы начать делиться знаниями.</p>
+                <a href="{% url 'course_create' %}" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                    Создать первый курс
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchTab(tabName) {
+    // Скрываем все вкладки
+    document.querySelectorAll('.tab-pane').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Удаляем активное состояние у всех кнопок вкладок
+    document.querySelectorAll('[role="tab"]').forEach(button => {
+        button.classList.remove('text-blue-600', 'border-blue-600', 'border-b-2');
+        button.classList.add('text-gray-500', 'border-transparent');
+        button.setAttribute('aria-selected', 'false');
+    });
+    
+    // Показываем выбранную вкладку
+    document.getElementById(`${tabName}-content`).classList.remove('hidden');
+    
+    // Добавляем активное состояние кнопке выбранной вкладки
+    const activeButton = document.getElementById(`${tabName}-tab`);
+    activeButton.classList.remove('text-gray-500', 'border-transparent');
+    activeButton.classList.add('text-blue-600', 'border-blue-600', 'border-b-2');
+    activeButton.setAttribute('aria-selected', 'true');
+}
+</script>
+{% endblock %}

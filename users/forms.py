@@ -1,0 +1,87 @@
+from django import forms
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from .models import CustomUser, Profile
+
+class CustomUserCreationForm(UserCreationForm):
+    """Форма для регистрации нового пользователя"""
+    
+    email = forms.EmailField(
+        label='Email',
+        required=True,
+        widget=forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'Email'})
+    )
+    
+    role = forms.ChoiceField(
+        label='Роль',
+        choices=Profile.ROLES,
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    class Meta:
+        model = CustomUser
+        fields = ('username', 'email', 'password1', 'password2')
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Имя пользователя'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['password1'].widget.attrs.update({'class': 'form-input', 'placeholder': 'Пароль'})
+        self.fields['password2'].widget.attrs.update({'class': 'form-input', 'placeholder': 'Подтверждение пароля'})
+        
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data['email']
+        if commit:
+            user.save()
+            # Создаем профиль пользователя с выбранной ролью
+            profile = Profile.objects.create(
+                user=user,
+                role=self.cleaned_data['role']
+            )
+        return user
+
+class CustomAuthenticationForm(AuthenticationForm):
+    """Форма для авторизации пользователя"""
+    
+    username = forms.CharField(
+        label='Имя пользователя или Email',
+        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Имя пользователя или Email'})
+    )
+    password = forms.CharField(
+        label='Пароль',
+        widget=forms.PasswordInput(attrs={'class': 'form-input', 'placeholder': 'Пароль'})
+    )
+
+class ProfileUpdateForm(forms.ModelForm):
+    """Форма для обновления профиля пользователя"""
+    
+    class Meta:
+        model = Profile
+        fields = ('bio', 'avatar')
+        widgets = {
+            'bio': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 4}),
+            'avatar': forms.FileInput(attrs={'class': 'form-input'})
+        }
+        labels = {
+            'bio': 'О себе',
+            'avatar': 'Фотография профиля'
+        }
+
+class UserUpdateForm(forms.ModelForm):
+    """Форма для обновления данных пользователя"""
+    
+    class Meta:
+        model = CustomUser
+        fields = ('first_name', 'last_name', 'email')
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-input'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-input'}),
+            'email': forms.EmailInput(attrs={'class': 'form-input'})
+        }
+        labels = {
+            'first_name': 'Имя',
+            'last_name': 'Фамилия',
+            'email': 'Email'
+        }

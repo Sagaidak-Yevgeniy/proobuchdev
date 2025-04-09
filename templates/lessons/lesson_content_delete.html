@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Удаление содержимого - {{ lesson.title }} - Образовательная платформа{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="bg-white p-8 rounded-lg shadow-md">
+        <div class="text-center mb-6">
+            <div class="inline-block p-4 rounded-full bg-red-100 text-red-600 mb-4">
+                <i class="fas fa-exclamation-triangle text-3xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold">Удаление содержимого урока</h1>
+        </div>
+        
+        <div class="text-center mb-8">
+            <p class="text-gray-600 mb-4">Вы уверены, что хотите удалить содержимое типа <strong>«{{ content.get_content_type_display }}»</strong> из урока?</p>
+            <p class="text-red-600 text-sm font-semibold">Это действие нельзя будет отменить.</p>
+            
+            {% if content.content_type == 'assignment' %}
+            <p class="text-yellow-600 mt-2 font-semibold">Внимание! Удаление также приведет к удалению связанного задания и всех решений к нему.</p>
+            {% endif %}
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="flex justify-between">
+                <a href="{% url 'lesson_detail' pk=lesson.pk %}" class="bg-gray-200 text-gray-700 py-2 px-4 rounded hover:bg-gray-300">
+                    Отмена
+                </a>
+                <button type="submit" class="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                    Удалить содержимое
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
