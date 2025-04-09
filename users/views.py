@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from .forms import CustomUserCreationForm, ProfileUpdateForm, UserUpdateForm, CustomAuthenticationForm
@@ -59,6 +59,13 @@ def user_profile(request, username):
     """Просмотр профиля другого пользователя"""
     user = get_object_or_404(CustomUser, username=username)
     return render(request, 'users/user_profile.html', {'user': user})
+
+@login_required
+def logout_view(request):
+    """Выход пользователя из системы"""
+    logout(request)
+    messages.success(request, 'Вы успешно вышли из системы.')
+    return redirect('home')
     
 @ensure_csrf_cookie
 def custom_login(request):
