@@ -76,13 +76,17 @@ def notify_course_creation(sender, instance, created, **kwargs):
     """Отправляет уведомление о создании нового курса"""
     if created and instance.is_published:
         # Получаем пользователей, которые должны получать уведомления о курсах
-        users_settings = NotificationSettings.objects.filter(receive_course=True, receive_all=True)
+        users_settings = NotificationSettings.objects.filter(receive_course=True).select_related('user')
+        
+        print(f"Найдено {users_settings.count()} пользователей с настройками получения уведомлений о курсах")
         
         for settings in users_settings:
             # Если пользователь настроил получение только важных, пропускаем
             if settings.notify_only_high_priority:
+                print(f"Пользователь {settings.user.username} настроил получение только важных уведомлений")
                 continue
                 
+            print(f"Создаем уведомление для пользователя {settings.user.username} о новом курсе {instance.title}")
             Notification.objects.create(
                 user=settings.user,
                 title=_('Новый курс!'),
@@ -91,6 +95,7 @@ def notify_course_creation(sender, instance, created, **kwargs):
                 is_high_priority=False,
                 url=f'/courses/{instance.slug}/'
             )
+            print(f"Уведомление создано для пользователя {settings.user.username}")
 
 
 @receiver(post_save, sender=Course)
@@ -98,16 +103,23 @@ def notify_course_update(sender, instance, created, **kwargs):
     """Отправляет уведомление об обновлении курса его участникам"""
     if not created and instance.is_published:
         # Получаем студентов, которые записаны на этот курс
-        enrolled_users = instance.students.all()
+        enrollments = instance.enrollments.select_related('user').all()
         
-        for user in enrolled_users:
+        print(f"Найдено {enrollments.count()} записей на курс {instance.title}")
+        
+        for enrollment in enrollments:
+            user = enrollment.user
             try:
                 settings = NotificationSettings.objects.get(user=user)
+                print(f"Проверяем настройки пользователя {user.username} для уведомлений о курсах")
                 if not settings.should_receive('course', False):
+                    print(f"Пользователь {user.username} отключил уведомления о курсах")
                     continue
             except NotificationSettings.DoesNotExist:
+                print(f"У пользователя {user.username} нет настроек уведомлений")
                 continue
             
+            print(f"Создаем уведомление для пользователя {user.username} о курсе {instance.title}")
             Notification.objects.create(
                 user=user,
                 title=_('Обновление курса'),
@@ -116,6 +128,7 @@ def notify_course_update(sender, instance, created, **kwargs):
                 is_high_priority=False,
                 url=f'/courses/{instance.slug}/'
             )
+            print(f"Уведомление создано для пользователя {user.username}")
 
 
 from lessons.models import Lesson
@@ -123,19 +136,28 @@ from lessons.models import Lesson
 @receiver(post_save, sender=Lesson)
 def notify_lesson_creation(sender, instance, created, **kwargs):
     """Отправляет уведомление о создании нового урока студентам курса"""
+    print(f"Сигнал notify_lesson_creation сработал. created={created}, lesson={instance.title}")
+    
     if created and hasattr(instance, 'course') and instance.course.is_published and instance.is_published:
+        print(f"Урок соответствует условиям для отправки уведомлений: course={instance.course.title}, is_published={instance.is_published}")
+        
         # Получаем студентов, которые записаны на этот курс
         enrolled_users = instance.course.enrollments.select_related('user').all()
+        print(f"Найдено {enrolled_users.count()} студентов, записанных на курс {instance.course.title}")
         
         for enrollment in enrolled_users:
             user = enrollment.user
             try:
                 settings = NotificationSettings.objects.get(user=user)
+                print(f"Проверяем настройки пользователя {user.username} для уведомлений об уроках")
                 if not settings.should_receive('lesson', False):
+                    print(f"Пользователь {user.username} отключил уведомления об уроках")
                     continue
             except NotificationSettings.DoesNotExist:
+                print(f"У пользователя {user.username} нет настроек уведомлений")
                 continue
             
+            print(f"Создаем уведомление для пользователя {user.username} о новом уроке {instance.title}")
             Notification.objects.create(
                 user=user,
                 title=_('Новый урок в курсе'),
@@ -144,24 +166,34 @@ def notify_lesson_creation(sender, instance, created, **kwargs):
                 is_high_priority=False,
                 url=f'/courses/{instance.course.slug}/lessons/{instance.id}/'
             )
+            print(f"Уведомление создано для пользователя {user.username}")
 
 
 @receiver(post_save, sender=Lesson)
 def notify_lesson_update(sender, instance, created, **kwargs):
     """Отправляет уведомление об обновлении урока студентам"""
+    print(f"Сигнал notify_lesson_update сработал. created={created}, lesson={instance.title}")
+    
     if not created and hasattr(instance, 'course') and instance.course.is_published and instance.is_published:
+        print(f"Урок соответствует условиям для отправки уведомлений об обновлении: course={instance.course.title}, is_published={instance.is_published}")
+        
         # Получаем студентов, которые записаны на этот курс
         enrolled_users = instance.course.enrollments.select_related('user').all()
+        print(f"Найдено {enrolled_users.count()} студентов, записанных на курс {instance.course.title}")
         
         for enrollment in enrolled_users:
             user = enrollment.user
             try:
                 settings = NotificationSettings.objects.get(user=user)
+                print(f"Проверяем настройки пользователя {user.username} для уведомлений об уроках")
                 if not settings.should_receive('lesson', False):
+                    print(f"Пользователь {user.username} отключил уведомления об уроках")
                     continue
             except NotificationSettings.DoesNotExist:
+                print(f"У пользователя {user.username} нет настроек уведомлений")
                 continue
             
+            print(f"Создаем уведомление для пользователя {user.username} об обновлении урока {instance.title}")
             Notification.objects.create(
                 user=user,
                 title=_('Обновление урока'),
@@ -170,6 +202,7 @@ def notify_lesson_update(sender, instance, created, **kwargs):
                 is_high_priority=False,
                 url=f'/courses/{instance.course.slug}/lessons/{instance.id}/'
             )
+            print(f"Уведомление создано для пользователя {user.username}")
 
 
 # Комментирую уведомления для заданий, так как модели не полностью доступны
