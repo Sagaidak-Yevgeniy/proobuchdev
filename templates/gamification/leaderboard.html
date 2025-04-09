@@ -84,8 +84,9 @@
                             <div class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ entry.total_points }}</div>
                             <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2 overflow-hidden">
                                 {% with max_points=leaderboard_users.0.total_points %}
-                                {% with percentage=entry.total_points|floatformat:0|default:0|safe|widthratio:max_points:100 %}
-                                <div class="bg-blue-600 h-2 rounded-full" style="width: {% if percentage > 100 %}100{% else %}{{ percentage }}{% endif %}%"></div>
+                                {% with percentage=entry.total_points|default:0 %}
+                                {% widthratio percentage max_points 100 as width_percent %}
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: {% if width_percent > 100 %}100{% else %}{{ width_percent }}{% endif %}%"></div>
                                 {% endwith %}
                                 {% endwith %}
                             </div>

@@ -669,15 +669,51 @@
         
         // Инициализация интерактивности виджетов
         function initWidgetInteractivity(widgetId, widgetType) {
-            // Здесь можно добавить обработчики событий для интерактивных элементов виджета
-            // В зависимости от типа виджета
-            
             const widget = document.querySelector(`.widget[data-widget-id="${widgetId}"]`);
             
-            if (widgetType === 'goals') {
-                // Добавление новой цели
-                widget.querySelector('#add-goal-btn')?.addEventListener('click', function() {
-                    const goalTitle = prompt('Введите название новой цели:');
+            if (!widget) return;
+            
+            switch(widgetType) {
+                case 'courses_progress':
+                    // Обработчик клика на курс - переход на страницу курса
+                    widget.querySelectorAll('.course-item').forEach(item => {
+                        item.addEventListener('click', function() {
+                            const courseId = this.dataset.courseId;
+                            if (courseId) {
+                                window.location.href = `/courses/${courseId}/`;
+                            }
+                        });
+                    });
+                    break;
+                    
+                case 'achievements':
+                    // Переход к странице достижений при клике
+                    widget.querySelector('.achievements')?.addEventListener('click', function() {
+                        window.location.href = "{% url 'achievement_list' %}";
+                    });
+                    break;
+                    
+                case 'recent_activity':
+                    // Отметка активности как прочитанной
+                    widget.querySelectorAll('.activity-item').forEach(item => {
+                        item.addEventListener('click', function() {
+                            // Добавим класс "прочитано"
+                            this.classList.remove('bg-blue-50');
+                            // Отправим запрос на сервер для отметки уведомления
+                            const notificationId = this.dataset.notificationId;
+                            if (notificationId) {
+                                fetch(`/notifications/${notificationId}/mark-read/`, {
+                                    method: 'POST'
+                                });
+                            }
+                        });
+                    });
+                    break;
+                    
+                case 'goals':
+                    // Добавление новой цели
+                    widget.querySelector('#add-goal-btn')?.addEventListener('click', function() {
+                        const goalTitle = prompt('Введите название новой цели:');
                     if (goalTitle) {
                         // Здесь должен быть запрос к серверу для сохранения новой цели
                         // После успешного сохранения обновляем данные виджета
