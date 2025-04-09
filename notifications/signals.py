@@ -66,7 +66,8 @@ def notify_achievement_earned(sender, instance, created, **kwargs):
             message=_(f'Вы получили достижение "{achievement.name}": {achievement.description}'),
             notification_type='achievement',
             is_high_priority=False,
-            url=f'/gamification/achievements/'
+            url=f'/gamification/achievements/',
+            importance='normal'
         )
 
 
@@ -91,7 +92,8 @@ def notify_badge_earned(sender, instance, created, **kwargs):
             message=_(f'Вы получили значок "{badge.name}" за ваши достижения! {badge.description}'),
             notification_type='achievement',
             is_high_priority=True,
-            url=f'/gamification/badges/'
+            url=f'/gamification/badges/',
+            importance='high'
         )
 
 
@@ -117,7 +119,8 @@ def notify_course_creation(sender, instance, created, **kwargs):
                 message=_(f'Появился новый курс "{instance.title}". {instance.description[:100]}...'),
                 notification_type='course',
                 is_high_priority=False,
-                url=f'/courses/{instance.slug}/'
+                url=f'/courses/{instance.slug}/',
+                importance='normal'
             )
             print(f"Уведомление создано для пользователя {settings.user.username}")
 
@@ -150,7 +153,8 @@ def notify_course_update(sender, instance, created, **kwargs):
                 message=_(f'Курс "{instance.title}" был обновлен.'),
                 notification_type='course',
                 is_high_priority=False,
-                url=f'/courses/{instance.slug}/'
+                url=f'/courses/{instance.slug}/',
+                importance='normal'
             )
             print(f"Уведомление создано для пользователя {user.username}")
 
@@ -192,7 +196,8 @@ def notify_lesson_creation(sender, instance, created, **kwargs):
                 message=_(f'В курсе "{instance.course.title}" появился новый урок: "{instance.title}" ({status_text})'),
                 notification_type='lesson',
                 is_high_priority=False,
-                url=f'/courses/{instance.course.slug}/lessons/{instance.id}/'
+                url=f'/courses/{instance.course.slug}/lessons/{instance.id}/',
+                importance='normal'
             )
             print(f"Уведомление создано для пользователя {user.username}")
 
@@ -234,12 +239,13 @@ def notify_lesson_update(sender, instance, created, **kwargs):
                 message=_(f'Урок "{instance.title}" в курсе "{instance.course.title}" был обновлен.{status_info}'),
                 notification_type='lesson',
                 is_high_priority=False,
-                url=f'/courses/{instance.course.slug}/lessons/{instance.id}/'
+                url=f'/courses/{instance.course.slug}/lessons/{instance.id}/',
+                importance='normal'
             )
             print(f"Уведомление создано для пользователя {user.username}")
 
 
-# Комментирую уведомления для заданий, так как модели не полностью доступны
+# Когда модели заданий будут доступны, раскомментируйте этот код
 # @receiver(post_save, sender=Assignment)
 # def notify_assignment_creation(sender, instance, created, **kwargs):
 #     """Отправляет уведомление о создании нового задания студентам"""
@@ -265,7 +271,8 @@ def notify_lesson_update(sender, instance, created, **kwargs):
 #                     message=_(f'В уроке "{lesson.title}" появилось новое задание: "{instance.title}"'),
 #                     notification_type='assignment',
 #                     is_high_priority=True,
-#                     url=f'/courses/{course.slug}/lessons/{lesson.slug}/#assignment-{instance.id}'
+#                     url=f'/courses/{course.slug}/lessons/{lesson.slug}/#assignment-{instance.id}',
+#                     importance='high'
 #                 )
 
 
@@ -298,7 +305,8 @@ def notify_lesson_update(sender, instance, created, **kwargs):
 #             message=_(f'Ваше решение задания "{assignment.title}" было проверено. Статус: {status_text}'),
 #             notification_type='assignment',
 #             is_high_priority=True,
-#             url=f'/courses/{course.slug}/lessons/{lesson.slug}/#assignment-{assignment.id}'
+#             url=f'/courses/{course.slug}/lessons/{lesson.slug}/#assignment-{assignment.id}',
+#             importance='high'
 #         )
 
 

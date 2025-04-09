@@ -39,6 +39,10 @@ class Notification(models.Model):
     is_high_priority = models.BooleanField(default=False, verbose_name=_('Высокий приоритет'))
     url = models.CharField(max_length=200, blank=True, null=True, verbose_name=_('URL'))
     
+    # Дополнительные поля, которые есть в БД, но не были в модели
+    importance = models.CharField(max_length=20, default='normal', verbose_name=_('Важность'))
+    icon = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('Иконка'))
+    
     # Поля для связи с любым объектом (GenericForeignKey)
     content_type = models.ForeignKey(
         ContentType,
