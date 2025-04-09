@@ -69,7 +69,7 @@
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                                 {% with progress=enrollment.progress|floatformat:0 %}
-                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {% if progress > 100 %}100{% else %}{{ progress }}{% endif %}%"></div>
+                                <div class="bg-lime-400 h-2.5 rounded-full" style="width: {% if progress > 100 %}100{% else %}{{ progress }}{% endif %}%"></div>
                                 {% endwith %}
                             </div>
                         </div>
