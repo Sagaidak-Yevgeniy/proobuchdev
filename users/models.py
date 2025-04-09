@@ -6,6 +6,18 @@ from django.utils.translation import gettext_lazy as _
 class CustomUser(AbstractUser):
     """Расширенная модель пользователя"""
     
+    # Переопределяем поле username, чтобы оно принимало пробелы
+    username = models.CharField(
+        _('username'),
+        max_length=150,
+        unique=True,
+        help_text=_('Введите полное ФИО. Будет использоваться для входа.'),
+        validators=[],
+        error_messages={
+            'unique': _("Пользователь с таким ФИО уже существует."),
+        },
+    )
+    
     email = models.EmailField(_('email address'), unique=True)
     
     def __str__(self):

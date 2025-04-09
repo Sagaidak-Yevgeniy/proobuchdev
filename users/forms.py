@@ -22,6 +22,22 @@ class CustomUserCreationForm(UserCreationForm):
         widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Введите ФИО полностью'})
     )
     
+    def clean_username(self):
+        """
+        Проверка валидности поля username для ФИО с пробелами.
+        Обычная проверка Django не пропускает пробелы, поэтому переопределяем.
+        """
+        username = self.cleaned_data.get('username')
+        if username:
+            # Проверяем уникальность
+            if CustomUser.objects.filter(username=username).exists():
+                raise forms.ValidationError(
+                    _('Пользователь с таким ФИО уже существует.'),
+                    code='duplicate_username'
+                )
+                
+        return username
+    
     email = forms.EmailField(
         label='Email',
         required=True,
