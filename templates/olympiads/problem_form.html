@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if problem %}Редактирование задачи{% else %}Создание новой задачи{% endif %} - {{ olympiad.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Навигация и заголовок -->
+    <div class="mb-6">
+        <div class="flex flex-wrap items-center text-sm text-gray-500 mb-2">
+            <a href="{% url 'olympiad_list' %}" class="hover:text-gray-700">Олимпиады</a>
+            <span class="mx-2">/</span>
+            <a href="{% url 'olympiad_detail' slug=olympiad.slug %}" class="hover:text-gray-700">{{ olympiad.title }}</a>
+            <span class="mx-2">/</span>
+            <span class="text-gray-900 font-medium">{% if problem %}Редактирование задачи{% else %}Новая задача{% endif %}</span>
+        </div>
+        
+        <h1 class="text-3xl font-bold">{% if problem %}Редактирование задачи{% else %}Создание новой задачи{% endif %}</h1>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <h2 class="text-xl font-semibold">Информация о задаче</h2>
+        </div>
+        
+        <div class="p-6">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Обработка ошибок формы -->
+                {% if form.errors %}
+                <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded relative mb-6" role="alert">
+                    <strong class="font-bold">Ошибка!</strong>
+                    <span class="block sm:inline">Пожалуйста, исправьте ошибки в форме.</span>
+                    
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                        <p class="text-sm mt-1">{{ field.label }}: {{ error }}</p>
+                        {% endfor %}
+                    {% endfor %}
+                    
+                    {% for error in form.non_field_errors %}
+                    <p class="text-sm mt-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Основная информация -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ form.title.label }}{% if form.title.field.required %}*{% endif %}
+                        </label>
+                        {{ form.title }}
+                        {% if form.title.help_text %}
+                        <p class="text-xs text-gray-500 mt-1">{{ form.title.help_text }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.order.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ form.order.label }}{% if form.order.field.required %}*{% endif %}
+                        </label>
+                        {{ form.order }}
+                        {% if form.order.help_text %}
+                        <p class="text-xs text-gray-500 mt-1">{{ form.order.help_text }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.points.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ form.points.label }}{% if form.points.field.required %}*{% endif %}
+                        </label>
+                        {{ form.points }}
+                        {% if form.points.help_text %}
+                        <p class="text-xs text-gray-500 mt-1">{{ form.points.help_text }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.time_limit.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ form.time_limit.label }}{% if form.time_limit.field.required %}*{% endif %}
+                        </label>
+                        {{ form.time_limit }}
+                        {% if form.time_limit.help_text %}
+                        <p class="text-xs text-gray-500 mt-1">{{ form.time_limit.help_text }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.memory_limit.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ form.memory_limit.label }}{% if form.memory_limit.field.required %}*{% endif %}
+                        </label>
+                        {{ form.memory_limit }}
+                        {% if form.memory_limit.help_text %}
+                        <p class="text-xs text-gray-500 mt-1">{{ form.memory_limit.help_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Описание и решение -->
+                <div class="space-y-6">
+                    <div>
+                        <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ form.description.label }}{% if form.description.field.required %}*{% endif %}
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.help_text %}
+                        <p class="text-xs text-gray-500 mt-1">{{ form.description.help_text }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.input_description.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ form.input_description.label }}{% if form.input_description.field.required %}*{% endif %}
+                        </label>
+                        {{ form.input_description }}
+                        {% if form.input_description.help_text %}
+                        <p class="text-xs text-gray-500 mt-1">{{ form.input_description.help_text }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.output_description.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ form.output_description.label }}{% if form.output_description.field.required %}*{% endif %}
+                        </label>
+                        {{ form.output_description }}
+                        {% if form.output_description.help_text %}
+                        <p class="text-xs text-gray-500 mt-1">{{ form.output_description.help_text }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.hint.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ form.hint.label }}{% if form.hint.field.required %}*{% endif %}
+                        </label>
+                        {{ form.hint }}
+                        {% if form.hint.help_text %}
+                        <p class="text-xs text-gray-500 mt-1">{{ form.hint.help_text }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.solution_code.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ form.solution_code.label }}{% if form.solution_code.field.required %}*{% endif %}
+                        </label>
+                        {{ form.solution_code }}
+                        {% if form.solution_code.help_text %}
+                        <p class="text-xs text-gray-500 mt-1">{{ form.solution_code.help_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Кнопки действий -->
+                <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                    <a href="{% url 'olympiad_detail' slug=olympiad.slug %}" class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Отмена
+                    </a>
+                    <button type="submit" class="px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        {% if problem %}Сохранить изменения{% else %}Создать задачу{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Добавление классов для стилизации полей
+        const inputs = document.querySelectorAll('input[type="text"], input[type="number"], textarea, select');
+        inputs.forEach(input => {
+            input.classList.add('w-full', 'rounded-md', 'border', 'border-gray-300', 'shadow-sm', 'py-2', 'px-3', 'focus:outline-none', 'focus:ring-blue-500', 'focus:border-blue-500');
+            
+            if (input.tagName === 'TEXTAREA') {
+                input.rows = 5;
+                
+                if (input.id === '{{ form.description.id_for_label }}') {
+                    input.rows = 8;
+                }
+                
+                if (input.id === '{{ form.solution_code.id_for_label }}') {
+                    input.rows = 15;
+                    input.classList.add('font-mono');
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

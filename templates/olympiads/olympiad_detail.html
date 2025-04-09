@@ -409,24 +409,33 @@ function updateCountdown() {
     
     // Обновление элементов для будущей олимпиады
     {% if olympiad.is_future %}
-    document.getElementById("days").innerHTML = days;
-    document.getElementById("hours").innerHTML = hours;
-    document.getElementById("minutes").innerHTML = minutes;
-    document.getElementById("seconds").innerHTML = seconds;
+    const daysElement = document.getElementById("days");
+    const hoursElement = document.getElementById("hours");
+    const minutesElement = document.getElementById("minutes");
+    const secondsElement = document.getElementById("seconds");
+    
+    if (daysElement && hoursElement && minutesElement && secondsElement) {
+        daysElement.innerHTML = days;
+        hoursElement.innerHTML = hours;
+        minutesElement.innerHTML = minutes;
+        secondsElement.innerHTML = seconds;
+    }
     {% endif %}
     
     // Обновление времени до окончания для активной олимпиады
     {% if olympiad.is_active %}
     const timeRemainingElement = document.getElementById("time-remaining");
     
-    if (distance < 0) {
-        timeRemainingElement.innerHTML = "Завершена";
-        // Перезагрузка страницы, когда олимпиада заканчивается
-        setTimeout(() => {
-            window.location.reload();
-        }, 1000);
-    } else {
-        timeRemainingElement.innerHTML = `${days}д ${hours}ч ${minutes}м ${seconds}с`;
+    if (timeRemainingElement) {
+        if (distance < 0) {
+            timeRemainingElement.innerHTML = "Завершена";
+            // Перезагрузка страницы, когда олимпиада заканчивается
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            timeRemainingElement.innerHTML = `${days}д ${hours}ч ${minutes}м ${seconds}с`;
+        }
     }
     {% endif %}
 }
