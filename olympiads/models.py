@@ -133,6 +133,8 @@ class TestCase(models.Model):
     input_data = models.TextField('Входные данные')
     expected_output = models.TextField('Ожидаемый результат')
     is_example = models.BooleanField('Пример для отображения', default=False)
+    weight = models.PositiveIntegerField('Вес теста', default=1,
+                                        help_text='Относительный вес теста при подсчете баллов')
     order = models.PositiveIntegerField('Порядковый номер', default=0)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
     

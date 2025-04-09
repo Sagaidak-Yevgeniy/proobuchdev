@@ -52,11 +52,12 @@ class TestCaseForm(forms.ModelForm):
     
     class Meta:
         model = TestCase
-        fields = ['input_data', 'expected_output', 'is_example', 'order']
+        fields = ['input_data', 'expected_output', 'is_example', 'weight', 'order']
         widgets = {
             'input_data': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 5}),
             'expected_output': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 5}),
             'is_example': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'weight': forms.NumberInput(attrs={'class': 'form-input', 'min': '1'}),
             'order': forms.NumberInput(attrs={'class': 'form-input'}),
         }
 

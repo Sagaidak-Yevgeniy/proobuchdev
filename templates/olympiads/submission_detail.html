@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Отправка #{{ submission.id }} - {{ submission.problem.title }} - Образовательная платформа{% endblock %}
+{% block title %}Детали отправки - Образовательная платформа{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto">
@@ -11,229 +11,273 @@
             <span class="mx-2">/</span>
             <a href="{% url 'olympiad_detail' slug=olympiad.slug %}" class="hover:text-gray-700">{{ olympiad.title }}</a>
             <span class="mx-2">/</span>
-            <a href="{% url 'problem_detail' olympiad_slug=olympiad.slug pk=submission.problem.pk %}" class="hover:text-gray-700">{{ submission.problem.title }}</a>
+            <a href="{% url 'submission_list' slug=olympiad.slug %}" class="hover:text-gray-700">Отправки решений</a>
             <span class="mx-2">/</span>
             <span class="text-gray-900 font-medium">Отправка #{{ submission.id }}</span>
         </div>
         
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h1 class="text-2xl font-bold">Результаты проверки</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold">Детали отправки #{{ submission.id }}</h1>
             
             <div class="flex flex-wrap gap-2">
-                <a href="{% url 'problem_detail' olympiad_slug=olympiad.slug pk=submission.problem.pk %}" class="inline-flex items-center px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
-                    <i class="fas fa-arrow-left mr-1.5"></i>Вернуться к задаче
+                <a href="{% url 'submission_list' slug=olympiad.slug %}" class="inline-flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    <i class="fas fa-arrow-left mr-1.5"></i>Назад к списку отправок
                 </a>
                 
-                <a href="{% url 'submission_list' slug=olympiad.slug %}?problem={{ submission.problem.id }}" class="inline-flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                    <i class="fas fa-list mr-1.5"></i>Все отправки
+                {% if is_creator %}
+                <a href="{% url 'olympiad_leaderboard' slug=olympiad.slug %}" class="inline-flex items-center px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700">
+                    <i class="fas fa-trophy mr-1.5"></i>Таблица результатов
                 </a>
+                {% endif %}
             </div>
         </div>
     </div>
     
-    <!-- Основная информация о отправке -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Информация об отправке -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Основная информация -->
         <div class="lg:col-span-2">
-            <!-- Код и результаты -->
-            <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-                <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-lg font-semibold">Код решения</h2>
-                        
-                        <div class="flex items-center">
-                            <div class="text-sm text-gray-500">Язык: <span class="font-medium">Python</span></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="p-0">
-                    <pre id="code-editor" class="text-sm h-96"></pre>
-                </div>
-            </div>
-            
-            <!-- Результаты тестирования -->
             <div class="bg-white rounded-lg shadow-md overflow-hidden">
                 <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                    <h2 class="text-lg font-semibold">Результаты тестирования</h2>
-                </div>
-                
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">№</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Время</th>
-                                {% if show_details or is_creator %}
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Входные данные</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ожидаемый результат</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ваш вывод</th>
-                                {% endif %}
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            {% for result in test_results %}
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    {% if result.test_case.is_example %}
-                                    <span title="Пример">{{ result.test_case.order }}</span>
-                                    {% else %}
-                                    <span>{{ result.test_case.order }}</span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    {% if result.passed %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        <i class="fas fa-check mr-1"></i>Пройден
-                                    </span>
-                                    {% else %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                        <i class="fas fa-times mr-1"></i>Не пройден
-                                    </span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {% if result.execution_time %}{{ result.execution_time }} мс{% else %}–{% endif %}
-                                </td>
-                                
-                                {% if show_details or is_creator or result.test_case.is_example %}
-                                <td class="px-6 py-4 text-sm text-gray-500">
-                                    <pre class="whitespace-pre-wrap max-h-20 overflow-y-auto text-xs bg-gray-50 p-2 rounded">{{ result.test_case.input_data }}</pre>
-                                </td>
-                                <td class="px-6 py-4 text-sm text-gray-500">
-                                    <pre class="whitespace-pre-wrap max-h-20 overflow-y-auto text-xs bg-gray-50 p-2 rounded">{{ result.test_case.expected_output }}</pre>
-                                </td>
-                                <td class="px-6 py-4 text-sm text-gray-500">
-                                    <pre class="whitespace-pre-wrap max-h-20 overflow-y-auto text-xs bg-gray-50 p-2 rounded">{{ result.output }}</pre>
-                                </td>
-                                {% endif %}
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="{% if show_details or is_creator %}6{% else %}3{% endif %}" class="px-6 py-4 text-center text-sm text-gray-500">
-                                    Результаты тестирования не найдены
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                
-                {% if not show_details and not is_creator and test_results %}
-                <div class="p-4 bg-yellow-50 text-yellow-700 text-sm border-t border-yellow-100">
-                    <i class="fas fa-info-circle mr-1"></i>
-                    {% if olympiad.is_active %}
-                    Детальные результаты для непримерных тестов будут доступны после завершения олимпиады.
-                    {% else %}
-                    Детальные результаты тестирования недоступны.
-                    {% endif %}
-                </div>
-                {% endif %}
-            </div>
-        </div>
-        
-        <!-- Боковая панель -->
-        <div>
-            <!-- Статус отправки -->
-            <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-                <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold">Информация</h3>
+                    <h2 class="text-xl font-semibold">Информация об отправке</h2>
                 </div>
                 
                 <div class="p-6">
-                    <div class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div>
-                            <div class="text-sm text-gray-500 mb-1">Статус:</div>
-                            {% if submission.status == 'accepted' %}
-                            <div class="flex items-center text-green-600 font-medium">
-                                <i class="fas fa-check-circle mr-2"></i>
-                                <span>{{ submission.get_status_display }}</span>
-                            </div>
-                            {% elif submission.status == 'pending' or submission.status == 'testing' %}
-                            <div class="flex items-center text-blue-600 font-medium">
-                                <i class="fas fa-spinner fa-spin mr-2"></i>
-                                <span>{{ submission.get_status_display }}</span>
-                            </div>
-                            {% else %}
-                            <div class="flex items-center text-red-600 font-medium">
-                                <i class="fas fa-times-circle mr-2"></i>
-                                <span>{{ submission.get_status_display }}</span>
-                            </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div>
-                            <div class="text-sm text-gray-500 mb-1">Баллы:</div>
-                            <div class="font-semibold {% if submission.points > 0 %}text-green-600{% else %}text-gray-600{% endif %}">
-                                {{ submission.points }} из {{ submission.problem.points }}
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <div class="text-sm text-gray-500 mb-1">Задача:</div>
-                            <div class="font-medium">
-                                <a href="{% url 'problem_detail' olympiad_slug=olympiad.slug pk=submission.problem.pk %}" class="text-blue-600 hover:text-blue-800">
-                                    {{ submission.problem.title }}
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">Задача</h3>
+                            <p class="text-base font-medium">
+                                <a href="{% url 'problem_detail' olympiad_slug=olympiad.slug pk=submission.problem.id %}" class="text-blue-600 hover:text-blue-900">
+                                    {{ submission.problem.order }}. {{ submission.problem.title }}
                                 </a>
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">Участник</h3>
+                            <p class="text-base font-medium">{{ submission.user.username }}</p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">Статус</h3>
+                            <div>
+                                {% if submission.status == 'accepted' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>Принято
+                                </span>
+                                {% elif submission.status == 'pending' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    <i class="fas fa-clock mr-1"></i>В обработке
+                                </span>
+                                {% elif submission.status == 'testing' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <i class="fas fa-spinner fa-spin mr-1"></i>Тестируется
+                                </span>
+                                {% elif submission.status == 'wrong_answer' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-times mr-1"></i>Неправильный ответ
+                                </span>
+                                {% elif submission.status == 'time_limit' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                    <i class="fas fa-clock mr-1"></i>Превышено время
+                                </span>
+                                {% elif submission.status == 'memory_limit' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                    <i class="fas fa-memory mr-1"></i>Превышена память
+                                </span>
+                                {% elif submission.status == 'runtime_error' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-bug mr-1"></i>Ошибка выполнения
+                                </span>
+                                {% elif submission.status == 'compilation_error' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-file-code mr-1"></i>Ошибка компиляции
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>{{ submission.status }}
+                                </span>
+                                {% endif %}
                             </div>
                         </div>
                         
                         <div>
-                            <div class="text-sm text-gray-500 mb-1">Олимпиада:</div>
-                            <div class="font-medium">
-                                <a href="{% url 'olympiad_detail' slug=olympiad.slug %}" class="text-blue-600 hover:text-blue-800">
-                                    {{ olympiad.title }}
-                                </a>
-                            </div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">Баллы</h3>
+                            <p class="text-base font-medium">{{ submission.points }} / {{ submission.problem.points }}</p>
                         </div>
                         
                         <div>
-                            <div class="text-sm text-gray-500 mb-1">Участник:</div>
-                            <div class="font-medium">{{ submission.user.username }}</div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">Дата отправки</h3>
+                            <p class="text-base">{{ submission.submitted_at|date:"d.m.Y H:i:s" }}</p>
                         </div>
                         
                         <div>
-                            <div class="text-sm text-gray-500 mb-1">Время отправки:</div>
-                            <div class="font-medium">{{ submission.submitted_at|date:"d.m.Y H:i:s" }}</div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">Время выполнения</h3>
+                            <p class="text-base">
+                                {% if submission.executed_time %}
+                                {{ submission.executed_time }} мс
+                                {% else %}
+                                -
+                                {% endif %}
+                            </p>
                         </div>
-                        
-                        {% if submission.executed_time %}
-                        <div>
-                            <div class="text-sm text-gray-500 mb-1">Время выполнения:</div>
-                            <div class="font-medium">{{ submission.executed_time }} мс</div>
-                        </div>
-                        {% endif %}
                     </div>
                     
                     {% if submission.error_message %}
-                    <div class="mt-6 p-3 bg-red-50 text-red-700 rounded-md text-sm">
-                        <div class="font-medium mb-1">Сообщение об ошибке:</div>
-                        <pre class="whitespace-pre-wrap text-xs">{{ submission.error_message }}</pre>
+                    <div class="mt-6">
+                        <h3 class="text-sm font-medium text-gray-500 mb-1">Сообщение об ошибке</h3>
+                        <div class="bg-red-50 border border-red-200 text-red-800 rounded-md p-3 whitespace-pre-wrap font-mono text-sm">{{ submission.error_message }}</div>
                     </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Сводка по тестам -->
+        <div>
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                    <h2 class="text-xl font-semibold">Результаты тестирования</h2>
+                </div>
+                
+                <div class="p-6">
+                    {% if test_results %}
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Пройдено тестов:</span>
+                            <span class="text-sm font-medium bg-gray-100 px-2 py-1 rounded">{{ test_results|filter_passed }} / {{ test_results|length }}</span>
+                        </div>
+                        
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: {% widthratio test_results|filter_passed test_results|length 100 %}%"></div>
+                        </div>
+                    </div>
+                    
+                    <ul class="space-y-2">
+                        {% for result in test_results %}
+                        <li class="flex items-center gap-3">
+                            {% if result.passed %}
+                            <span class="flex-shrink-0 w-5 h-5 bg-green-100 text-green-800 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check text-xs"></i>
+                            </span>
+                            {% else %}
+                            <span class="flex-shrink-0 w-5 h-5 bg-red-100 text-red-800 rounded-full flex items-center justify-center">
+                                <i class="fas fa-times text-xs"></i>
+                            </span>
+                            {% endif %}
+                            <span class="flex-grow text-sm">
+                                Тест {{ result.test_case.order }}
+                                {% if result.test_case.is_example %}
+                                <span class="text-blue-600 text-xs">(пример)</span>
+                                {% endif %}
+                            </span>
+                            {% if result.execution_time %}
+                            <span class="text-xs text-gray-500 whitespace-nowrap">{{ result.execution_time }} мс</span>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-gray-500 text-center italic">Результаты тестирования отсутствуют</p>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
+    
+    <!-- Код решения -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <h2 class="text-xl font-semibold">Код решения</h2>
+        </div>
+        
+        <div class="p-6">
+            <pre class="bg-gray-50 border border-gray-200 rounded-md p-4 overflow-x-auto text-sm font-mono whitespace-pre-wrap">{{ submission.code }}</pre>
+        </div>
+    </div>
+    
+    <!-- Детали тестирования -->
+    {% if test_results and (show_details or is_creator) %}
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <h2 class="text-xl font-semibold">Детали тестирования</h2>
+        </div>
+        
+        <div class="p-6">
+            <div class="space-y-8">
+                {% for result in test_results %}
+                <div class="border-b border-gray-200 pb-6 last:border-b-0 last:pb-0">
+                    <div class="flex items-center gap-2 mb-4">
+                        <h3 class="text-lg font-semibold">Тест {{ result.test_case.order }}</h3>
+                        {% if result.passed %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <i class="fas fa-check mr-1"></i>Пройден
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            <i class="fas fa-times mr-1"></i>Не пройден
+                        </span>
+                        {% endif %}
+                        
+                        {% if result.test_case.is_example %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            <i class="fas fa-eye mr-1"></i>Пример
+                        </span>
+                        {% endif %}
+                        
+                        {% if result.execution_time %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            <i class="fas fa-clock mr-1"></i>{{ result.execution_time }} мс
+                        </span>
+                        {% endif %}
+                        
+                        {% if result.memory_used %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            <i class="fas fa-memory mr-1"></i>{{ result.memory_used }} КБ
+                        </span>
+                        {% endif %}
+                        
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            <i class="fas fa-weight-hanging mr-1"></i>Вес: {{ result.test_case.weight }}
+                        </span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500 mb-2">Входные данные:</h4>
+                            <div class="bg-gray-50 border border-gray-200 rounded-md p-3 whitespace-pre-wrap font-mono text-sm">{{ result.test_case.input_data }}</div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500 mb-2">Ожидаемые выходные данные:</h4>
+                            <div class="bg-gray-50 border border-gray-200 rounded-md p-3 whitespace-pre-wrap font-mono text-sm">{{ result.test_case.expected_output }}</div>
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <h4 class="text-sm font-medium text-gray-500 mb-2">Вывод программы:</h4>
+                            <div class="bg-gray-50 border border-gray-200 rounded-md p-3 whitespace-pre-wrap font-mono text-sm">{{ result.output|default:"(нет вывода)" }}</div>
+                        </div>
+                        
+                        {% if result.error_message %}
+                        <div class="md:col-span-2">
+                            <h4 class="text-sm font-medium text-gray-500 mb-2">Сообщение об ошибке:</h4>
+                            <div class="bg-red-50 border border-red-200 text-red-800 rounded-md p-3 whitespace-pre-wrap font-mono text-sm">{{ result.error_message }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Инициализация CodeMirror для отображения кода
-    const codeElement = document.getElementById('code-editor');
-    if (codeElement) {
-        const editor = CodeMirror(function(elt) {
-            codeElement.parentNode.replaceChild(elt, codeElement);
-        }, {
-            value: `{{ submission.code|escapejs }}`,
-            mode: 'python',
-            theme: 'monokai',
-            lineNumbers: true,
-            readOnly: true
-        });
-    }
-});
-</script>
+{% block extra_filters %}
+{% load olympiad_extras %}
+
+{# Дополнительные фильтры для шаблона #}
+{% filter_passed test_results %}
+
 {% endblock %}

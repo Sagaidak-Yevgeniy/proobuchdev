@@ -140,13 +140,17 @@ def check_submission(submission):
     # Получаем все тестовые случаи для задачи
     test_cases = submission.problem.test_cases.all().order_by('order')
     
-    # Инициализируем переменные для подсчета
-    total_tests = test_cases.count()
-    passed_tests = 0
-    max_execution_time = 0
-    
     # Удаляем прошлые результаты тестов, если есть
     submission.test_results.all().delete()
+    
+    # Получаем общее количество и сумму весов тестов
+    total_tests = test_cases.count()
+    total_weight = sum(test_case.weight for test_case in test_cases)
+    
+    # Инициализируем переменные для подсчета
+    passed_tests = 0
+    total_weighted_score = 0
+    max_execution_time = 0
     
     # Проверяем решение на каждом тестовом случае
     for test_case in test_cases:
@@ -173,6 +177,7 @@ def check_submission(submission):
         # Обновляем счетчики
         if result['passed']:
             passed_tests += 1
+            total_weighted_score += test_case.weight
         
         # Обновляем максимальное время выполнения
         if result['execution_time'] and result['execution_time'] > max_execution_time:
@@ -194,8 +199,10 @@ def check_submission(submission):
     else:
         # Если есть непройденные тесты, считаем решение частично правильным
         submission.status = 'wrong_answer'
-        if total_tests > 0:
-            submission.points = int((passed_tests / total_tests) * submission.problem.points)
+        if total_weight > 0:
+            # Вычисляем очки по весам тестов
+            percentage = total_weighted_score / total_weight
+            submission.points = int(percentage * submission.problem.points)
         else:
             submission.points = 0
     
