@@ -42,6 +42,7 @@ class CustomUserCreationForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
+        
         # Извлекаем и устанавливаем имя и фамилию из ФИО (username)
         full_name = self.cleaned_data['username'].strip()
         name_parts = full_name.split(' ', 1)
@@ -57,6 +58,7 @@ class CustomUserCreationForm(UserCreationForm):
         
         if commit:
             user.save()
+            
             # Создаем или обновляем профиль пользователя с выбранной ролью
             profile, created = Profile.objects.get_or_create(
                 user=user,
@@ -67,6 +69,10 @@ class CustomUserCreationForm(UserCreationForm):
             if not created:
                 profile.role = selected_role
                 profile.save()
+            
+            # Создаем настройки уведомлений для пользователя
+            from notifications.models import NotificationSettings
+            NotificationSettings.objects.get_or_create(user=user)
                 
             print(f"DEBUG: Profile {'created' if created else 'updated'} with role: {profile.role}")
             
