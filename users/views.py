@@ -18,27 +18,47 @@ def grant_welcome_achievement(user):
     Args:
         user (CustomUser): Пользователь, которому нужно выдать достижение
     """
-    # Определяем тип достижения в зависимости от роли пользователя
+    # Определяем тип достижения в зависимости от фактической роли пользователя
+    current_role = user.profile.role
     achievement_name = ""
     
-    if user.profile.role == 'student':
+    if current_role == 'student':
         achievement_name = "Новый студент"
-    elif user.profile.role == 'teacher':
+    elif current_role == 'teacher':
         achievement_name = "Новый преподаватель"
     else:
         # Для других ролей не выдаем достижение
+        print(f"DEBUG: Роль {current_role} не предусматривает выдачу достижения")
         return False
     
     try:
-        # Проверяем, есть ли уже у пользователя какие-либо достижения "Новый студент" или "Новый преподаватель" 
-        # и не выдаем дополнительных достижений, если они уже есть
-        existing_achievement = UserAchievement.objects.filter(
+        # Удаляем неправильные достижения, если они есть
+        # Например, если у преподавателя есть достижение "Новый студент", удаляем его
+        wrong_achievement_name = "Новый студент" if current_role == "teacher" else "Новый преподаватель"
+        wrong_achievements = UserAchievement.objects.filter(
             user=user, 
-            achievement__name__in=["Новый студент", "Новый преподаватель"]
-        ).first()
+            achievement__name=wrong_achievement_name
+        )
         
-        if existing_achievement:
-            print(f"DEBUG: Пользователь {user.username} уже имеет достижение {existing_achievement.achievement.name}")
+        if wrong_achievements.exists():
+            print(f"DEBUG: Удаляем неподходящее достижение {wrong_achievement_name} у пользователя {user.username}")
+            wrong_achievements.delete()
+            
+            # Также удаляем уведомления о неправильных достижениях
+            Notification.objects.filter(
+                user=user, 
+                title__contains=wrong_achievement_name,
+                notification_type='achievement'
+            ).delete()
+        
+        # Проверяем, есть ли уже правильное достижение у пользователя
+        existing_correct_achievement = UserAchievement.objects.filter(
+            user=user, 
+            achievement__name=achievement_name
+        ).exists()
+        
+        if existing_correct_achievement:
+            print(f"DEBUG: Пользователь {user.username} уже имеет правильное достижение {achievement_name}")
             return False
             
         # Находим соответствующее достижение

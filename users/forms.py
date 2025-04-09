@@ -163,22 +163,23 @@ class CustomUserCreationForm(UserCreationForm):
         print(f"DEBUG: Creating user with role: {selected_role}")
         
         if commit:
-            # Сначала сохраняем пользователя
+            # Отключаем сигналы перед сохранением пользователя, чтобы избежать 
+            # автоматического создания профиля с ролью по умолчанию
+            from django.db.models.signals import post_save
+            from .signals import create_profile
+            post_save.disconnect(create_profile, sender=CustomUser)
+            
+            # Сохраняем пользователя
             user.save()
             
+            # Восстанавливаем сигналы
+            post_save.connect(create_profile, sender=CustomUser)
+            
             try:
-                # Создаем или обновляем профиль пользователя с выбранной ролью
-                profile, created = Profile.objects.get_or_create(
-                    user=user,
-                    defaults={'role': selected_role}
-                )
-                
-                # Если профиль уже существовал, обновляем роль
-                if not created:
-                    profile.role = selected_role
-                    profile.save()
-                
-                print(f"DEBUG: Profile {'created' if created else 'updated'} with role: {profile.role}")
+                # Создаем профиль пользователя с выбранной ролью
+                profile = Profile(user=user, role=selected_role)
+                profile.save()
+                print(f"DEBUG: Profile created with role: {profile.role}")
                 
                 # Создаем настройки уведомлений для пользователя с безопасными значениями по умолчанию
                 from notifications.models import NotificationSettings
