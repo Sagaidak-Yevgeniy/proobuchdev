@@ -105,6 +105,9 @@ class NotificationSettings(models.Model):
         verbose_name=_('Получать дайджест вместо отдельных писем')
     )
     
+    # Push уведомления
+    push_notifications = models.BooleanField(default=False, verbose_name=_('Push-уведомления'))
+    
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Создано'))
     updated_at = models.DateTimeField(auto_now=True, verbose_name=_('Обновлено'))
     

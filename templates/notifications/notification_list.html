@@ -5,14 +5,14 @@
 
 {% block content %}
 <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
             <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">Уведомления</h2>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Здесь отображаются все ваши уведомления
             </p>
         </div>
-        <div class="flex space-x-3">
+        <div class="flex flex-wrap gap-3">
             <a href="{% url 'notifications:notification_settings' %}" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
                 <i class="fas fa-cog mr-1"></i> Настройки
             </a>
@@ -28,9 +28,9 @@
         {% if notifications %}
             {% for notification in notifications %}
                 <div class="notification-item p-4 {% if not notification.is_read %}bg-blue-50 dark:bg-blue-900/20{% endif %}" data-id="{{ notification.id }}">
-                    <div class="flex items-start">
+                    <div class="flex flex-col sm:flex-row sm:items-start">
                         <!-- Иконка уведомления -->
-                        <div class="flex-shrink-0 mr-4">
+                        <div class="flex-shrink-0 mr-4 mb-3 sm:mb-0">
                             {% if notification.notification_type == 'info' %}
                                 <svg class="h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -76,21 +76,21 @@
                         
                         <!-- Содержимое уведомления -->
                         <div class="flex-1 min-w-0">
-                            <div class="flex justify-between">
-                                <h3 class="text-base font-medium text-gray-900 dark:text-gray-100 flex items-center">
+                            <div class="flex flex-col sm:flex-row sm:justify-between">
+                                <h3 class="text-base font-medium text-gray-900 dark:text-gray-100 flex items-center flex-wrap mb-1 sm:mb-0">
                                     {% if notification.url %}
-                                        <a href="{{ notification.url }}" class="hover:underline">{{ notification.title }}</a>
+                                        <a href="{{ notification.url }}" class="hover:underline mr-2">{{ notification.title }}</a>
                                     {% else %}
-                                        {{ notification.title }}
+                                        <span class="mr-2">{{ notification.title }}</span>
                                     {% endif %}
                                     
                                     {% if notification.is_high_priority %}
-                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
                                             Важно
                                         </span>
                                     {% endif %}
                                 </h3>
-                                <div class="flex space-x-4 items-center">
+                                <div class="flex space-x-4 items-center mb-2 sm:mb-0">
                                     <span class="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                                         {{ notification.created_at|date:"d.m.Y H:i" }}
                                     </span>
@@ -101,7 +101,7 @@
                                 {{ notification.message }}
                             </p>
                             
-                            <div class="mt-3 flex justify-end space-x-3">
+                            <div class="mt-3 flex flex-wrap justify-end gap-3">
                                 {% if not notification.is_read %}
                                     <button class="mark-read-button text-xs text-blue-600 dark:text-blue-400 hover:underline" data-id="{{ notification.id }}">
                                         <i class="fas fa-check mr-1"></i> Отметить как прочитанное
@@ -118,62 +118,73 @@
             
             <!-- Пагинация -->
             {% if notifications.has_other_pages %}
-                <div class="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
-                    <div class="flex-1 flex justify-between sm:hidden">
+                <div class="px-4 py-3 flex flex-col items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
+                    <!-- Мобильная навигация -->
+                    <div class="w-full flex justify-between mb-4 sm:hidden">
                         {% if notifications.has_previous %}
-                            <a href="?page={{ notifications.previous_page_number }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <a href="?page={{ notifications.previous_page_number }}" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                <svg class="h-5 w-5 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
                                 Предыдущая
                             </a>
+                        {% else %}
+                            <span></span> <!-- Пустой элемент для выравнивания -->
                         {% endif %}
                         {% if notifications.has_next %}
-                            <a href="?page={{ notifications.next_page_number }}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <a href="?page={{ notifications.next_page_number }}" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
                                 Следующая
+                                <svg class="h-5 w-5 ml-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
                             </a>
+                        {% else %}
+                            <span></span> <!-- Пустой элемент для выравнивания -->
                         {% endif %}
                     </div>
                     
-                    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                        <div>
-                            <p class="text-sm text-gray-700 dark:text-gray-300">
-                                Показано <span class="font-medium">{{ notifications.start_index }}</span>
-                                - <span class="font-medium">{{ notifications.end_index }}</span>
-                                из <span class="font-medium">{{ notifications.paginator.count }}</span> уведомлений
-                            </p>
-                        </div>
-                        
-                        <div>
-                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Пагинация">
-                                {% if notifications.has_previous %}
-                                    <a href="?page={{ notifications.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                        <span class="sr-only">Предыдущая</span>
-                                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                        </svg>
+                    <!-- Информация о страницах для всех устройств -->
+                    <div class="w-full mb-4 text-center sm:text-left">
+                        <p class="text-sm text-gray-700 dark:text-gray-300">
+                            Показано <span class="font-medium">{{ notifications.start_index }}</span>
+                            - <span class="font-medium">{{ notifications.end_index }}</span>
+                            из <span class="font-medium">{{ notifications.paginator.count }}</span> уведомлений
+                        </p>
+                    </div>
+                    
+                    <!-- Навигация для планшетов и десктопов -->
+                    <div class="w-full flex justify-center sm:justify-end">
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm" aria-label="Пагинация">
+                            {% if notifications.has_previous %}
+                                <a href="?page={{ notifications.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                    <span class="sr-only">Предыдущая</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </a>
+                            {% endif %}
+                            
+                            {% for i in notifications.paginator.page_range %}
+                                {% if notifications.number == i %}
+                                    <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-sm font-medium text-blue-600 dark:text-blue-400">
+                                        {{ i }}
+                                    </span>
+                                {% elif i > notifications.number|add:'-3' and i < notifications.number|add:'3' %}
+                                    <a href="?page={{ i }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                        {{ i }}
                                     </a>
                                 {% endif %}
-                                
-                                {% for i in notifications.paginator.page_range %}
-                                    {% if notifications.number == i %}
-                                        <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-sm font-medium text-blue-600 dark:text-blue-400">
-                                            {{ i }}
-                                        </span>
-                                    {% elif i > notifications.number|add:'-3' and i < notifications.number|add:'3' %}
-                                        <a href="?page={{ i }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                            {{ i }}
-                                        </a>
-                                    {% endif %}
-                                {% endfor %}
-                                
-                                {% if notifications.has_next %}
-                                    <a href="?page={{ notifications.next_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                        <span class="sr-only">Следующая</span>
-                                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                                        </svg>
-                                    </a>
-                                {% endif %}
-                            </nav>
-                        </div>
+                            {% endfor %}
+                            
+                            {% if notifications.has_next %}
+                                <a href="?page={{ notifications.next_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                    <span class="sr-only">Следующая</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </a>
+                            {% endif %}
+                        </nav>
                     </div>
                 </div>
             {% endif %}

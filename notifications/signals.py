@@ -18,7 +18,10 @@ User = get_user_model()
 def create_notification_settings(sender, instance, created, **kwargs):
     """Создает настройки уведомлений для нового пользователя"""
     if created:
-        NotificationSettings.objects.create(user=instance)
+        NotificationSettings.objects.create(
+            user=instance,
+            push_notifications=False
+        )
 
 
 @receiver(post_save, sender=UserAchievement)
