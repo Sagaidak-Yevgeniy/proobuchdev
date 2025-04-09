@@ -1,0 +1,48 @@
+{% if data.events %}
+    <div class="calendar-widget">
+        <div class="calendar-events">
+            {% for event in data.events %}
+                <div class="event-item mb-3 p-3 rounded-lg {% if event.is_past %}bg-gray-100{% else %}bg-blue-50{% endif %}">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="font-medium {% if event.is_past %}text-gray-500{% endif %}">
+                                {{ event.title }}
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                {{ event.date }} {% if event.time %}в {{ event.time }}{% endif %}
+                            </div>
+                            {% if event.description %}
+                                <div class="text-sm mt-1 {% if event.is_past %}text-gray-400{% else %}text-gray-600{% endif %}">
+                                    {{ event.description }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% if event.is_past %}
+                            <div class="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">
+                                Прошедшее
+                            </div>
+                        {% else %}
+                            <div class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                Предстоящее
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <div class="mt-4">
+            <button class="btn btn-sm btn-outline w-full" id="add-event-btn">
+                <i class="fas fa-plus mr-1"></i> Добавить событие
+            </button>
+        </div>
+    </div>
+{% else %}
+    <div class="no-data">
+        <i class="fas fa-calendar-alt text-3xl mb-3"></i>
+        <p>У вас пока нет учебных событий</p>
+        <button class="btn btn-sm btn-outline mt-2" id="add-first-event-btn">
+            <i class="fas fa-plus mr-1"></i> Добавить первое событие
+        </button>
+    </div>
+{% endif %}

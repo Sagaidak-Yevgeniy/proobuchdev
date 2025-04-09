@@ -1,0 +1,39 @@
+{% if data.goals %}
+    <div class="goals-widget">
+        <div class="goals-list">
+            {% for goal in data.goals %}
+                <div class="flex items-center py-2 border-b border-gray-100">
+                    <div class="mr-3">
+                        {% if goal.completed %}
+                            <i class="fas fa-check-circle text-green-500"></i>
+                        {% else %}
+                            <i class="far fa-circle text-gray-400"></i>
+                        {% endif %}
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium {% if goal.completed %}line-through text-gray-500{% endif %}">
+                            {{ goal.title }}
+                        </div>
+                        {% if goal.deadline %}
+                            <div class="text-sm text-gray-500">Срок: {{ goal.deadline }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <div class="mt-4">
+            <button class="btn btn-sm btn-outline w-full" id="add-goal-btn">
+                <i class="fas fa-plus mr-1"></i> Добавить цель
+            </button>
+        </div>
+    </div>
+{% else %}
+    <div class="no-data">
+        <i class="fas fa-bullseye text-3xl mb-3"></i>
+        <p>У вас пока нет учебных целей</p>
+        <button class="btn btn-sm btn-outline mt-2" id="add-first-goal-btn">
+            <i class="fas fa-plus mr-1"></i> Добавить первую цель
+        </button>
+    </div>
+{% endif %}

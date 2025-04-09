@@ -1,0 +1,720 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Мой дашборд{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Стили для анимаций */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.03); }
+        100% { transform: scale(1); }
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    /* Общие стили дашборда */
+    .dashboard-container {
+        padding: 1.5rem;
+    }
+    
+    /* Стили для компоновки сетки */
+    .widget-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    /* Стили для свободной компоновки */
+    .widget-free {
+        position: relative;
+        min-height: 70vh;
+    }
+    
+    .widget-free .dashboard-widget {
+        position: absolute;
+        transition: all 0.3s ease;
+    }
+    
+    /* Стили для компоновки кирпичей */
+    .widget-masonry {
+        column-count: 1;
+        column-gap: 1.5rem;
+    }
+    
+    @media (min-width: 640px) {
+        .widget-masonry {
+            column-count: 2;
+        }
+    }
+    
+    @media (min-width: 1024px) {
+        .widget-masonry {
+            column-count: 3;
+        }
+    }
+    
+    .widget-masonry .dashboard-widget {
+        display: inline-block;
+        width: 100%;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Стили виджетов */
+    .dashboard-widget {
+        background-color: var(--bg-card);
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        animation: fadeIn 0.5s ease forwards;
+    }
+    
+    .dashboard-widget-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background-color: var(--bg-card-header);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .dashboard-widget-title {
+        font-weight: bold;
+        font-size: 1.1rem;
+        margin: 0;
+        color: var(--text-title);
+    }
+    
+    .dashboard-widget-controls {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .dashboard-widget-content {
+        padding: 1rem;
+        overflow: auto;
+    }
+    
+    /* Размеры виджетов */
+    .dashboard-widget.small {
+        min-height: 150px;
+    }
+    
+    .dashboard-widget.medium {
+        min-height: 250px;
+    }
+    
+    .dashboard-widget.large {
+        min-height: 350px;
+    }
+    
+    .dashboard-widget.extra-large {
+        min-height: 450px;
+    }
+    
+    /* Анимации для виджетов */
+    .animate-loading {
+        animation: spin 1s linear infinite;
+    }
+    
+    .animate-pulse {
+        animation: pulse 2s ease infinite;
+    }
+    
+    /* Стили для плавающей кнопки добавления виджета */
+    .add-widget-button {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background-color: var(--color-primary);
+        color: white;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 100;
+    }
+    
+    .add-widget-button:hover {
+        transform: scale(1.1);
+        background-color: var(--color-primary-dark);
+    }
+    
+    /* Стили для модального окна выбора виджета */
+    .widget-types-popup {
+        display: none;
+        position: fixed;
+        bottom: 5rem;
+        right: 2rem;
+        background-color: var(--bg-card);
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        padding: 1rem;
+        z-index: 99;
+        max-width: 300px;
+    }
+    
+    .widget-type-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        border-radius: 0.25rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        margin-bottom: 0.5rem;
+    }
+    
+    .widget-type-item:hover {
+        background-color: var(--bg-hover);
+    }
+    
+    .widget-type-icon {
+        margin-right: 0.75rem;
+        color: var(--color-secondary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <div class="page-header">
+        <h1 class="page-title">Мой дашборд</h1>
+        <div class="page-actions">
+            <a href="{% url 'dashboard:settings' %}" class="btn btn-outline">
+                <i class="fas fa-cog"></i> Настройки
+            </a>
+        </div>
+    </div>
+    
+    <div class="dashboard-container">
+        {% if widgets %}
+            {% if settings.layout == 'grid' %}
+                <!-- Компоновка сетки -->
+                <div class="widget-grid" id="dashboard-widgets">
+                    {% for widget in widgets %}
+                        {% include 'dashboard/partials/widget.html' with widget=widget %}
+                    {% endfor %}
+                </div>
+            {% elif settings.layout == 'free' %}
+                <!-- Свободная компоновка -->
+                <div class="widget-free" id="dashboard-widgets">
+                    {% for widget in widgets %}
+                        {% include 'dashboard/partials/widget.html' with widget=widget draggable=True %}
+                    {% endfor %}
+                </div>
+            {% elif settings.layout == 'masonry' %}
+                <!-- Компоновка кирпичей -->
+                <div class="widget-masonry" id="dashboard-widgets">
+                    {% for widget in widgets %}
+                        {% include 'dashboard/partials/widget.html' with widget=widget %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-chart-bar fa-3x"></i>
+                </div>
+                <h3 class="empty-state-title">Ваш дашборд пуст</h3>
+                <p class="empty-state-description">
+                    Добавьте виджеты, чтобы отслеживать свой прогресс и получать важную информацию
+                </p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Плавающая кнопка добавления виджета -->
+    <div class="add-widget-button" id="addWidgetBtn">
+        <i class="fas fa-plus"></i>
+    </div>
+    
+    <!-- Всплывающее окно для выбора типа виджета -->
+    <div class="widget-types-popup" id="widgetTypesPopup">
+        <h4 class="popup-title">Выберите виджет</h4>
+        <div class="widget-types-list">
+            {% for widget_type in available_widget_types %}
+                <a href="{% url 'dashboard:add_widget' widget_type.id %}" class="widget-type-item">
+                    <span class="widget-type-icon">
+                        <i class="{{ widget_type.icon }}"></i>
+                    </span>
+                    <span class="widget-type-name">{{ widget_type.name }}</span>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Настройки анимации
+    const animationSpeed = "{{ settings.animation_speed }}";
+    const autoRefresh = {% if settings.auto_refresh %}true{% else %}false{% endif %};
+    const refreshInterval = {{ settings.refresh_interval }} * 1000; // в миллисекундах
+    
+    // Получаем все виджеты
+    const widgets = document.querySelectorAll('.dashboard-widget');
+    
+    // Настройка времени анимации в зависимости от настроек пользователя
+    let animationDuration = 500; // по умолчанию
+    if (animationSpeed === 'slow') {
+        animationDuration = 1000;
+    } else if (animationSpeed === 'fast') {
+        animationDuration = 300;
+    } else if (animationSpeed === 'none') {
+        animationDuration = 0;
+    }
+    
+    // Применяем анимацию к виджетам с задержкой
+    widgets.forEach((widget, index) => {
+        if (animationSpeed !== 'none') {
+            widget.style.opacity = 0;
+            widget.style.animationDelay = `${index * 0.1}s`;
+            widget.style.animationDuration = `${animationDuration/1000}s`;
+        }
+        
+        // Загрузка данных для виджета
+        loadWidgetData(widget.dataset.widgetId);
+    });
+    
+    // Функция для загрузки данных виджета через AJAX
+    function loadWidgetData(widgetId) {
+        const contentElement = document.querySelector(`#widget-content-${widgetId}`);
+        const loadingElement = document.querySelector(`#widget-loading-${widgetId}`);
+        
+        if (!contentElement || !loadingElement) return;
+        
+        loadingElement.style.display = 'flex';
+        
+        fetch(`/dashboard/widget/data/${widgetId}/`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Отображаем данные в зависимости от типа виджета
+            const widgetType = contentElement.dataset.widgetType;
+            renderWidgetContent(widgetType, contentElement, data);
+            
+            loadingElement.style.display = 'none';
+            contentElement.style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки данных виджета:', error);
+            contentElement.innerHTML = `
+                <div class="widget-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Не удалось загрузить данные</p>
+                </div>
+            `;
+            loadingElement.style.display = 'none';
+            contentElement.style.display = 'block';
+        });
+    }
+    
+    // Обработка разных типов виджетов
+    function renderWidgetContent(widgetType, element, data) {
+        switch(widgetType) {
+            case 'course_progress':
+                renderCourseProgress(element, data);
+                break;
+            case 'activity_chart':
+                renderActivityChart(element, data);
+                break;
+            case 'achievements_widget':
+                renderAchievements(element, data);
+                break;
+            case 'learning_stats':
+                renderLearningStats(element, data);
+                break;
+            case 'recent_lessons':
+                renderRecentLessons(element, data);
+                break;
+            default:
+                element.innerHTML = `<p>Нет данных для этого типа виджета</p>`;
+        }
+    }
+    
+    // Функции рендеринга для каждого типа виджета
+    function renderCourseProgress(element, data) {
+        let html = '<div class="course-progress-list">';
+        
+        if (data.courses && data.courses.length > 0) {
+            data.courses.forEach(course => {
+                html += `
+                    <div class="course-progress-item">
+                        <div class="course-info">
+                            <h4 class="course-title">
+                                <a href="${course.url}">${course.title}</a>
+                            </h4>
+                            <div class="course-stats">
+                                <span>${course.completed_lessons} из ${course.total_lessons} уроков</span>
+                            </div>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" style="width: ${course.progress_percent}%"></div>
+                            <span class="progress-text">${course.progress_percent}%</span>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            html += '<p class="empty-message">Вы еще не записаны ни на один курс</p>';
+        }
+        
+        html += '</div>';
+        element.innerHTML = html;
+    }
+    
+    function renderActivityChart(element, data) {
+        let html = '<div class="activity-chart">';
+        
+        if (data.activity_data && data.activity_data.length > 0) {
+            // Находим максимальные значения для масштабирования
+            const maxLessons = Math.max(...data.activity_data.map(d => d.lessons_completed), 1);
+            const maxPoints = Math.max(...data.activity_data.map(d => d.points_earned), 1);
+            
+            html += '<div class="chart-container">';
+            
+            // Строим график
+            data.activity_data.forEach(day => {
+                const lessonHeight = (day.lessons_completed / maxLessons) * 100;
+                const pointsHeight = (day.points_earned / maxPoints) * 100;
+                
+                html += `
+                    <div class="chart-day">
+                        <div class="chart-bars">
+                            <div class="chart-bar lessons" style="height: ${lessonHeight}%" title="${day.lessons_completed} уроков"></div>
+                            <div class="chart-bar points" style="height: ${pointsHeight}%" title="${day.points_earned} очков"></div>
+                        </div>
+                        <div class="chart-label">${day.display_date}</div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            
+            // Легенда
+            html += `
+                <div class="chart-legend">
+                    <div class="legend-item">
+                        <span class="legend-color lessons"></span>
+                        <span class="legend-text">Завершенные уроки</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color points"></span>
+                        <span class="legend-text">Заработанные очки</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            html += '<p class="empty-message">Нет данных об активности за указанный период</p>';
+        }
+        
+        html += '</div>';
+        element.innerHTML = html;
+    }
+    
+    function renderAchievements(element, data) {
+        let html = '<div class="achievements-widget">';
+        
+        // Секция достижений
+        html += '<div class="achievements-section">';
+        html += '<h4 class="section-title">Достижения</h4>';
+        
+        if (data.achievements && data.achievements.length > 0) {
+            html += '<div class="achievements-list">';
+            data.achievements.forEach(achievement => {
+                html += `
+                    <div class="achievement-item">
+                        <div class="achievement-icon">
+                            <i class="${achievement.icon}"></i>
+                        </div>
+                        <div class="achievement-info">
+                            <h5 class="achievement-name">${achievement.name}</h5>
+                            <p class="achievement-desc">${achievement.description}</p>
+                            <span class="achievement-points">+${achievement.points} очков</span>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        } else {
+            html += '<p class="empty-message">У вас пока нет достижений</p>';
+        }
+        html += '</div>';
+        
+        // Секция значков
+        html += '<div class="badges-section">';
+        html += '<h4 class="section-title">Значки</h4>';
+        
+        if (data.badges && data.badges.length > 0) {
+            html += '<div class="badges-list">';
+            data.badges.forEach(badge => {
+                html += `
+                    <div class="badge-item">
+                        <div class="badge-icon">
+                            <i class="${badge.icon}"></i>
+                        </div>
+                        <div class="badge-info">
+                            <h5 class="badge-name">${badge.name}</h5>
+                            <p class="badge-desc">${badge.description}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        } else {
+            html += '<p class="empty-message">У вас пока нет значков</p>';
+        }
+        html += '</div>';
+        
+        html += '</div>';
+        element.innerHTML = html;
+    }
+    
+    function renderLearningStats(element, data) {
+        let html = `
+            <div class="learning-stats">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div class="stat-value">${data.total_completed_lessons}</div>
+                        <div class="stat-label">Завершено уроков</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div class="stat-value">${data.enrolled_courses}</div>
+                        <div class="stat-label">Курсов изучается</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="stat-value">${data.total_points}</div>
+                        <div class="stat-label">Очков набрано</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-value">${data.avg_progress}%</div>
+                        <div class="stat-label">Средний прогресс</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        element.innerHTML = html;
+    }
+    
+    function renderRecentLessons(element, data) {
+        let html = '<div class="recent-lessons-widget">';
+        
+        // Недавно завершенные уроки
+        html += '<div class="completed-lessons-section">';
+        html += '<h4 class="section-title">Недавно завершенные уроки</h4>';
+        
+        if (data.recently_completed && data.recently_completed.length > 0) {
+            html += '<div class="lessons-list">';
+            data.recently_completed.forEach(lesson => {
+                html += `
+                    <div class="lesson-item">
+                        <div class="lesson-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="lesson-info">
+                            <h5 class="lesson-title">
+                                <a href="${lesson.url}">${lesson.title}</a>
+                            </h5>
+                            <p class="lesson-course">${lesson.course_title}</p>
+                            <span class="lesson-date">${lesson.completed_at}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        } else {
+            html += '<p class="empty-message">Вы еще не завершили ни одного урока</p>';
+        }
+        html += '</div>';
+        
+        // Доступные уроки
+        html += '<div class="available-lessons-section">';
+        html += '<h4 class="section-title">Доступные уроки</h4>';
+        
+        if (data.available_lessons && data.available_lessons.length > 0) {
+            html += '<div class="lessons-list">';
+            data.available_lessons.forEach(lesson => {
+                html += `
+                    <div class="lesson-item">
+                        <div class="lesson-icon">
+                            <i class="fas fa-play-circle"></i>
+                        </div>
+                        <div class="lesson-info">
+                            <h5 class="lesson-title">
+                                <a href="${lesson.url}">${lesson.title}</a>
+                            </h5>
+                            <p class="lesson-course">${lesson.course_title}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        } else {
+            html += '<p class="empty-message">У вас нет доступных уроков</p>';
+        }
+        html += '</div>';
+        
+        html += '</div>';
+        element.innerHTML = html;
+    }
+    
+    // Обработка кнопки добавления виджета
+    const addWidgetBtn = document.getElementById('addWidgetBtn');
+    const widgetTypesPopup = document.getElementById('widgetTypesPopup');
+    
+    addWidgetBtn.addEventListener('click', () => {
+        if (widgetTypesPopup.style.display === 'block') {
+            widgetTypesPopup.style.display = 'none';
+        } else {
+            widgetTypesPopup.style.display = 'block';
+        }
+    });
+    
+    // Скрываем попап при клике вне его
+    document.addEventListener('click', (event) => {
+        if (!addWidgetBtn.contains(event.target) && 
+            !widgetTypesPopup.contains(event.target)) {
+            widgetTypesPopup.style.display = 'none';
+        }
+    });
+    
+    // Автоматическое обновление данных если включено
+    if (autoRefresh) {
+        setInterval(() => {
+            widgets.forEach(widget => {
+                loadWidgetData(widget.dataset.widgetId);
+            });
+        }, refreshInterval);
+    }
+    
+    // Обработка перетаскивания виджетов для свободной компоновки
+    if ("{{ settings.layout }}" === 'free') {
+        widgets.forEach(widget => {
+            // Инициализация Drag and Drop
+            let isDragging = false;
+            let offsetX, offsetY;
+            
+            widget.addEventListener('mousedown', startDrag);
+            
+            function startDrag(e) {
+                const header = widget.querySelector('.dashboard-widget-header');
+                
+                // Проверяем, что нажатие было на заголовок
+                if (header.contains(e.target)) {
+                    isDragging = true;
+                    
+                    // Запоминаем позицию мыши относительно элемента
+                    const rect = widget.getBoundingClientRect();
+                    offsetX = e.clientX - rect.left;
+                    offsetY = e.clientY - rect.top;
+                    
+                    // Устанавливаем стили для перетаскивания
+                    widget.style.transition = 'none';
+                    widget.style.zIndex = '1000';
+                    
+                    document.addEventListener('mousemove', dragWidget);
+                    document.addEventListener('mouseup', stopDrag);
+                    
+                    // Предотвращаем выделение текста
+                    e.preventDefault();
+                }
+            }
+            
+            function dragWidget(e) {
+                if (isDragging) {
+                    // Вычисляем новую позицию
+                    const containerRect = document.querySelector('.widget-free').getBoundingClientRect();
+                    const x = e.clientX - containerRect.left - offsetX;
+                    const y = e.clientY - containerRect.top - offsetY;
+                    
+                    // Ограничиваем перемещение в пределах контейнера
+                    const maxX = containerRect.width - widget.offsetWidth;
+                    const maxY = containerRect.height - widget.offsetHeight;
+                    
+                    const newX = Math.max(0, Math.min(x, maxX));
+                    const newY = Math.max(0, Math.min(y, maxY));
+                    
+                    // Перемещаем виджет
+                    widget.style.left = `${newX}px`;
+                    widget.style.top = `${newY}px`;
+                }
+            }
+            
+            function stopDrag() {
+                if (isDragging) {
+                    isDragging = false;
+                    
+                    // Возвращаем нормальные стили
+                    widget.style.transition = 'all 0.3s ease';
+                    widget.style.zIndex = '1';
+                    
+                    // Сохраняем позицию на сервере
+                    saveWidgetPosition(
+                        widget.dataset.widgetId,
+                        Math.round(parseInt(widget.style.left) / 20),  // Пересчитываем в единицы сетки
+                        Math.round(parseInt(widget.style.top) / 20)
+                    );
+                    
+                    document.removeEventListener('mousemove', dragWidget);
+                    document.removeEventListener('mouseup', stopDrag);
+                }
+            }
+        });
+        
+        // Функция для сохранения позиции виджета
+        function saveWidgetPosition(widgetId, posX, posY) {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            fetch('/dashboard/widget/position/update/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                },
+                body: `widget_id=${widgetId}&position_x=${posX}&position_y=${posY}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error('Ошибка сохранения позиции виджета');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка при обращении к серверу:', error);
+            });
+        }
+    }
+</script>
+{% endblock %}

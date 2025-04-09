@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Настройки дашборда{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+    .settings-container {
+        background-color: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        padding: 30px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .form-select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 1rem;
+        background-color: #fff;
+    }
+    
+    .form-select:focus {
+        border-color: #4f46e5;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    
+    .theme-preview {
+        margin-top: 30px;
+        padding: 20px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .theme-light {
+        background-color: #f8fafc;
+        color: #333;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .theme-dark {
+        background-color: #1e293b;
+        color: #f8fafc;
+        border: 1px solid #334155;
+    }
+    
+    .theme-colorful {
+        background: linear-gradient(135deg, #f472b6, #818cf8);
+        color: #fff;
+        border: none;
+    }
+    
+    .btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        transition: all 0.2s;
+        text-align: center;
+        cursor: pointer;
+    }
+    
+    .btn-primary {
+        background-color: #4f46e5;
+        color: white;
+        border: none;
+    }
+    
+    .btn-primary:hover {
+        background-color: #4338ca;
+    }
+    
+    .btn-secondary {
+        background-color: #f3f4f6;
+        color: #374151;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #e5e7eb;
+    }
+    
+    .animation-preview {
+        width: 60px;
+        height: 60px;
+        background-color: #4f46e5;
+        border-radius: 8px;
+        margin: 0 auto;
+        transition: transform 0.5s ease;
+    }
+    
+    .animation-slow {
+        transition-duration: 1s;
+    }
+    
+    .animation-normal {
+        transition-duration: 0.5s;
+    }
+    
+    .animation-fast {
+        transition-duration: 0.2s;
+    }
+    
+    .animation-bounce {
+        animation: bounce 2s infinite;
+    }
+    
+    @keyframes bounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-15px);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto py-6">
+    <div class="flex items-center mb-6">
+        <a href="{% url 'dashboard:index' %}" class="text-blue-600 hover:text-blue-800 mr-2">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <h1 class="text-2xl font-bold text-gray-800">Настройки дашборда</h1>
+    </div>
+    
+    <div class="settings-container">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label class="form-label" for="{{ form.theme.id_for_label }}">Тема оформления</label>
+                {{ form.theme }}
+                <div class="theme-preview theme-light mt-4" id="theme-preview">
+                    <h3 class="text-lg font-semibold mb-2">Предпросмотр темы</h3>
+                    <p>Так будет выглядеть ваш дашборд с выбранной темой.</p>
+                    <div class="flex mt-3">
+                        <div class="w-8 h-8 bg-blue-500 rounded mr-2"></div>
+                        <div class="w-8 h-8 bg-green-500 rounded mr-2"></div>
+                        <div class="w-8 h-8 bg-yellow-500 rounded mr-2"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="{{ form.animation_speed.id_for_label }}">Скорость анимации</label>
+                {{ form.animation_speed }}
+                <div class="mt-4 text-center">
+                    <div class="animation-preview animation-normal" id="animation-preview"></div>
+                    <p class="mt-2 text-sm text-gray-500">Наведите курсор на блок для просмотра анимации</p>
+                </div>
+            </div>
+            
+            <div class="flex justify-between mt-8">
+                <a href="{% url 'dashboard:index' %}" class="btn btn-secondary">
+                    Отмена
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    Сохранить настройки
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeSelect = document.getElementById('{{ form.theme.id_for_label }}');
+        const themePreview = document.getElementById('theme-preview');
+        
+        // Функция обновления превью темы
+        function updateThemePreview() {
+            // Удаляем все классы темы
+            themePreview.classList.remove('theme-light', 'theme-dark', 'theme-colorful');
+            
+            // Добавляем класс выбранной темы
+            themePreview.classList.add(`theme-${themeSelect.value}`);
+        }
+        
+        // Инициализация превью темы
+        updateThemePreview();
+        
+        // Обновление превью при изменении выбора
+        themeSelect.addEventListener('change', updateThemePreview);
+        
+        // Анимация предпросмотра
+        const animationSelect = document.getElementById('{{ form.animation_speed.id_for_label }}');
+        const animationPreview = document.getElementById('animation-preview');
+        
+        // Функция обновления скорости анимации
+        function updateAnimationSpeed() {
+            // Удаляем все классы скорости
+            animationPreview.classList.remove('animation-slow', 'animation-normal', 'animation-fast', 'animation-bounce');
+            
+            // Добавляем класс выбранной скорости
+            animationPreview.classList.add(`animation-${animationSelect.value}`);
+        }
+        
+        // Инициализация скорости анимации
+        updateAnimationSpeed();
+        
+        // Обновление скорости при изменении выбора
+        animationSelect.addEventListener('change', updateAnimationSpeed);
+        
+        // Демонстрация анимации при наведении
+        animationPreview.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateX(100px)';
+        });
+        
+        animationPreview.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateX(0)';
+        });
+    });
+</script>
+{% endblock %}

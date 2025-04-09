@@ -21,6 +21,7 @@ urlpatterns = [
     path('gamification/', include('gamification.urls')),
     path('ai/', include('ai_assistant.urls')),
     path('notifications/', include('notifications.urls', namespace='notifications')),
+    path('dashboard/', include('dashboard.urls')),
 ]
 
 # Добавляем обработку медиа-файлов в режиме разработки

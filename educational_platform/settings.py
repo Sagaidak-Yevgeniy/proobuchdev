@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'gamification.apps.GamificationConfig',
     'ai_assistant.apps.AiAssistantConfig',
     'notifications.apps.NotificationsConfig',
+    'dashboard.apps.DashboardConfig',
 ]
 
 MIDDLEWARE = [

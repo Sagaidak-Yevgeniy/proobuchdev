@@ -1,0 +1,818 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Приборная панель{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+    .dashboard-container {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        grid-gap: 16px;
+        padding: 20px;
+    }
+    
+    .widget {
+        background-color: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .widget:hover {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .widget-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .widget-title {
+        font-weight: 600;
+        font-size: 1.2rem;
+        color: #333;
+    }
+    
+    .widget-actions {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .widget-action-btn {
+        background: none;
+        border: none;
+        color: #666;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+    
+    .widget-action-btn:hover {
+        color: #333;
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    
+    .widget-content {
+        height: calc(100% - 40px);
+        overflow-y: auto;
+    }
+    
+    .widget-small {
+        grid-column: span 3;
+    }
+    
+    .widget-medium {
+        grid-column: span 6;
+    }
+    
+    .widget-large {
+        grid-column: span 12;
+    }
+    
+    .widget-loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100px;
+    }
+    
+    .no-data {
+        text-align: center;
+        padding: 30px 0;
+        color: #666;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .dashboard-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 0 20px;
+    }
+    
+    .btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    
+    .btn-primary {
+        background-color: #4f46e5;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #4338ca;
+    }
+    
+    .btn-outline {
+        border: 1px solid #d1d5db;
+        background-color: transparent;
+    }
+    
+    .btn-outline:hover {
+        background-color: #f9fafb;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto py-6">
+    <div class="dashboard-header mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Приборная панель</h1>
+        <p class="text-gray-600">Добро пожаловать, {{ request.user.username }}! Здесь вы можете отслеживать свой прогресс обучения.</p>
+    </div>
+    
+    <div class="dashboard-controls">
+        <button id="add-widget-btn" class="btn btn-primary">
+            <i class="fas fa-plus mr-1"></i> Добавить виджет
+        </button>
+        
+        <div class="dashboard-settings">
+            <a href="{% url 'dashboard:settings' %}" class="btn btn-outline">
+                <i class="fas fa-cog mr-1"></i> Настройки
+            </a>
+        </div>
+    </div>
+    
+    <div class="dashboard-container">
+        {% if widgets %}
+            {% for widget in widgets %}
+                <div class="widget widget-{{ widget.size }}" data-widget-id="{{ widget.id }}" data-widget-type="{{ widget.widget_type }}">
+                    <div class="widget-header">
+                        <h3 class="widget-title">{{ widget.title }}</h3>
+                        <div class="widget-actions">
+                            <button class="widget-action-btn widget-refresh" title="Обновить">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button class="widget-action-btn widget-edit" title="Настроить">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                            <button class="widget-action-btn widget-remove" title="Удалить">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="widget-content">
+                        <div class="widget-loading">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-span-12 text-center py-12 bg-white rounded-lg shadow">
+                <div class="no-data">
+                    <i class="fas fa-chart-line text-5xl mb-4 text-gray-300"></i>
+                    <h3 class="text-2xl font-semibold mb-2">Добавьте свой первый виджет</h3>
+                    <p class="text-gray-600 mb-6">Настройте дашборд под свои потребности, добавив полезные виджеты</p>
+                    <button id="first-widget-btn" class="btn btn-primary">
+                        <i class="fas fa-plus mr-1"></i> Добавить виджет
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Добавление виджета
+        document.getElementById('add-widget-btn')?.addEventListener('click', function() {
+            window.location.href = "{% url 'dashboard:add_widget' %}";
+        });
+        
+        document.getElementById('first-widget-btn')?.addEventListener('click', function() {
+            window.location.href = "{% url 'dashboard:add_widget' %}";
+        });
+        
+        // Обработчики кнопок на виджетах
+        document.querySelectorAll('.widget-refresh').forEach(button => {
+            button.addEventListener('click', function() {
+                const widget = this.closest('.widget');
+                const widgetId = widget.dataset.widgetId;
+                loadWidgetData(widgetId);
+            });
+        });
+        
+        document.querySelectorAll('.widget-edit').forEach(button => {
+            button.addEventListener('click', function() {
+                const widget = this.closest('.widget');
+                const widgetId = widget.dataset.widgetId;
+                window.location.href = `/dashboard/widgets/${widgetId}/`;
+            });
+        });
+        
+        document.querySelectorAll('.widget-remove').forEach(button => {
+            button.addEventListener('click', function() {
+                const widget = this.closest('.widget');
+                const widgetId = widget.dataset.widgetId;
+                if (confirm('Вы уверены, что хотите удалить этот виджет?')) {
+                    window.location.href = `/dashboard/widgets/${widgetId}/delete/`;
+                }
+            });
+        });
+        
+        // Загрузка данных для всех виджетов
+        document.querySelectorAll('.widget').forEach(widget => {
+            const widgetId = widget.dataset.widgetId;
+            loadWidgetData(widgetId);
+        });
+        
+        // Функция загрузки данных виджета
+        function loadWidgetData(widgetId) {
+            const widget = document.querySelector(`.widget[data-widget-id="${widgetId}"]`);
+            const widgetContent = widget.querySelector('.widget-content');
+            const widgetType = widget.dataset.widgetType;
+            
+            // Показываем индикатор загрузки
+            widgetContent.innerHTML = '<div class="widget-loading"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
+            
+            // Запрашиваем данные с сервера
+            fetch(`/dashboard/widgets/${widgetId}/data/`)
+                .then(response => response.json())
+                .then(data => {
+                    // В зависимости от типа виджета, рендерим соответствующий шаблон
+                    let html = '';
+                    
+                    switch(widgetType) {
+                        case 'courses_progress':
+                            html = renderCoursesProgress(data);
+                            break;
+                        case 'achievements':
+                            html = renderAchievements(data);
+                            break;
+                        case 'recent_activity':
+                            html = renderRecentActivity(data);
+                            break;
+                        case 'statistics':
+                            html = renderStatistics(data);
+                            break;
+                        case 'leaderboard':
+                            html = renderLeaderboard(data);
+                            break;
+                        case 'upcoming_lessons':
+                            html = renderUpcomingLessons(data);
+                            break;
+                        case 'goals':
+                            html = renderGoals(data);
+                            break;
+                        case 'study_time':
+                            html = renderStudyTime(data);
+                            break;
+                        case 'calendar':
+                            html = renderCalendar(data);
+                            break;
+                        case 'notes':
+                            html = renderNotes(data);
+                            break;
+                        default:
+                            html = '<div class="no-data">Неизвестный тип виджета</div>';
+                    }
+                    
+                    widgetContent.innerHTML = html;
+                    
+                    // Добавляем обработчики событий для интерактивных элементов виджета
+                    initWidgetInteractivity(widgetId, widgetType);
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки данных виджета:', error);
+                    widgetContent.innerHTML = '<div class="no-data">Ошибка загрузки данных</div>';
+                });
+        }
+        
+        // Функции рендеринга различных типов виджетов
+        function renderCoursesProgress(data) {
+            if (!data.courses || data.courses.length === 0) {
+                return '<div class="no-data"><i class="fas fa-book-reader text-3xl mb-3"></i><p>У вас пока нет курсов</p></div>';
+            }
+            
+            let html = '<div class="courses-progress">';
+            
+            data.courses.forEach(course => {
+                html += `
+                    <div class="course-item mb-4">
+                        <div class="flex justify-between mb-1">
+                            <span class="font-medium">${course.title}</span>
+                            <span class="text-sm">${course.completed_lessons}/${course.total_lessons}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${course.progress_percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            return html;
+        }
+        
+        function renderAchievements(data) {
+            if (!data.achievements || data.achievements.length === 0) {
+                return '<div class="no-data"><i class="fas fa-trophy text-3xl mb-3"></i><p>У вас пока нет достижений</p></div>';
+            }
+            
+            let html = `
+                <div class="achievements">
+                    <div class="text-center mb-4">
+                        <div class="text-3xl font-bold">${data.earned}/${data.total}</div>
+                        <div class="text-sm text-gray-500">заработано достижений</div>
+                    </div>
+                    <div class="achievements-list">
+            `;
+            
+            data.achievements.forEach(achievement => {
+                html += `
+                    <div class="achievement-item flex items-start mb-3 p-2 rounded-lg hover:bg-gray-50">
+                        ${achievement.icon ? 
+                            `<div class="mr-3"><img src="${achievement.icon}" alt="${achievement.title}" class="w-10 h-10"></div>` : 
+                            `<div class="mr-3 w-10 h-10 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full"><i class="fas fa-award"></i></div>`
+                        }
+                        <div>
+                            <div class="font-medium">${achievement.title}</div>
+                            <div class="text-sm text-gray-500">${achievement.description}</div>
+                            <div class="text-xs text-gray-400 mt-1">Получено: ${achievement.earned_at}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div></div>';
+            return html;
+        }
+        
+        function renderRecentActivity(data) {
+            if (!data.activities || data.activities.length === 0) {
+                return '<div class="no-data"><i class="fas fa-history text-3xl mb-3"></i><p>Нет недавней активности</p></div>';
+            }
+            
+            let html = '<div class="recent-activity">';
+            
+            data.activities.forEach(activity => {
+                let iconClass = 'fas fa-info-circle text-blue-500';
+                
+                if (activity.type === 'lesson_completed') {
+                    iconClass = 'fas fa-check-circle text-green-500';
+                } else if (activity.type === 'achievement_earned') {
+                    iconClass = 'fas fa-trophy text-yellow-500';
+                } else if (activity.type === 'course_enrolled') {
+                    iconClass = 'fas fa-graduation-cap text-purple-500';
+                } else if (activity.type === 'assignment_submitted') {
+                    iconClass = 'fas fa-tasks text-indigo-500';
+                }
+                
+                html += `
+                    <div class="activity-item flex items-start mb-3 p-2 rounded-lg ${!activity.is_read ? 'bg-blue-50' : 'hover:bg-gray-50'}">
+                        <div class="mr-3 mt-1"><i class="${iconClass}"></i></div>
+                        <div class="flex-1">
+                            <div>${activity.message}</div>
+                            <div class="text-xs text-gray-400 mt-1">${activity.date}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            return html;
+        }
+        
+        function renderStatistics(data) {
+            let html = `
+                <div class="statistics grid grid-cols-2 gap-4">
+                    <div class="stat-item text-center p-3 bg-blue-50 rounded-lg">
+                        <div class="stat-icon mb-2 text-blue-500"><i class="fas fa-book-open text-2xl"></i></div>
+                        <div class="stat-value text-2xl font-bold">${data.completed_lessons}</div>
+                        <div class="stat-label text-sm text-gray-600">Завершенных уроков</div>
+                    </div>
+                    
+                    <div class="stat-item text-center p-3 bg-green-50 rounded-lg">
+                        <div class="stat-icon mb-2 text-green-500"><i class="fas fa-trophy text-2xl"></i></div>
+                        <div class="stat-value text-2xl font-bold">${data.earned_achievements}</div>
+                        <div class="stat-label text-sm text-gray-600">Заработанных достижений</div>
+                    </div>
+                    
+                    <div class="stat-item text-center p-3 bg-purple-50 rounded-lg">
+                        <div class="stat-icon mb-2 text-purple-500"><i class="fas fa-graduation-cap text-2xl"></i></div>
+                        <div class="stat-value text-2xl font-bold">${data.enrolled_courses}</div>
+                        <div class="stat-label text-sm text-gray-600">Записанных курсов</div>
+                    </div>
+                    
+                    <div class="stat-item text-center p-3 bg-yellow-50 rounded-lg">
+                        <div class="stat-icon mb-2 text-yellow-500"><i class="fas fa-chart-line text-2xl"></i></div>
+                        <div class="stat-value text-2xl font-bold">${data.avg_progress}%</div>
+                        <div class="stat-label text-sm text-gray-600">Средний прогресс</div>
+                    </div>
+                </div>
+            `;
+            
+            return html;
+        }
+        
+        function renderLeaderboard(data) {
+            if (!data.leaderboard || data.leaderboard.length === 0) {
+                return '<div class="no-data"><i class="fas fa-medal text-3xl mb-3"></i><p>Нет данных для таблицы лидеров</p></div>';
+            }
+            
+            let html = `
+                <div class="leaderboard">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="text-left px-2 py-2">#</th>
+                                <th class="text-left px-2 py-2">Пользователь</th>
+                                <th class="text-right px-2 py-2">Достижения</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            data.leaderboard.forEach(user => {
+                html += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="px-2 py-2">${user.rank}</td>
+                        <td class="px-2 py-2">${user.full_name}</td>
+                        <td class="px-2 py-2 text-right">${user.achievements_count}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+            return html;
+        }
+        
+        function renderUpcomingLessons(data) {
+            if (!data.upcoming_lessons || data.upcoming_lessons.length === 0) {
+                return '<div class="no-data"><i class="fas fa-calendar-day text-3xl mb-3"></i><p>Нет предстоящих уроков</p></div>';
+            }
+            
+            let html = '<div class="upcoming-lessons">';
+            
+            data.upcoming_lessons.forEach(lesson => {
+                html += `
+                    <div class="lesson-item mb-3 p-3 rounded-lg bg-blue-50">
+                        <div class="font-medium">${lesson.lesson_title}</div>
+                        <div class="text-sm text-gray-600">Курс: ${lesson.course_title}</div>
+                        <div class="text-sm text-gray-600">Модуль: ${lesson.module_title}</div>
+                        <div class="mt-2">
+                            <a href="${lesson.lesson_url}" class="btn btn-sm btn-primary">
+                                Перейти к уроку
+                            </a>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            return html;
+        }
+        
+        function renderGoals(data) {
+            if (!data.goals || data.goals.length === 0) {
+                return '<div class="no-data"><i class="fas fa-bullseye text-3xl mb-3"></i><p>У вас пока нет целей обучения</p><button class="btn btn-sm btn-outline mt-2" id="add-first-goal-btn"><i class="fas fa-plus mr-1"></i> Добавить первую цель</button></div>';
+            }
+            
+            let html = `
+                <div class="learning-goals">
+                    <div class="goals-list">
+            `;
+            
+            data.goals.forEach(goal => {
+                html += `
+                    <div class="goal-item flex items-center mb-3 p-2 rounded-lg hover:bg-gray-50">
+                        <input type="checkbox" class="goal-checkbox mr-3" data-goal-id="${goal.id}" ${goal.completed ? 'checked' : ''}>
+                        <div class="flex-1 ${goal.completed ? 'line-through text-gray-400' : ''}">
+                            ${goal.title}
+                        </div>
+                        <button class="text-red-500 hover:text-red-700 delete-goal-btn" data-goal-id="${goal.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                    <div class="mt-4">
+                        <button class="btn btn-sm btn-outline w-full" id="add-goal-btn">
+                            <i class="fas fa-plus mr-1"></i> Добавить цель
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            return html;
+        }
+        
+        function renderStudyTime(data) {
+            if (!data.study_time || !data.study_time.days || data.study_time.days.length === 0) {
+                return '<div class="no-data"><i class="fas fa-clock text-3xl mb-3"></i><p>Нет данных о времени обучения</p></div>';
+            }
+            
+            let html = `
+                <div class="study-time">
+                    <div class="study-time-summary flex justify-around mb-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold">${data.study_time.total_hours} ч.</div>
+                            <div class="text-sm text-gray-500">Всего за период</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold">${data.study_time.avg_hours} ч.</div>
+                            <div class="text-sm text-gray-500">В среднем за день</div>
+                        </div>
+                    </div>
+                    
+                    <div class="study-time-chart">
+                        <div class="flex justify-between items-end h-32 mt-4 mb-2">
+            `;
+            
+            // Находим максимальное значение для масштабирования
+            const maxHours = Math.max(...data.study_time.days.map(day => day.hours));
+            
+            data.study_time.days.forEach(day => {
+                const height = Math.max(15, (day.hours / maxHours) * 100);
+                
+                html += `
+                    <div class="study-time-bar flex flex-col items-center">
+                        <div class="study-time-value text-xs mb-1">${day.hours} ч.</div>
+                        <div class="w-8 bg-blue-500 rounded-t" style="height: ${height}%"></div>
+                        <div class="study-time-day text-xs mt-1">${day.day_of_week}</div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            return html;
+        }
+        
+        function renderCalendar(data) {
+            if (!data.events || data.events.length === 0) {
+                return '<div class="no-data"><i class="fas fa-calendar-alt text-3xl mb-3"></i><p>У вас пока нет учебных событий</p><button class="btn btn-sm btn-outline mt-2" id="add-first-event-btn"><i class="fas fa-plus mr-1"></i> Добавить первое событие</button></div>';
+            }
+            
+            let html = `
+                <div class="calendar-widget">
+                    <div class="calendar-events">
+            `;
+            
+            data.events.forEach(event => {
+                html += `
+                    <div class="event-item mb-3 p-3 rounded-lg ${event.is_past ? 'bg-gray-100' : 'bg-blue-50'}">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="font-medium ${event.is_past ? 'text-gray-500' : ''}">
+                                    ${event.title}
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                    ${event.date} ${event.time ? 'в ' + event.time : ''}
+                                </div>
+                                ${event.description ? 
+                                    `<div class="text-sm mt-1 ${event.is_past ? 'text-gray-400' : 'text-gray-600'}">
+                                        ${event.description}
+                                    </div>` : ''}
+                            </div>
+                            ${event.is_past ? 
+                                `<div class="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">
+                                    Прошедшее
+                                </div>` : 
+                                `<div class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                    Предстоящее
+                                </div>`}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button class="btn btn-sm btn-outline w-full" id="add-event-btn">
+                            <i class="fas fa-plus mr-1"></i> Добавить событие
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            return html;
+        }
+        
+        function renderNotes(data) {
+            if (!data.notes || data.notes.length === 0) {
+                return '<div class="no-data"><i class="fas fa-sticky-note text-3xl mb-3"></i><p>У вас пока нет заметок</p><button class="btn btn-sm btn-outline mt-2" id="add-first-note-btn"><i class="fas fa-plus mr-1"></i> Добавить первую заметку</button></div>';
+            }
+            
+            let html = `
+                <div class="notes-widget">
+                    <div class="notes-list mb-4">
+            `;
+            
+            data.notes.forEach((note, index) => {
+                html += `
+                    <div class="note-item mb-3 p-3 rounded-lg ${note.color ? 'bg-' + note.color + '-50' : 'bg-yellow-50'}">
+                        <div class="font-medium mb-1">${note.title}</div>
+                        <div class="text-sm ${note.color ? 'text-' + note.color + '-700' : 'text-yellow-700'}">
+                            ${note.content}
+                        </div>
+                        <div class="text-xs text-gray-500 mt-2 flex justify-between">
+                            <span>${note.date}</span>
+                            <div class="flex gap-2">
+                                <button class="edit-note-btn hover:text-blue-500" data-note-id="${index}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="delete-note-btn hover:text-red-500" data-note-id="${index}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button class="btn btn-sm btn-outline w-full" id="add-note-btn">
+                            <i class="fas fa-plus mr-1"></i> Добавить заметку
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            return html;
+        }
+        
+        // Инициализация интерактивности виджетов
+        function initWidgetInteractivity(widgetId, widgetType) {
+            // Здесь можно добавить обработчики событий для интерактивных элементов виджета
+            // В зависимости от типа виджета
+            
+            const widget = document.querySelector(`.widget[data-widget-id="${widgetId}"]`);
+            
+            if (widgetType === 'goals') {
+                // Добавление новой цели
+                widget.querySelector('#add-goal-btn')?.addEventListener('click', function() {
+                    const goalTitle = prompt('Введите название новой цели:');
+                    if (goalTitle) {
+                        // Здесь должен быть запрос к серверу для сохранения новой цели
+                        // После успешного сохранения обновляем данные виджета
+                        loadWidgetData(widgetId);
+                    }
+                });
+                
+                widget.querySelector('#add-first-goal-btn')?.addEventListener('click', function() {
+                    const goalTitle = prompt('Введите название новой цели:');
+                    if (goalTitle) {
+                        // Здесь должен быть запрос к серверу для сохранения новой цели
+                        // После успешного сохранения обновляем данные виджета
+                        loadWidgetData(widgetId);
+                    }
+                });
+                
+                // Обработка изменения статуса цели
+                widget.querySelectorAll('.goal-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        const goalId = this.dataset.goalId;
+                        const isCompleted = this.checked;
+                        
+                        // Здесь должен быть запрос к серверу для обновления статуса цели
+                        // После успешного обновления:
+                        const goalText = this.nextElementSibling;
+                        if (isCompleted) {
+                            goalText.classList.add('line-through', 'text-gray-400');
+                        } else {
+                            goalText.classList.remove('line-through', 'text-gray-400');
+                        }
+                    });
+                });
+                
+                // Удаление цели
+                widget.querySelectorAll('.delete-goal-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const goalId = this.dataset.goalId;
+                        if (confirm('Вы уверены, что хотите удалить эту цель?')) {
+                            // Здесь должен быть запрос к серверу для удаления цели
+                            // После успешного удаления обновляем данные виджета
+                            loadWidgetData(widgetId);
+                        }
+                    });
+                });
+            }
+            
+            else if (widgetType === 'calendar') {
+                // Добавление нового события
+                widget.querySelector('#add-event-btn')?.addEventListener('click', function() {
+                    // Здесь можно открыть модальное окно для добавления события
+                    // Или использовать простые промпты для демонстрации
+                    const eventTitle = prompt('Введите название события:');
+                    if (eventTitle) {
+                        const eventDate = prompt('Введите дату события (дд.мм.гггг):');
+                        const eventTime = prompt('Введите время события (чч:мм):');
+                        const eventDescription = prompt('Введите описание события (необязательно):');
+                        
+                        // Здесь должен быть запрос к серверу для сохранения нового события
+                        // После успешного сохранения обновляем данные виджета
+                        loadWidgetData(widgetId);
+                    }
+                });
+                
+                widget.querySelector('#add-first-event-btn')?.addEventListener('click', function() {
+                    const eventTitle = prompt('Введите название события:');
+                    if (eventTitle) {
+                        const eventDate = prompt('Введите дату события (дд.мм.гггг):');
+                        const eventTime = prompt('Введите время события (чч:мм):');
+                        const eventDescription = prompt('Введите описание события (необязательно):');
+                        
+                        // Здесь должен быть запрос к серверу для сохранения нового события
+                        // После успешного сохранения обновляем данные виджета
+                        loadWidgetData(widgetId);
+                    }
+                });
+            }
+            
+            else if (widgetType === 'notes') {
+                // Добавление новой заметки
+                widget.querySelector('#add-note-btn')?.addEventListener('click', function() {
+                    const noteTitle = prompt('Введите заголовок заметки:');
+                    if (noteTitle) {
+                        const noteContent = prompt('Введите текст заметки:');
+                        const noteColor = prompt('Выберите цвет заметки (blue, green, yellow, red или оставьте пустым):');
+                        
+                        // Здесь должен быть запрос к серверу для сохранения новой заметки
+                        // После успешного сохранения обновляем данные виджета
+                        loadWidgetData(widgetId);
+                    }
+                });
+                
+                widget.querySelector('#add-first-note-btn')?.addEventListener('click', function() {
+                    const noteTitle = prompt('Введите заголовок заметки:');
+                    if (noteTitle) {
+                        const noteContent = prompt('Введите текст заметки:');
+                        const noteColor = prompt('Выберите цвет заметки (blue, green, yellow, red или оставьте пустым):');
+                        
+                        // Здесь должен быть запрос к серверу для сохранения новой заметки
+                        // После успешного сохранения обновляем данные виджета
+                        loadWidgetData(widgetId);
+                    }
+                });
+                
+                // Редактирование заметки
+                widget.querySelectorAll('.edit-note-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const noteId = this.dataset.noteId;
+                        const noteItem = this.closest('.note-item');
+                        const noteTitle = noteItem.querySelector('.font-medium').textContent;
+                        const noteContent = noteItem.querySelector('.text-sm').textContent.trim();
+                        
+                        const newTitle = prompt('Редактирование заголовка:', noteTitle);
+                        if (newTitle !== null) {
+                            const newContent = prompt('Редактирование текста:', noteContent);
+                            
+                            // Здесь должен быть запрос к серверу для обновления заметки
+                            // После успешного обновления обновляем данные виджета
+                            loadWidgetData(widgetId);
+                        }
+                    });
+                });
+                
+                // Удаление заметки
+                widget.querySelectorAll('.delete-note-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const noteId = this.dataset.noteId;
+                        if (confirm('Вы уверены, что хотите удалить эту заметку?')) {
+                            // Здесь должен быть запрос к серверу для удаления заметки
+                            // После успешного удаления обновляем данные виджета
+                            loadWidgetData(widgetId);
+                        }
+                    });
+                });
+            }
+        }
+    });
+</script>
+{% endblock %}

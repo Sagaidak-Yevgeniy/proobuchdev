@@ -1,0 +1,333 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if action == 'add' %}Добавление{% else %}Редактирование{% endif %} виджета{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+    .form-container {
+        background-color: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        padding: 30px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .form-input,
+    .form-select,
+    .form-textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 1rem;
+        background-color: #fff;
+    }
+    
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+        border-color: #4f46e5;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    
+    .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .form-checkbox {
+        margin-right: 8px;
+    }
+    
+    .widget-type-preview {
+        background-color: #f8fafc;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 10px;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .preview-icon {
+        font-size: 24px;
+        margin-bottom: 10px;
+        color: #4f46e5;
+    }
+    
+    .btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        transition: all 0.2s;
+        text-align: center;
+        cursor: pointer;
+    }
+    
+    .btn-primary {
+        background-color: #4f46e5;
+        color: white;
+        border: none;
+    }
+    
+    .btn-primary:hover {
+        background-color: #4338ca;
+    }
+    
+    .btn-secondary {
+        background-color: #f3f4f6;
+        color: #374151;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #e5e7eb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto py-6">
+    <div class="flex items-center mb-6">
+        <a href="{% url 'dashboard:index' %}" class="text-blue-600 hover:text-blue-800 mr-2">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <h1 class="text-2xl font-bold text-gray-800">
+            {% if action == 'add' %}
+                Добавление нового виджета
+            {% else %}
+                Редактирование виджета "{{ widget.title }}"
+            {% endif %}
+        </h1>
+    </div>
+    
+    <div class="form-container">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label class="form-label" for="{{ form.title.id_for_label }}">Название виджета</label>
+                {{ form.title }}
+                {% if form.title.errors %}
+                    <div class="text-red-500 text-sm mt-1">{{ form.title.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="{{ form.widget_type.id_for_label }}">Тип виджета</label>
+                {{ form.widget_type }}
+                {% if form.widget_type.errors %}
+                    <div class="text-red-500 text-sm mt-1">{{ form.widget_type.errors }}</div>
+                {% endif %}
+                
+                <div class="widget-type-preview mt-4" id="widget-type-preview">
+                    <div class="text-center">
+                        <div class="preview-icon">
+                            <i class="fas fa-chart-line" id="widget-type-icon"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2" id="widget-type-title">Выберите тип виджета</h3>
+                        <p id="widget-type-description" class="text-sm text-gray-600">Описание выбранного типа виджета будет отображаться здесь.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="{{ form.size.id_for_label }}">Размер виджета</label>
+                {{ form.size }}
+                {% if form.size.errors %}
+                    <div class="text-red-500 text-sm mt-1">{{ form.size.errors }}</div>
+                {% endif %}
+                
+                <div class="grid grid-cols-3 gap-4 mt-3">
+                    <div class="text-center cursor-pointer size-option p-2 rounded" data-size="small">
+                        <div class="bg-gray-200 h-10 rounded"></div>
+                        <div class="text-sm mt-1">Маленький</div>
+                    </div>
+                    <div class="text-center cursor-pointer size-option p-2 rounded" data-size="medium">
+                        <div class="bg-gray-200 h-10 rounded"></div>
+                        <div class="text-sm mt-1">Средний</div>
+                    </div>
+                    <div class="text-center cursor-pointer size-option p-2 rounded" data-size="large">
+                        <div class="bg-gray-200 h-10 rounded"></div>
+                        <div class="text-sm mt-1">Большой</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="flex items-center">
+                    {{ form.is_active }}
+                    <span>Активен</span>
+                </label>
+                {% if form.is_active.errors %}
+                    <div class="text-red-500 text-sm mt-1">{{ form.is_active.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="{{ form.settings.id_for_label }}">Настройки виджета (JSON)</label>
+                {{ form.settings }}
+                <div class="text-sm text-gray-500 mt-1">Настройки в формате JSON. Оставьте пустым для использования значений по умолчанию.</div>
+                {% if form.settings.errors %}
+                    <div class="text-red-500 text-sm mt-1">{{ form.settings.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="flex justify-between mt-8">
+                <a href="{% url 'dashboard:index' %}" class="btn btn-secondary">
+                    Отмена
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    {% if action == 'add' %}Добавить виджет{% else %}Сохранить изменения{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const widgetTypeSelect = document.getElementById('{{ form.widget_type.id_for_label }}');
+        const widgetTypeIcon = document.getElementById('widget-type-icon');
+        const widgetTypeTitle = document.getElementById('widget-type-title');
+        const widgetTypeDescription = document.getElementById('widget-type-description');
+        
+        // Описания и иконки для типов виджетов
+        const widgetTypes = {
+            'courses_progress': {
+                icon: 'fas fa-graduation-cap',
+                title: 'Прогресс по курсам',
+                description: 'Отображает ваш прогресс по всем записанным курсам.'
+            },
+            'achievements': {
+                icon: 'fas fa-trophy',
+                title: 'Достижения',
+                description: 'Показывает ваши заработанные достижения и прогресс.'
+            },
+            'recent_activity': {
+                icon: 'fas fa-history',
+                title: 'Недавняя активность',
+                description: 'Отображает вашу недавнюю активность на платформе.'
+            },
+            'statistics': {
+                icon: 'fas fa-chart-bar',
+                title: 'Статистика',
+                description: 'Показывает статистику вашего обучения.'
+            },
+            'leaderboard': {
+                icon: 'fas fa-medal',
+                title: 'Таблица лидеров',
+                description: 'Отображает рейтинг пользователей по заработанным достижениям.'
+            },
+            'upcoming_lessons': {
+                icon: 'fas fa-calendar-day',
+                title: 'Предстоящие уроки',
+                description: 'Показывает ваши предстоящие уроки по курсам.'
+            },
+            'goals': {
+                icon: 'fas fa-bullseye',
+                title: 'Цели обучения',
+                description: 'Позволяет установить и отслеживать ваши цели обучения.'
+            },
+            'study_time': {
+                icon: 'fas fa-clock',
+                title: 'Время обучения',
+                description: 'Отображает статистику по времени, затраченному на обучение.'
+            },
+            'calendar': {
+                icon: 'fas fa-calendar-alt',
+                title: 'Календарь',
+                description: 'Показывает ваши запланированные учебные события.'
+            },
+            'notes': {
+                icon: 'fas fa-sticky-note',
+                title: 'Заметки',
+                description: 'Позволяет создавать и управлять учебными заметками.'
+            }
+        };
+        
+        // Функция обновления превью типа виджета
+        function updateWidgetTypePreview() {
+            const selectedType = widgetTypeSelect.value;
+            const typeInfo = widgetTypes[selectedType];
+            
+            if (typeInfo) {
+                widgetTypeIcon.className = typeInfo.icon;
+                widgetTypeTitle.textContent = typeInfo.title;
+                widgetTypeDescription.textContent = typeInfo.description;
+            } else {
+                widgetTypeIcon.className = 'fas fa-question-circle';
+                widgetTypeTitle.textContent = 'Тип не выбран';
+                widgetTypeDescription.textContent = 'Пожалуйста, выберите тип виджета.';
+            }
+        }
+        
+        // Инициализация превью типа виджета
+        updateWidgetTypePreview();
+        
+        // Обновление превью при изменении выбора
+        widgetTypeSelect.addEventListener('change', updateWidgetTypePreview);
+        
+        // Выбор размера виджета
+        const sizeSelect = document.getElementById('{{ form.size.id_for_label }}');
+        const sizeOptions = document.querySelectorAll('.size-option');
+        
+        // Функция обновления выбранного размера
+        function updateSelectedSize() {
+            const selectedSize = sizeSelect.value;
+            
+            sizeOptions.forEach(option => {
+                const size = option.dataset.size;
+                if (size === selectedSize) {
+                    option.classList.add('bg-blue-100', 'border', 'border-blue-300');
+                } else {
+                    option.classList.remove('bg-blue-100', 'border', 'border-blue-300');
+                }
+            });
+        }
+        
+        // Инициализация выбранного размера
+        updateSelectedSize();
+        
+        // Обновление выбранного размера при изменении выбора
+        sizeSelect.addEventListener('change', updateSelectedSize);
+        
+        // Выбор размера при клике на опцию
+        sizeOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                const size = this.dataset.size;
+                sizeSelect.value = size;
+                updateSelectedSize();
+            });
+        });
+        
+        // Форматирование JSON в текстовом поле настроек
+        const settingsTextarea = document.getElementById('{{ form.settings.id_for_label }}');
+        
+        // Попытка форматирования JSON при загрузке страницы
+        try {
+            const settingsValue = settingsTextarea.value.trim();
+            if (settingsValue) {
+                const parsedSettings = JSON.parse(settingsValue);
+                settingsTextarea.value = JSON.stringify(parsedSettings, null, 2);
+            }
+        } catch (e) {
+            // Если не удалось распарсить JSON, оставляем как есть
+            console.error('Не удалось распарсить JSON настроек:', e);
+        }
+    });
+</script>
+{% endblock %}
