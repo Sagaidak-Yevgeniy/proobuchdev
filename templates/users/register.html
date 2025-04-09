@@ -3,10 +3,6 @@
 
 {% block title %}Регистрация - Образовательная платформа{% endblock %}
 
-{% block extra_head %}
-<script src="{% static 'js/password-toggle.js' %}"></script>
-{% endblock %}
-
 {% block content %}
 <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
     <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg">
@@ -32,6 +28,26 @@
                         var xhr = new XMLHttpRequest();
                         xhr.open('POST', formElement.action || window.location.href, false);
                         xhr.setRequestHeader('X-CSRFToken', csrftoken);
+                    });
+                    
+                    // Функционал переключения видимости пароля
+                    document.querySelectorAll('.password-toggle').forEach(function(toggle) {
+                        toggle.addEventListener('click', function() {
+                            var targetId = this.getAttribute('data-target');
+                            var passwordInput = document.getElementById(targetId);
+                            var eyeIcon = this.querySelector('.eye-icon');
+                            var eyeSlashIcon = this.querySelector('.eye-slash-icon');
+                            
+                            if (passwordInput.type === 'password') {
+                                passwordInput.type = 'text';
+                                eyeIcon.classList.add('hidden');
+                                eyeSlashIcon.classList.remove('hidden');
+                            } else {
+                                passwordInput.type = 'password';
+                                eyeIcon.classList.remove('hidden');
+                                eyeSlashIcon.classList.add('hidden');
+                            }
+                        });
                     });
                 });
             </script>
