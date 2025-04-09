@@ -1,52 +1,130 @@
 <!-- Компонент выпадающего меню с уведомлениями -->
 <div class="relative inline-block text-left">
     <!-- Кнопка уведомлений -->
-    <button id="notification-button" class="p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none relative">
+    <button id="notification-button" class="p-1.5 sm:p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none relative">
         <span class="sr-only">Уведомления</span>
-        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg class="h-5 w-5 sm:h-6 sm:w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         
         <!-- Индикатор непрочитанных уведомлений -->
-        <span class="notification-count absolute top-1 right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500 hidden"></span>
+        <span class="notification-count absolute top-0.5 right-0.5 sm:top-1 sm:right-1 inline-flex items-center justify-center px-1 sm:px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500 hidden"></span>
     </button>
     
-    <!-- Выпадающее меню с уведомлениями -->
-    <div id="notification-dropdown" class="hidden origin-top-right absolute right-0 mt-2 w-96 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50 overflow-hidden">
-        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100">
+    <!-- Выпадающее меню с уведомлениями - адаптивная версия для десктопа -->
+    <div id="notification-dropdown" class="hidden origin-top-right absolute right-0 mt-2 w-screen max-w-sm sm:w-96 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50 overflow-hidden">
+        <div class="px-3 py-2 sm:px-4 sm:py-3 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between sm:items-center">
+            <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2 sm:mb-0">
                 Уведомления
             </h3>
-            <div class="space-x-2">
-                <a href="{% url 'notifications:notification_list' %}" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+            <div class="flex space-x-3 text-xs">
+                <a href="{% url 'notifications:notification_list' %}" class="text-blue-600 dark:text-blue-400 hover:underline">
                     Все уведомления
                 </a>
-                <button id="mark-all-as-read" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">
-                    Отметить все как прочитанные
+                <button id="mark-all-as-read" class="text-blue-600 dark:text-blue-400 hover:underline">
+                    Отметить все прочитанными
                 </button>
             </div>
         </div>
         
-        <div class="max-h-80 overflow-y-auto">
-            <ul id="notification-list" class="divide-y divide-gray-200 dark:divide-gray-700 max-h-64">
+        <div class="max-h-64 sm:max-h-80 overflow-y-auto">
+            <ul id="notification-list" class="divide-y divide-gray-200 dark:divide-gray-700">
                 <!-- Здесь будут отображаться уведомления через JavaScript -->
             </ul>
             
             <!-- Сообщение "Нет уведомлений" -->
             <div id="notification-no-items" class="hidden px-4 py-5 text-center">
-                <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
-                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                <p class="mt-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                     У вас нет новых уведомлений
                 </p>
             </div>
         </div>
         
-        <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700 text-right">
+        <div class="px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 dark:bg-gray-700 text-right">
             <a href="{% url 'notifications:notification_settings' %}" class="text-xs text-gray-500 dark:text-gray-400 hover:underline">
                 <i class="fas fa-cog mr-1"></i> Настройки уведомлений
             </a>
         </div>
     </div>
+    
+    <!-- Мобильная версия выпадающего списка (на полный экран в мобильном виде) -->
+    <div id="notification-mobile-dropdown" class="hidden fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col sm:hidden">
+        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 class="text-base font-medium text-gray-900 dark:text-gray-100">
+                Уведомления
+            </h3>
+            <button id="close-mobile-notifications" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="flex-grow overflow-y-auto">
+            <ul id="notification-mobile-list" class="divide-y divide-gray-200 dark:divide-gray-700">
+                <!-- Здесь будут отображаться уведомления через JavaScript для мобильной версии -->
+            </ul>
+            
+            <!-- Сообщение "Нет уведомлений" для мобильной версии -->
+            <div id="notification-mobile-no-items" class="hidden px-4 py-8 text-center">
+                <svg class="mx-auto h-16 w-16 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <p class="mt-3 text-gray-500 dark:text-gray-400">
+                    У вас нет новых уведомлений
+                </p>
+            </div>
+        </div>
+        
+        <div class="border-t border-gray-200 dark:border-gray-700 p-4 grid grid-cols-2 gap-3">
+            <a href="{% url 'notifications:notification_list' %}" class="btn-primary text-center py-2 text-sm">
+                Все уведомления
+            </a>
+            <button id="mark-all-read-mobile" class="btn-secondary text-center py-2 text-sm">
+                Отметить все прочитанными
+            </button>
+        </div>
+        
+        <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700 text-center border-t border-gray-200 dark:border-gray-700">
+            <a href="{% url 'notifications:notification_settings' %}" class="text-gray-500 dark:text-gray-400 hover:underline">
+                <i class="fas fa-cog mr-1"></i> Настройки уведомлений
+            </a>
+        </div>
+    </div>
 </div>
+
+<script>
+// Добавляем обработчик для мобильной версии уведомлений
+document.addEventListener('DOMContentLoaded', function() {
+    // Если мы на мобильном устройстве (ширина < 640px)
+    if (window.innerWidth < 640) {
+        const notificationButton = document.getElementById('notification-button');
+        const mobileDropdown = document.getElementById('notification-mobile-dropdown');
+        const closeButton = document.getElementById('close-mobile-notifications');
+        const markAllReadMobileButton = document.getElementById('mark-all-read-mobile');
+        
+        // Переопределяем событие клика для кнопки уведомлений на мобильных устройствах
+        notificationButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            mobileDropdown.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Блокируем прокрутку страницы
+        });
+        
+        // Закрываем мобильное выпадающее меню при клике на кнопку закрытия
+        closeButton.addEventListener('click', function() {
+            mobileDropdown.classList.add('hidden');
+            document.body.style.overflow = ''; // Разрешаем прокрутку страницы
+        });
+        
+        // Дублируем функционал отметки всех уведомлений как прочитанных для мобильной версии
+        markAllReadMobileButton.addEventListener('click', function() {
+            // Вызываем тот же метод, что и для десктопной версии
+            if (typeof markAllNotificationsAsRead === 'function') {
+                markAllNotificationsAsRead();
+            }
+        });
+    }
+});
+</script>
