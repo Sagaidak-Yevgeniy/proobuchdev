@@ -61,9 +61,13 @@
             <div class="px-6 py-5 bg-gray-50 border-b">
                 <div class="flex justify-between items-start">
                     <h3 class="text-xl font-semibold text-gray-900 truncate">
+                        {% if olympiad.slug %}
                         <a href="{% url 'olympiad_detail' slug=olympiad.slug %}" class="hover:text-blue-600">
                             {{ olympiad.title }}
                         </a>
+                        {% else %}
+                        {{ olympiad.title }}
+                        {% endif %}
                     </h3>
                     
                     {% if olympiad.status == 'active' %}
@@ -112,39 +116,48 @@
             
             <div class="px-6 py-4 bg-gray-50 border-t">
                 <div class="flex justify-between items-center">
-                    {% if olympiad.is_past %}
-                    <a href="{% url 'olympiad_leaderboard' slug=olympiad.slug %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-trophy mr-1.5"></i> Результаты
-                    </a>
-                    <a href="{% url 'olympiad_detail' slug=olympiad.slug %}" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700">
-                        Подробнее <i class="fas fa-arrow-right ml-1.5"></i>
-                    </a>
-                    {% elif olympiad.is_active %}
-                    {% if user.is_authenticated %}
-                    {% if user_participating %}
-                    <a href="{% url 'olympiad_detail' slug=olympiad.slug %}" class="inline-flex items-center text-sm font-medium text-green-600 hover:text-green-700">
-                        <i class="fas fa-play-circle mr-1.5"></i> Продолжить
-                    </a>
+                    {% if olympiad.slug %}
+                        {% if olympiad.is_past %}
+                        <a href="{% url 'olympiad_leaderboard' slug=olympiad.slug %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
+                            <i class="fas fa-trophy mr-1.5"></i> Результаты
+                        </a>
+                        <a href="{% url 'olympiad_detail' slug=olympiad.slug %}" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700">
+                            Подробнее <i class="fas fa-arrow-right ml-1.5"></i>
+                        </a>
+                        {% elif olympiad.is_active %}
+                        {% if user.is_authenticated %}
+                        {% if user_participating %}
+                        <a href="{% url 'olympiad_detail' slug=olympiad.slug %}" class="inline-flex items-center text-sm font-medium text-green-600 hover:text-green-700">
+                            <i class="fas fa-play-circle mr-1.5"></i> Продолжить
+                        </a>
+                        {% else %}
+                        <a href="{% url 'olympiad_register' slug=olympiad.slug %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-700">
+                            <i class="fas fa-user-plus mr-1.5"></i> Участвовать
+                        </a>
+                        {% endif %}
+                        {% else %}
+                        <span class="inline-flex items-center text-sm font-medium text-gray-500">
+                            <i class="fas fa-info-circle mr-1.5"></i> Требуется вход
+                        </span>
+                        {% endif %}
+                        <a href="{% url 'olympiad_detail' slug=olympiad.slug %}" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700">
+                            Подробнее <i class="fas fa-arrow-right ml-1.5"></i>
+                        </a>
+                        {% else %}
+                        <span class="inline-flex items-center text-sm font-medium text-gray-500">
+                            <i class="fas fa-clock mr-1.5"></i> Начало: {{ olympiad.start_time|date:"d.m.Y" }}
+                        </span>
+                        <a href="{% url 'olympiad_detail' slug=olympiad.slug %}" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700">
+                            Подробнее <i class="fas fa-arrow-right ml-1.5"></i>
+                        </a>
+                        {% endif %}
                     {% else %}
-                    <a href="{% url 'olympiad_register' slug=olympiad.slug %}" class="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-700">
-                        <i class="fas fa-user-plus mr-1.5"></i> Участвовать
-                    </a>
-                    {% endif %}
-                    {% else %}
-                    <span class="inline-flex items-center text-sm font-medium text-gray-500">
-                        <i class="fas fa-info-circle mr-1.5"></i> Требуется вход
-                    </span>
-                    {% endif %}
-                    <a href="{% url 'olympiad_detail' slug=olympiad.slug %}" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700">
-                        Подробнее <i class="fas fa-arrow-right ml-1.5"></i>
-                    </a>
-                    {% else %}
-                    <span class="inline-flex items-center text-sm font-medium text-gray-500">
-                        <i class="fas fa-clock mr-1.5"></i> Начало: {{ olympiad.start_time|date:"d.m.Y" }}
-                    </span>
-                    <a href="{% url 'olympiad_detail' slug=olympiad.slug %}" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700">
-                        Подробнее <i class="fas fa-arrow-right ml-1.5"></i>
-                    </a>
+                        <span class="inline-flex items-center text-sm font-medium text-gray-500">
+                            <i class="fas fa-exclamation-triangle mr-1.5"></i> URL не задан
+                        </span>
+                        <span class="inline-flex items-center text-sm font-medium text-gray-500">
+                            <i class="fas fa-clock mr-1.5"></i> {{ olympiad.start_time|date:"d.m.Y" }}
+                        </span>
                     {% endif %}
                 </div>
             </div>
