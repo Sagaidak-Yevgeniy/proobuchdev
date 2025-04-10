@@ -92,8 +92,9 @@
                         </div>
                         
                         <!-- Кнопки участия -->
-                        {% if user.is_authenticated and olympiad_has_started and olympiad_is_active %}
+                        {% if user.is_authenticated %}
                             {% if user_participation %}
+                            <!-- Если пользователь уже зарегистрирован -->
                             <div class="flex justify-center mt-4 mb-2">
                                 <a href="{% url 'olympiads:olympiad_tasks' olympiad_id=olympiad.id %}" class="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors shadow-lg">
                                     <i class="fas fa-play-circle mr-2"></i>
@@ -104,17 +105,26 @@
                                     {% endif %}
                                 </a>
                             </div>
-                            {% elif olympiad.is_open %}
+                            {% elif olympiad.is_open or olympiad_is_active %}
+                            <!-- Если пользователь еще не зарегистрирован, но олимпиада открыта или активна -->
                             <div class="flex justify-center mt-4 mb-2">
                                 <form action="{% url 'olympiads:olympiad_register' olympiad_id=olympiad.id %}" method="post">
                                     {% csrf_token %}
-                                    <button type="submit" class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-lg">
+                                    <button type="submit" class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-lg animate-pulse">
                                         <i class="fas fa-rocket mr-2"></i>
                                         {% trans 'Приступить к заданиям' %}
                                     </button>
                                 </form>
                             </div>
                             {% endif %}
+                        {% else %}
+                            <!-- Если пользователь не авторизован -->
+                            <div class="flex justify-center mt-4 mb-2">
+                                <a href="{% url 'users:login' %}?next={{ request.path }}" class="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors shadow-lg">
+                                    <i class="fas fa-sign-in-alt mr-2"></i>
+                                    {% trans 'Войти для участия' %}
+                                </a>
+                            </div>
                         {% endif %}
                     </div>
                 </div>

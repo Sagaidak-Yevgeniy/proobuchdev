@@ -204,9 +204,10 @@ def olympiad_register(request, olympiad_id):
     now = timezone.now()
     
     # Проверяем, может ли пользователь зарегистрироваться
-    if olympiad.start_datetime <= now:
-        messages.error(request, _('Регистрация на эту олимпиаду уже закрыта'))
-        return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
+    # Комментирую эту проверку, чтобы можно было регистрироваться на активные олимпиады
+    # if olympiad.start_datetime <= now:
+    #     messages.error(request, _('Регистрация на эту олимпиаду уже закрыта'))
+    #     return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
     
     # Проверяем, не зарегистрирован ли пользователь уже
     if OlympiadParticipation.objects.filter(olympiad=olympiad, user=request.user).exists():
