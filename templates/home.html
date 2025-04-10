@@ -5,24 +5,30 @@
 {% block content %}
 <div class="max-w-5xl mx-auto">
     <!-- Главный баннер -->
-    <section class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-xl p-8 mb-12 shadow-lg">
-        <div class="flex flex-col md:flex-row items-center">
+    <section class="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white rounded-xl p-8 mb-12 shadow-xl relative overflow-hidden border border-blue-500/30">
+        <div class="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJwYXR0ZXJuIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiIHBhdHRlcm5UcmFuc2Zvcm09InJvdGF0ZSg0NSkiPjxwYXRoIGQ9Ik0wIDEwIEwxMCAwIEwyMCAxMCBMMTAgMjAgWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNwYXR0ZXJuKSIvPjwvc3ZnPg==')] opacity-20"></div>
+        <div class="flex flex-col md:flex-row items-center relative z-10">
             <div class="md:w-2/3 mb-6 md:mb-0 md:pr-8">
-                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">Учитесь эффективно с нашей образовательной платформой</h1>
-                <p class="text-base sm:text-lg md:text-xl mb-6">Получайте знания, выполняйте практические задания и развивайтесь в выбранной вами области.</p>
+                <div class="bg-blue-500/20 px-4 py-1 rounded-full inline-block mb-2 backdrop-blur-sm">
+                    <span class="text-sm font-medium">Современная образовательная платформа</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-shadow">Учитесь эффективно с нашей образовательной платформой</h1>
+                <p class="text-base sm:text-lg md:text-xl mb-6 text-blue-100">Получайте знания, выполняйте практические задания и развивайтесь в выбранной вами области.</p>
                 <div class="flex flex-wrap gap-4">
-                    <a href="{% url 'course_list' %}" class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-100 transition">Начать обучение</a>
+                    <a href="{% url 'course_list' %}" class="btn btn-primary bg-white text-blue-600 hover:bg-blue-100 hover:shadow-lg hover-lift shadow-md">Начать обучение</a>
                     {% if not user.is_authenticated %}
-                    <a href="{% url 'register' %}" class="bg-transparent border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition">Зарегистрироваться</a>
-                    <a href="{% url 'login' %}" class="bg-transparent border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition">Войти</a>
+                    <a href="{% url 'register' %}" class="btn bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 transition-all duration-300 hover-lift shadow-md">Зарегистрироваться</a>
+                    <a href="{% url 'login' %}" class="btn bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 transition-all duration-300 hover-lift shadow-md">Войти</a>
                     {% endif %}
                 </div>
             </div>
-            <div class="md:w-1/3">
-                <svg class="w-full h-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-                    <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"></path>
-                </svg>
+            <div class="md:w-1/3 transform transition-transform hover:scale-105 duration-500">
+                <div class="bg-white/10 p-6 rounded-2xl backdrop-blur-sm shadow-inner">
+                    <svg class="w-full h-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                        <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"></path>
+                    </svg>
+                </div>
             </div>
         </div>
     </section>
@@ -31,26 +37,26 @@
     <section class="mb-12">
         <h2 class="text-2xl sm:text-2xl md:text-3xl font-bold text-center mb-8">Почему стоит учиться у нас</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <div class="bg-blue-100 text-blue-600 p-3 rounded-full w-14 h-14 flex items-center justify-center mb-4">
+            <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 dark:bg-gray-800 dark:text-white border border-gray-100 dark:border-gray-700">
+                <div class="bg-blue-100 text-blue-600 p-3 rounded-full w-16 h-16 flex items-center justify-center mb-4 mx-auto md:mx-0 shadow-inner dark:bg-blue-900 dark:text-blue-300">
                     <i class="fas fa-book-open text-2xl"></i>
                 </div>
-                <h3 class="text-xl font-bold mb-2">Интерактивные уроки</h3>
-                <p class="text-gray-600">Изучайте материал в удобном формате, включающем текст, код и видео.</p>
+                <h3 class="text-xl font-bold mb-2 text-center md:text-left">Интерактивные уроки</h3>
+                <p class="text-gray-600 dark:text-gray-300">Изучайте материал в удобном формате, включающем текст, код и видео.</p>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <div class="bg-blue-100 text-blue-600 p-3 rounded-full w-14 h-14 flex items-center justify-center mb-4">
+            <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 dark:bg-gray-800 dark:text-white border border-gray-100 dark:border-gray-700">
+                <div class="bg-green-100 text-green-600 p-3 rounded-full w-16 h-16 flex items-center justify-center mb-4 mx-auto md:mx-0 shadow-inner dark:bg-green-900 dark:text-green-300">
                     <i class="fas fa-laptop-code text-2xl"></i>
                 </div>
-                <h3 class="text-xl font-bold mb-2">Практические задания</h3>
-                <p class="text-gray-600">Закрепляйте знания с помощью заданий с автоматической проверкой решений.</p>
+                <h3 class="text-xl font-bold mb-2 text-center md:text-left">Практические задания</h3>
+                <p class="text-gray-600 dark:text-gray-300">Закрепляйте знания с помощью заданий с автоматической проверкой решений.</p>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <div class="bg-blue-100 text-blue-600 p-3 rounded-full w-14 h-14 flex items-center justify-center mb-4">
+            <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 dark:bg-gray-800 dark:text-white border border-gray-100 dark:border-gray-700">
+                <div class="bg-purple-100 text-purple-600 p-3 rounded-full w-16 h-16 flex items-center justify-center mb-4 mx-auto md:mx-0 shadow-inner dark:bg-purple-900 dark:text-purple-300">
                     <i class="fas fa-chalkboard-teacher text-2xl"></i>
                 </div>
-                <h3 class="text-xl font-bold mb-2">Опытные преподаватели</h3>
-                <p class="text-gray-600">Учитесь у профессионалов, которые создают качественные образовательные материалы.</p>
+                <h3 class="text-xl font-bold mb-2 text-center md:text-left">Опытные преподаватели</h3>
+                <p class="text-gray-600 dark:text-gray-300">Учитесь у профессионалов, которые создают качественные образовательные материалы.</p>
             </div>
         </div>
     </section>
@@ -58,29 +64,37 @@
     <!-- Как это работает -->
     <section class="mb-12">
         <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8">Как работает наша платформа</h2>
-        <div class="bg-white p-8 rounded-lg shadow-md">
+        <div class="bg-white p-8 rounded-xl shadow-md dark:bg-gray-800 dark:text-white border border-gray-100 dark:border-gray-700">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div class="text-center">
-                    <div class="bg-blue-600 text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4">1</div>
+                <div class="text-center p-4 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors duration-300">
+                    <div class="bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-4 shadow-md transform transition-transform hover:scale-110">
+                        <span class="text-xl font-bold">1</span>
+                    </div>
                     <h3 class="text-xl font-bold mb-2">Регистрация</h3>
-                    <p class="text-gray-600">Создайте аккаунт для доступа к курсам</p>
+                    <p class="text-gray-600 dark:text-gray-300">Создайте аккаунт для доступа к курсам</p>
                 </div>
-                <div class="text-center">
-                    <div class="bg-blue-600 text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4">2</div>
+                <div class="text-center p-4 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors duration-300">
+                    <div class="bg-gradient-to-r from-green-500 to-green-700 text-white rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-4 shadow-md transform transition-transform hover:scale-110">
+                        <span class="text-xl font-bold">2</span>
+                    </div>
                     <h3 class="text-xl font-bold mb-2">Выбор курса</h3>
-                    <p class="text-gray-600">Выберите курс, соответствующий вашим интересам</p>
+                    <p class="text-gray-600 dark:text-gray-300">Выберите курс, соответствующий вашим интересам</p>
                 </div>
-                <div class="text-center">
-                    <div class="bg-blue-600 text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4">3</div>
+                <div class="text-center p-4 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors duration-300">
+                    <div class="bg-gradient-to-r from-yellow-500 to-yellow-700 text-white rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-4 shadow-md transform transition-transform hover:scale-110">
+                        <span class="text-xl font-bold">3</span>
+                    </div>
                     <h3 class="text-xl font-bold mb-2">Обучение</h3>
-                    <p class="text-gray-600">Изучайте материалы и выполняйте задания</p>
+                    <p class="text-gray-600 dark:text-gray-300">Изучайте материалы и выполняйте задания</p>
                 </div>
-                <div class="text-center">
-                    <div class="bg-blue-600 text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4">4</div>
+                <div class="text-center p-4 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors duration-300">
+                    <div class="bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-4 shadow-md transform transition-transform hover:scale-110">
+                        <span class="text-xl font-bold">4</span>
+                    </div>
                     <h3 class="text-xl font-bold mb-2">Сертификат</h3>
-                    <p class="text-gray-600">Получите подтверждение своих знаний</p>
+                    <p class="text-gray-600 dark:text-gray-300">Получите подтверждение своих знаний</p>
                     {% if user.is_authenticated %}
-                    <a href="{% url 'my_certificates' %}" class="inline-block mt-3 text-blue-600 hover:text-blue-800 hover:underline">
+                    <a href="{% url 'my_certificates' %}" class="inline-block mt-3 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline transition-colors">
                         Мои сертификаты <i class="fas fa-chevron-right text-xs ml-1"></i>
                     </a>
                     {% endif %}
@@ -90,15 +104,15 @@
     </section>
 
     <!-- Призыв к действию -->
-    <section class="bg-blue-50 p-8 rounded-xl text-center mb-8">
-        <h2 class="text-2xl sm:text-3xl font-bold mb-4">Готовы начать обучение?</h2>
-        <p class="text-base sm:text-lg md:text-xl text-gray-600 mb-6">Присоединяйтесь к тысячам студентов, которые уже улучшают свои навыки с нами</p>
+    <section class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-blue-900 p-8 rounded-xl text-center mb-8 shadow-md border border-blue-100 dark:border-blue-900">
+        <h2 class="text-2xl sm:text-3xl font-bold mb-4 dark:text-white">Готовы начать обучение?</h2>
+        <p class="text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-6">Присоединяйтесь к тысячам студентов, которые уже улучшают свои навыки с нами</p>
         <div class="flex flex-wrap justify-center gap-4">
-            <a href="{% url 'course_list' %}" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">Смотреть все курсы</a>
+            <a href="{% url 'course_list' %}" class="btn btn-primary pulse-on-hover shadow-md">Смотреть все курсы</a>
             {% if not user.is_authenticated %}
-            <a href="{% url 'login' %}" class="bg-white border-2 border-blue-600 text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition">Войти в аккаунт</a>
+            <a href="{% url 'login' %}" class="btn btn-secondary border-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 hover-lift shadow-md">Войти в аккаунт</a>
             {% else %}
-            <a href="{% url 'my_certificates' %}" class="bg-white border-2 border-blue-600 text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition">Мои сертификаты</a>
+            <a href="{% url 'my_certificates' %}" class="btn btn-secondary border-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 hover-lift shadow-md">Мои сертификаты</a>
             {% endif %}
         </div>
     </section>

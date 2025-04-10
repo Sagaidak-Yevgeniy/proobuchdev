@@ -107,6 +107,89 @@
         .dark .text-gray-700 { color: #c0c0c0; }
         .dark .border-gray-300 { border-color: #333; }
         .dark .shadow-md { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); }
+        
+        /* Улучшенные стили для кнопок */
+        .btn {
+            @apply px-4 py-2 rounded-lg font-medium transition-all duration-300 transform;
+        }
+        .btn:active {
+            @apply scale-95;
+        }
+        .btn:focus {
+            @apply outline-none ring-2 ring-offset-2;
+        }
+        .btn-primary {
+            @apply bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md active:bg-blue-800 focus:ring-blue-500;
+        }
+        .btn-secondary {
+            @apply bg-gray-200 text-gray-800 hover:bg-gray-300 hover:shadow-sm active:bg-gray-400 focus:ring-gray-500 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600;
+        }
+        .btn-success {
+            @apply bg-green-600 text-white hover:bg-green-700 hover:shadow-md active:bg-green-800 focus:ring-green-500;
+        }
+        .btn-danger {
+            @apply bg-red-600 text-white hover:bg-red-700 hover:shadow-md active:bg-red-800 focus:ring-red-500;
+        }
+        
+        /* Улучшенные стили для форм */
+        .form-input {
+            @apply block w-full px-4 py-2 rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-1 focus:outline-none transition-all duration-200 dark:bg-gray-800 dark:border-gray-600 dark:focus:border-blue-400;
+        }
+        .form-select {
+            @apply block w-full px-4 py-2 rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-1 focus:outline-none transition-all duration-200 dark:bg-gray-800 dark:border-gray-600 dark:focus:border-blue-400;
+        }
+        .form-textarea {
+            @apply block w-full px-4 py-2 rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-1 focus:outline-none transition-all duration-200 dark:bg-gray-800 dark:border-gray-600 dark:focus:border-blue-400;
+        }
+        .form-checkbox {
+            @apply rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-1 focus:outline-none transition-all duration-200 dark:bg-gray-800 dark:border-gray-600;
+        }
+        .form-radio {
+            @apply rounded-full border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-1 focus:outline-none transition-all duration-200 dark:bg-gray-800 dark:border-gray-600;
+        }
+        .form-label {
+            @apply block mb-2 font-medium text-gray-700 dark:text-gray-300;
+        }
+
+        /* Микроанимации для интерактивных элементов */
+        .hover-lift {
+            @apply transition-transform duration-300;
+        }
+        .hover-lift:hover {
+            @apply transform -translate-y-1;
+        }
+        
+        .pulse-on-hover:hover {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        /* Улучшенные стили для мобильных устройств */
+        @media (max-width: 640px) {
+            .form-input, .form-select, .form-textarea {
+                font-size: 16px; /* Предотвращает масштабирование в Safari на iOS */
+            }
+            
+            .container {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            
+            .btn {
+                padding-top: 0.625rem;
+                padding-bottom: 0.625rem;
+            }
+        }
     </style>
     
     {% block extra_css %}{% endblock %}

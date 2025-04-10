@@ -1,0 +1,116 @@
+/* Современные стили для форм */
+.form-group {
+    @apply mb-4;
+}
+
+.form-label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+    @apply block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+    @apply text-gray-400 dark:text-gray-500;
+}
+
+.form-input:disabled,
+.form-textarea:disabled,
+.form-select:disabled {
+    @apply bg-gray-100 dark:bg-gray-700 cursor-not-allowed;
+}
+
+/* Состояние ошибки */
+.form-input.error,
+.form-textarea.error,
+.form-select.error {
+    @apply border-red-500 focus:ring-red-500 focus:border-red-500;
+}
+
+.form-error-message {
+    @apply text-red-600 dark:text-red-400 text-sm mt-1;
+}
+
+/* Чекбоксы и радиокнопки */
+.form-checkbox,
+.form-radio {
+    @apply w-4 h-4 text-blue-600 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 transition-colors duration-200;
+}
+
+.form-radio {
+    @apply rounded-full;
+}
+
+.form-checkbox-label,
+.form-radio-label {
+    @apply inline-flex items-center cursor-pointer;
+}
+
+.form-checkbox + span,
+.form-radio + span {
+    @apply ml-2 text-sm text-gray-700 dark:text-gray-300;
+}
+
+/* Группа кнопок формы */
+.form-buttons {
+    @apply flex items-center space-x-3 mt-6;
+}
+
+/* Адаптивные формы для мобильных устройств */
+@media (max-width: 640px) {
+    .form-group-row {
+        @apply flex flex-col;
+    }
+    
+    .form-group-row .form-group {
+        @apply w-full mb-4;
+    }
+    
+    .form-buttons {
+        @apply flex flex-col-reverse space-y-reverse space-y-2 space-x-0;
+    }
+    
+    .form-buttons .btn {
+        @apply w-full;
+    }
+}
+
+/* Анимированные метки полей */
+.form-floating {
+    @apply relative;
+}
+
+.form-floating .form-input,
+.form-floating .form-textarea {
+    @apply pt-6 pb-2;
+}
+
+.form-floating .form-label {
+    @apply absolute top-3 left-3 transition-all duration-200 text-gray-500 pointer-events-none;
+    transform-origin: left top;
+}
+
+.form-floating .form-input:focus ~ .form-label,
+.form-floating .form-textarea:focus ~ .form-label,
+.form-floating .form-input:not(:placeholder-shown) ~ .form-label,
+.form-floating .form-textarea:not(:placeholder-shown) ~ .form-label {
+    @apply text-xs text-blue-600 dark:text-blue-400;
+    transform: translateY(-14px) scale(0.85);
+}
+
+/* Индикатор загрузки для форм */
+.form-loading {
+    @apply opacity-60 pointer-events-none;
+}
+
+.form-loading-indicator {
+    @apply fixed inset-0 flex items-center justify-center bg-black bg-opacity-20 z-50;
+}
+
+.form-loading-spinner {
+    @apply h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin;
+}

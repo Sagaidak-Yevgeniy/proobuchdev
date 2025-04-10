@@ -1,0 +1,239 @@
+/* Оптимизация интерфейса для мобильных устройств */
+
+/* Основные компоненты */
+@media (max-width: 640px) {
+    .container {
+        @apply px-4 !important;
+    }
+    
+    h1 {
+        @apply text-2xl !important;
+    }
+    
+    h2 {
+        @apply text-xl !important;
+    }
+    
+    h3 {
+        @apply text-lg !important;
+    }
+    
+    /* Уменьшаем отступы на мобильных */
+    .mobile-p-0 {
+        padding: 0 !important;
+    }
+    
+    .mobile-px-2 {
+        @apply px-2 !important;
+    }
+    
+    .mobile-py-2 {
+        @apply py-2 !important;
+    }
+    
+    .mobile-m-0 {
+        margin: 0 !important;
+    }
+    
+    .mobile-mb-2 {
+        @apply mb-2 !important;
+    }
+    
+    .mobile-mt-2 {
+        @apply mt-2 !important;
+    }
+    
+    /* Стили для мобильных списков */
+    .mobile-list {
+        @apply flex flex-col !important;
+    }
+    
+    .mobile-list > * {
+        @apply w-full mb-3 !important;
+    }
+    
+    /* Кнопки на всю ширину */
+    .mobile-btn-full {
+        @apply w-full !important;
+    }
+    
+    /* Скрытие элементов на мобильном */
+    .mobile-hidden {
+        @apply hidden !important;
+    }
+    
+    /* Показ мобильных элементов */
+    .mobile-block {
+        @apply block !important;
+    }
+    
+    /* Подвал */
+    footer {
+        @apply text-center !important;
+    }
+    
+    footer .flex {
+        @apply flex-col items-center !important;
+    }
+    
+    /* Грид и флекс адаптивные контейнеры */
+    .mobile-grid-1 {
+        @apply grid-cols-1 !important;
+    }
+    
+    .mobile-flex-col {
+        @apply flex-col !important;
+    }
+    
+    /* Меню навигации */
+    .nav-mobile {
+        @apply fixed top-0 left-0 w-full h-screen bg-gray-900 bg-opacity-95 z-50 transform transition-all duration-300 ease-in-out;
+    }
+    
+    .nav-mobile.closed {
+        @apply -translate-x-full;
+    }
+    
+    .nav-mobile.open {
+        @apply translate-x-0;
+    }
+    
+    /* Скругленные углы для мобильных элементов */
+    .mobile-rounded {
+        @apply rounded-xl !important;
+    }
+    
+    /* Стили для нижнего мобильного меню */
+    .mobile-bottom-nav {
+        @apply fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg border-t border-gray-200 dark:border-gray-700 px-2 py-2 z-40 flex justify-around items-center;
+    }
+    
+    .mobile-bottom-nav-item {
+        @apply flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors;
+    }
+    
+    .mobile-bottom-nav-icon {
+        @apply text-xl mb-1;
+    }
+    
+    .mobile-bottom-nav-text {
+        @apply text-xs;
+    }
+    
+    /* Мобильный поиск */
+    .mobile-search-overlay {
+        @apply fixed inset-0 bg-gray-900 bg-opacity-90 z-50 flex flex-col p-4;
+    }
+    
+    .mobile-search-header {
+        @apply flex justify-between items-center mb-4;
+    }
+    
+    .mobile-search-input {
+        @apply w-full p-3 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100;
+    }
+    
+    /* Система табов для мобильных */
+    .mobile-tabs {
+        @apply flex overflow-x-auto space-x-2 pb-2 no-scrollbar;
+    }
+    
+    .mobile-tab {
+        @apply px-4 py-2 rounded-full bg-gray-200 dark:bg-gray-700 text-sm font-medium whitespace-nowrap;
+    }
+    
+    .mobile-tab.active {
+        @apply bg-blue-600 text-white;
+    }
+    
+    /* Адаптивные таблицы для мобильных */
+    .mobile-table {
+        @apply block border-0 !important;
+    }
+    
+    .mobile-table thead {
+        @apply hidden !important;
+    }
+    
+    .mobile-table tbody, 
+    .mobile-table tr {
+        @apply block w-full !important;
+    }
+    
+    .mobile-table tr {
+        @apply mb-3 rounded-lg border border-gray-200 dark:border-gray-700 !important;
+    }
+    
+    .mobile-table td {
+        @apply block py-2 px-3 !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        text-align: right !important;
+    }
+    
+    .mobile-table td::before {
+        content: attr(data-label);
+        @apply font-medium text-left mr-2;
+    }
+    
+    /* Индикатор прокрутки */
+    .mobile-scroll-x {
+        @apply overflow-x-auto;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE 10+ */
+    }
+    
+    .mobile-scroll-x::-webkit-scrollbar {
+        display: none; /* WebKit */
+    }
+    
+    /* Плавающие кнопки действий */
+    .mobile-fab {
+        @apply fixed right-4 bottom-20 shadow-lg p-3 rounded-full bg-blue-600 text-white z-40;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Индикатор прогресса чтения на мобильном */
+    .mobile-reading-progress {
+        @apply fixed top-0 left-0 h-1 bg-blue-600 z-40;
+        width: var(--scroll-width, 0%);
+    }
+}
+
+/* Планшеты */
+@media (min-width: 641px) and (max-width: 1024px) {
+    .tablet-grid-2 {
+        @apply grid-cols-2 !important;
+    }
+    
+    .tablet-hidden {
+        @apply hidden !important;
+    }
+    
+    .tablet-block {
+        @apply block !important;
+    }
+    
+    .tablet-flex-row {
+        @apply flex-row !important;
+    }
+    
+    .tablet-p-4 {
+        @apply p-4 !important;
+    }
+}
+
+/* Важные классы для доступности на мобильных устройствах */
+.tap-target {
+    @apply min-h-[44px] min-w-[44px]; /* Минимальный размер для тапа по гайдлайнам */
+}
+
+.no-tap-highlight {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Убираем дрожание элементов при скролле на iOS */
+.fix-ios-scroll {
+    -webkit-overflow-scrolling: touch;
+}
