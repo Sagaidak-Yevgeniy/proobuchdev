@@ -3,9 +3,13 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Sum, Count, Q, F, Max
+from django.db.models import Sum, Count, Q, F, Max, Avg
 from django.utils.translation import gettext_lazy as _
 from django.core.paginator import Paginator
+from django.views.decorators.http import require_POST, require_GET
+from django.views.decorators.csrf import csrf_exempt
+import json
+import datetime
 
 from .models import (
     Olympiad, 
@@ -837,3 +841,268 @@ def olympiad_invitations(request, olympiad_id):
     }
     
     return render(request, 'olympiads/manage/invitations.html', context)
+
+# Завершение олимпиады участником
+@login_required
+def olympiad_finish(request, olympiad_id):
+    if request.method != 'POST':
+        return redirect('olympiads:olympiad_tasks', olympiad_id=olympiad_id)
+    
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    
+    # Проверяем, зарегистрирован ли пользователь
+    participation = get_object_or_404(
+        OlympiadParticipation, 
+        olympiad=olympiad,
+        user=request.user
+    )
+    
+    # Если олимпиада уже завершена, перенаправляем на результаты
+    if participation.is_completed:
+        return redirect('olympiads:olympiad_results', olympiad_id=olympiad.id)
+    
+    now = timezone.now()
+    
+    # Отмечаем олимпиаду как завершенную
+    participation.is_completed = True
+    participation.finished_at = now
+    participation.save()
+    
+    # Обновляем общий балл
+    participation.calculate_score()
+    
+    messages.success(request, _('Вы успешно завершили олимпиаду!'))
+    return redirect('olympiads:olympiad_results', olympiad_id=olympiad.id)
+
+# Просмотр таблицы лидеров олимпиады
+@login_required
+def olympiad_leaderboard(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    
+    # Получаем завершенные участия в порядке убывания баллов и времени
+    participations = OlympiadParticipation.objects.filter(
+        olympiad=olympiad,
+        is_completed=True
+    ).order_by('-score', 'finished_at')
+    
+    # Создаем пагинатор
+    paginator = Paginator(participations, 20)
+    page_number = request.GET.get('page', 1)
+    participants_page = paginator.get_page(page_number)
+    
+    # Получаем ранг текущего пользователя
+    user_rank = None
+    if request.user.is_authenticated:
+        user_participation = OlympiadParticipation.objects.filter(
+            olympiad=olympiad,
+            user=request.user,
+            is_completed=True
+        ).first()
+        
+        if user_participation:
+            for i, participation in enumerate(participations):
+                if participation.user_id == request.user.id:
+                    user_rank = i + 1
+                    break
+    
+    context = {
+        'olympiad': olympiad,
+        'participants': participants_page,
+        'user_rank': user_rank,
+        'total_participants': participations.count()
+    }
+    
+    return render(request, 'olympiads/olympiad_leaderboard.html', context)
+
+# API для обновления прогресса участника
+@login_required
+@require_POST
+@csrf_exempt
+def olympiad_update_progress(request, olympiad_id):
+    try:
+        olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+        
+        # Проверяем, зарегистрирован ли пользователь
+        participation = get_object_or_404(
+            OlympiadParticipation, 
+            olympiad=olympiad,
+            user=request.user
+        )
+        
+        # Проверяем, не завершил ли пользователь олимпиаду
+        if participation.is_completed:
+            return JsonResponse({'status': 'error', 'message': 'Олимпиада уже завершена'})
+        
+        # Получаем задания и их статус
+        tasks = olympiad.tasks.all()
+        task_statuses = {}
+        
+        for task in tasks:
+            submission = OlympiadTaskSubmission.objects.filter(
+                participation=participation,
+                task=task
+            ).order_by('-submitted_at').first()
+            
+            task_statuses[str(task.id)] = {
+                'submitted': submission is not None,
+                'is_correct': submission.is_correct if submission else False,
+                'score': submission.score if submission else 0
+            }
+        
+        # Обновляем общий балл
+        participation.calculate_score()
+        
+        # Проверяем, не истекло ли время
+        now = timezone.now()
+        time_left = 0
+        
+        if olympiad.time_limit_minutes > 0:
+            time_passed = (now - participation.started_at).total_seconds() / 60
+            time_left = max(0, olympiad.time_limit_minutes - time_passed)
+        else:
+            time_left = max(0, (olympiad.end_datetime - now).total_seconds() / 60)
+        
+        return JsonResponse({
+            'status': 'success',
+            'task_statuses': task_statuses,
+            'score': participation.score,
+            'max_score': participation.max_score,
+            'time_left_minutes': int(time_left)
+        })
+    
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+# Завершение олимпиады организатором
+@login_required
+def olympiad_complete(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    
+    # Проверяем права доступа
+    if not (request.user.is_staff or request.user == olympiad.created_by):
+        messages.error(request, _('У вас нет прав для управления этой олимпиадой'))
+        return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
+    
+    if request.method == 'POST':
+        olympiad.status = Olympiad.OlympiadStatus.COMPLETED
+        olympiad.save()
+        
+        # Завершаем все незавершенные участия
+        now = timezone.now()
+        OlympiadParticipation.objects.filter(
+            olympiad=olympiad,
+            is_completed=False
+        ).update(is_completed=True, finished_at=now)
+        
+        messages.success(request, _('Олимпиада успешно завершена'))
+        return redirect('olympiads:olympiad_manage_list')
+    
+    context = {
+        'olympiad': olympiad
+    }
+    
+    return render(request, 'olympiads/manage/complete.html', context)
+
+# Архивация олимпиады
+@login_required
+def olympiad_archive(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    
+    # Проверяем права доступа
+    if not (request.user.is_staff or request.user == olympiad.created_by):
+        messages.error(request, _('У вас нет прав для управления этой олимпиадой'))
+        return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
+    
+    if request.method == 'POST':
+        olympiad.status = Olympiad.OlympiadStatus.ARCHIVED
+        olympiad.save()
+        
+        messages.success(request, _('Олимпиада успешно архивирована'))
+        return redirect('olympiads:olympiad_manage_list')
+    
+    context = {
+        'olympiad': olympiad
+    }
+    
+    return render(request, 'olympiads/manage/archive.html', context)
+
+# Удаление задания олимпиады
+@login_required
+def olympiad_task_delete(request, olympiad_id, task_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    task = get_object_or_404(OlympiadTask, id=task_id, olympiad=olympiad)
+    
+    # Проверяем права доступа
+    if not (request.user.is_staff or request.user == olympiad.created_by):
+        messages.error(request, _('У вас нет прав для управления этой олимпиадой'))
+        return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
+    
+    if request.method == 'POST':
+        task.delete()
+        
+        # Пересчитываем порядок заданий
+        for i, t in enumerate(olympiad.tasks.all().order_by('order')):
+            t.order = i + 1
+            t.save()
+        
+        messages.success(request, _('Задание успешно удалено'))
+        return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
+    
+    context = {
+        'olympiad': olympiad,
+        'task': task
+    }
+    
+    return render(request, 'olympiads/manage/task_delete.html', context)
+
+# Статистика олимпиады
+@login_required
+def olympiad_statistics(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    
+    # Проверяем права доступа
+    if not (request.user.is_staff or request.user == olympiad.created_by):
+        messages.error(request, _('У вас нет прав для просмотра статистики этой олимпиады'))
+        return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
+    
+    # Получаем общую статистику
+    total_participants = OlympiadParticipation.objects.filter(olympiad=olympiad).count()
+    completed_participants = OlympiadParticipation.objects.filter(olympiad=olympiad, is_completed=True).count()
+    passed_participants = OlympiadParticipation.objects.filter(olympiad=olympiad, passed=True).count()
+    
+    # Статистика по заданиям
+    tasks = olympiad.tasks.all().order_by('order')
+    tasks_stats = []
+    
+    for task in tasks:
+        submissions = OlympiadTaskSubmission.objects.filter(task=task)
+        attempts = submissions.count()
+        correct = submissions.filter(is_correct=True).count()
+        avg_score = submissions.aggregate(avg=Avg('score'))['avg'] or 0
+        
+        tasks_stats.append({
+            'task': task,
+            'attempts': attempts,
+            'correct': correct,
+            'success_rate': (correct / attempts * 100) if attempts > 0 else 0,
+            'avg_score': avg_score
+        })
+    
+    # Распределение баллов
+    score_distribution = OlympiadParticipation.objects.filter(
+        olympiad=olympiad,
+        is_completed=True
+    ).values('score').annotate(count=Count('id')).order_by('score')
+    
+    context = {
+        'olympiad': olympiad,
+        'total_participants': total_participants,
+        'completed_participants': completed_participants,
+        'passed_participants': passed_participants,
+        'completion_rate': (completed_participants / total_participants * 100) if total_participants > 0 else 0,
+        'pass_rate': (passed_participants / completed_participants * 100) if completed_participants > 0 else 0,
+        'tasks_stats': tasks_stats,
+        'score_distribution': score_distribution
+    }
+    
+    return render(request, 'olympiads/manage/statistics.html', context)

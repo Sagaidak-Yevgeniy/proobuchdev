@@ -1,62 +1,62 @@
 from django import template
+from django.template.defaultfilters import stringfilter
+import datetime
 
 register = template.Library()
 
-@register.filter
+@register.filter(name='get_item')
 def get_item(dictionary, key):
-    """
-    Фильтр Django для получения значения из словаря по ключу.
-    Используется в шаблонах для доступа к вложенным словарям.
-    
-    Пример использования:
-    {{ my_dict|get_item:my_key }}
-    
-    Args:
-        dictionary: Словарь, из которого нужно получить значение
-        key: Ключ для поиска в словаре
-        
-    Returns:
-        Значение по ключу или None, если ключ не найден
-    """
-    if dictionary is None:
-        return None
-    
-    try:
-        return dictionary.get(key)
-    except (AttributeError, KeyError, TypeError):
-        return None
+    """Получает элемент словаря по ключу в шаблоне"""
+    return dictionary.get(str(key)) if dictionary else None
 
-@register.filter
-def filter_passed(test_results):
-    """
-    Фильтр для подсчета количества пройденных тестов.
-    
-    Args:
-        test_results: Список результатов тестов
-        
-    Returns:
-        Количество пройденных тестов
-    """
-    if not test_results:
+@register.filter(name='selectattr')
+def selectattr(iterable, attr):
+    """Фильтрует список объектов по атрибуту"""
+    result = []
+    for item in iterable:
+        if isinstance(item, dict) and attr in item and item[attr]:
+            result.append(item)
+        elif hasattr(item, attr) and getattr(item, attr):
+            result.append(item)
+    return result
+
+@register.filter(name='mul')
+def mul(value, arg):
+    """Умножает два числа"""
+    return float(value) * float(arg)
+
+@register.filter(name='div')
+def div(value, arg):
+    """Делит два числа"""
+    if float(arg) == 0:
         return 0
-    
-    return sum(1 for result in test_results if result.passed)
+    return float(value) / float(arg)
+
+@register.filter(name='add')
+def add_minutes(value, arg):
+    """Добавляет указанное количество минут к datetime"""
+    if not value:
+        return value
+    return value + datetime.timedelta(minutes=int(arg))
+
+@register.filter(name='list')
+def to_list(value):
+    """Преобразует значение в список"""
+    return list(value)
 
 @register.simple_tag
-def widthratio(value, max_value, scale):
-    """
-    Вычисляет соотношение между value и max_value, умноженное на scale.
-    Безопасно обрабатывает случай деления на ноль.
-    
-    Args:
-        value: Числитель
-        max_value: Знаменатель
-        scale: Множитель (обычно 100 для процентов)
-        
-    Returns:
-        Вычисленное значение или 0, если max_value = 0
-    """
-    try:
-        return int(float(value) / float(max_value) * float(scale))
-    except (ValueError, ZeroDivisionError):
+def get_task_status(task_statuses, task_id):
+    """Возвращает статус задания по его ID"""
+    status = task_statuses.get(str(task_id), {})
+    if status.get('is_correct'):
+        return 'correct'
+    elif status.get('submitted'):
+        return 'submitted'
+    return 'not_submitted'
+
+@register.simple_tag
+def get_progress_percentage(completed, total):
+    """Вычисляет процент выполнения"""
+    if int(total) == 0:
         return 0
+    return int(int(completed) * 100 / int(total))
