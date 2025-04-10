@@ -117,7 +117,7 @@ def get_recent_activity(request):
     
     # Получаем недавние уведомления
     recent_notifications = Notification.objects.filter(
-        recipient=user
+        user=user
     ).order_by('-created_at')[:10]
     
     activities = []
@@ -213,8 +213,7 @@ def get_schedule(request):
     
     # Получаем все записанные курсы пользователя
     enrollments = Enrollment.objects.filter(
-        user=user, 
-        is_active=True
+        user=user
     )
     
     schedule = []
