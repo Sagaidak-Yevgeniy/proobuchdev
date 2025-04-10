@@ -177,6 +177,7 @@ def olympiad_detail(request, olympiad_id):
     olympiad_is_active = olympiad.is_active()
     olympiad_is_completed = olympiad.is_completed()
     olympiad_has_started = olympiad.has_started()
+    olympiad_is_upcoming = olympiad.is_upcoming()
     
     context = {
         'olympiad': olympiad,
@@ -189,7 +190,8 @@ def olympiad_detail(request, olympiad_id):
         'now': now,
         'olympiad_is_active': olympiad_is_active,
         'olympiad_is_completed': olympiad_is_completed, 
-        'olympiad_has_started': olympiad_has_started
+        'olympiad_has_started': olympiad_has_started,
+        'olympiad_is_upcoming': olympiad_is_upcoming
     }
     
     return render(request, 'olympiads/olympiad_detail.html', context)
