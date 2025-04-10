@@ -6,10 +6,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ПроОбучение{% endblock %}</title>
     
-    <!-- Tailwind CSS Локальный файл -->
-    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Настройки темы перенесены в CSS
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontSize: {
+                        // Базовые размеры шрифтов
+                        'base': '1rem',
+                        'xl': '1.25rem',
+                        'xs': '0.75rem',
+                        // Размеры для адаптивного интерфейса
+                        'small': '0.875rem',
+                        'normal': '1rem',
+                        'large': '1.125rem',
+                        'x-large': '1.25rem',
+                    },
+                }
+            }
+        }
     </script>
     
     <!-- Font Awesome для иконок -->
