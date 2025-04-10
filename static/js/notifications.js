@@ -36,6 +36,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const maxHeight = window.innerHeight * 0.8; // 80% от высоты экрана
             notificationDropdown.style.maxHeight = `${maxHeight}px`;
             
+            // Гарантируем, что на мобильных устройствах меню выровнено по правому краю
+            notificationDropdown.style.left = 'auto';
+            notificationDropdown.style.right = '8px'; // 2rem, соответствует right-2 в tailwind
+            
             // Устанавливаем максимальную высоту для внутреннего контейнера с уведомлениями
             const listContainer = notificationDropdown.querySelector('.overflow-y-auto');
             if (listContainer) {
@@ -45,15 +49,10 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // На десктопе позиционируем меню относительно кнопки
-        const buttonRect = notificationButton.getBoundingClientRect();
-        const parentRect = notificationButton.closest('.relative').getBoundingClientRect();
-        const leftOffset = buttonRect.left - parentRect.left;
-        
-        // Устанавливаем положение меню так, чтобы оно было выровнено по левому краю кнопки
-        notificationDropdown.style.left = `${leftOffset}px`;
-        notificationDropdown.style.right = 'auto';
+        // На десктопе используем абсолютное позиционирование
         notificationDropdown.style.maxHeight = '80vh';
+        notificationDropdown.style.left = 'auto';
+        notificationDropdown.style.right = '0';
         
         // Сбрасываем высоту внутреннего контейнера
         const listContainer = notificationDropdown.querySelector('.overflow-y-auto');
