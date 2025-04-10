@@ -552,6 +552,7 @@
                     const line3 = document.querySelector('.menu-line-3');
                     
                     if (line1 && line2 && line3) {
+                        // Перемещаем линии в центр и поворачиваем на 45 градусов
                         line1.style.transform = 'translateY(0) rotate(45deg)';
                         line2.style.opacity = '0';
                         line3.style.transform = 'translateY(0) rotate(-45deg)';
@@ -565,9 +566,11 @@
                     const line3 = document.querySelector('.menu-line-3');
                     
                     if (line1 && line2 && line3) {
-                        line1.style.transform = 'translateY(-1.5px) rotate(0)';
+                        // Полностью сбрасываем трансформацию до исходных значений
+                        line1.style.transform = 'translateY(-1.5px)';
                         line2.style.opacity = '1';
-                        line3.style.transform = 'translateY(1.5px) rotate(0)';
+                        line2.style.transform = '';
+                        line3.style.transform = 'translateY(1.5px)';
                     }
                 }
             });
