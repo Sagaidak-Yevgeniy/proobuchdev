@@ -10,34 +10,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='notification',
-            name='icon',
-            field=models.CharField(blank=True, max_length=50, null=True, verbose_name='Иконка'),
-        ),
-        migrations.AddField(
-            model_name='notification',
-            name='importance',
-            field=models.CharField(default='normal', max_length=20, verbose_name='Важность'),
-        ),
-        migrations.AddField(
-            model_name='notificationsettings',
-            name='receive_deadline',
-            field=models.BooleanField(blank=True, default=True, null=True, verbose_name='Уведомления о дедлайнах'),
-        ),
-        migrations.AddField(
-            model_name='notificationsettings',
-            name='receive_system',
-            field=models.BooleanField(default=True, verbose_name='Системные уведомления'),
-        ),
-        migrations.AlterField(
-            model_name='notificationsettings',
-            name='quiet_hours_end',
-            field=models.TimeField(blank=True, default='08:00', null=True, verbose_name='Конец тихих часов'),
-        ),
-        migrations.AlterField(
-            model_name='notificationsettings',
-            name='quiet_hours_start',
-            field=models.TimeField(blank=True, default='22:00', null=True, verbose_name='Начало тихих часов'),
+        # Поля уже существуют, создаем пустую миграцию, чтобы Django считал, что она применена
+        migrations.RunSQL(
+            sql='-- Эта миграция фиктивная, поскольку поля icon и importance уже существуют',
+            reverse_sql='-- Нет необходимости в обратной миграции'
         ),
     ]
