@@ -1,301 +1,303 @@
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-from django.urls import reverse
-from django.utils.text import slugify
-from django.conf import settings
+from django.contrib.auth import get_user_model
 
+from courses.models import Course
+
+User = get_user_model()
 
 class Olympiad(models.Model):
-    """Модель олимпиады с набором задач и временными рамками проведения"""
-    title = models.CharField('Название олимпиады', max_length=200)
-    slug = models.SlugField('URL', max_length=200, unique=True)
-    description = models.TextField('Описание', blank=True)
-    start_time = models.DateTimeField('Время начала')
-    end_time = models.DateTimeField('Время окончания')
-    is_published = models.BooleanField('Опубликована', default=False)
-    creator = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='created_olympiads',
-        verbose_name='Создатель'
-    )
-    created_at = models.DateTimeField('Дата создания', auto_now_add=True)
-    updated_at = models.DateTimeField('Дата обновления', auto_now=True)
+    """Модель олимпиады"""
+    
+    class OlympiadStatus(models.TextChoices):
+        DRAFT = 'draft', _('Черновик')
+        PUBLISHED = 'published', _('Опубликована')
+        ACTIVE = 'active', _('Активна')
+        COMPLETED = 'completed', _('Завершена')
+        ARCHIVED = 'archived', _('В архиве')
+    
+    title = models.CharField(_('Название'), max_length=255)
+    description = models.TextField(_('Описание'))
+    short_description = models.CharField(_('Краткое описание'), max_length=255, blank=True)
+    image = models.ImageField(_('Изображение'), upload_to='olympiad_covers/', blank=True, null=True)
+    start_datetime = models.DateTimeField(_('Дата и время начала'), default=timezone.now)
+    end_datetime = models.DateTimeField(_('Дата и время окончания'), default=timezone.now)
+    is_open = models.BooleanField(_('Открытая'), default=True, 
+                                help_text=_('Если отмечено, любой пользователь может принять участие'))
+    time_limit_minutes = models.PositiveIntegerField(_('Ограничение по времени (мин)'), 
+                                                   default=0, 
+                                                   help_text=_('0 означает без ограничения'))
+    min_passing_score = models.PositiveIntegerField(_('Минимальный проходной балл'), default=0)
+    
+    status = models.CharField(_('Статус'), max_length=20, choices=OlympiadStatus.choices, default=OlympiadStatus.DRAFT)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, 
+                                  related_name='created_olympiads', verbose_name=_('Создатель'))
+    participants = models.ManyToManyField(User, through='OlympiadParticipation', 
+                                         related_name='olympiads', verbose_name=_('Участники'))
+    
+    is_rated = models.BooleanField(_('Рейтинговая'), default=True,
+                               help_text=_('Влияет ли на общий рейтинг пользователей'))
+    related_course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True,
+                                     related_name='olympiads', verbose_name=_('Связанный курс'))
+    
+    created_at = models.DateTimeField(_('Создана'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('Обновлена'), auto_now=True)
     
     class Meta:
-        verbose_name = 'Олимпиада'
-        verbose_name_plural = 'Олимпиады'
-        ordering = ['-start_time']
+        verbose_name = _('Олимпиада')
+        verbose_name_plural = _('Олимпиады')
+        ordering = ['-start_datetime']
     
     def __str__(self):
         return self.title
-    
-    def save(self, *args, **kwargs):
-        # Автоматически генерируем slug при первом сохранении
-        if not self.slug:
-            self.slug = slugify(self.title)
-        super().save(*args, **kwargs)
-    
-    def get_absolute_url(self):
-        return reverse('olympiad_detail', kwargs={'slug': self.slug})
     
     def is_active(self):
-        """Проверяет, активна ли олимпиада (идет ли она сейчас)"""
+        """Проверяет, активна ли олимпиада в текущий момент времени"""
         now = timezone.now()
-        return self.start_time <= now and self.end_time >= now
+        return self.start_datetime <= now <= self.end_datetime and self.status == self.OlympiadStatus.ACTIVE
     
-    def is_future(self):
-        """Проверяет, запланирована ли олимпиада на будущее"""
-        return self.start_time > timezone.now()
-    
-    def is_past(self):
+    def is_completed(self):
         """Проверяет, завершена ли олимпиада"""
-        return self.end_time < timezone.now()
+        return self.end_datetime < timezone.now() or self.status == self.OlympiadStatus.COMPLETED
     
-    @property
-    def status(self):
-        """Возвращает статус олимпиады: активная/предстоящая/завершенная/черновик"""
-        if not self.is_published:
-            return 'draft'
-        if self.is_active():
-            return 'active'
-        if self.is_future():
-            return 'future'
-        return 'past'
+    def is_upcoming(self):
+        """Проверяет, ожидается ли начало олимпиады"""
+        return self.start_datetime > timezone.now() and self.status == self.OlympiadStatus.PUBLISHED
     
-    @property
-    def status_display(self):
-        """Возвращает отображаемый статус олимпиады на русском"""
-        status_dict = {
-            'draft': 'Черновик',
-            'active': 'Активная',
-            'future': 'Предстоящая',
-            'past': 'Завершена'
-        }
-        return status_dict.get(self.status, 'Неизвестно')
-    
-    @property
-    def problems_count(self):
-        """Возвращает количество задач в олимпиаде"""
-        return self.problems.count()
-    
-    @property
-    def participants_count(self):
-        """Возвращает количество участников олимпиады"""
-        return self.participants.count()
+    def can_participate(self, user):
+        """Определяет, может ли пользователь участвовать в олимпиаде"""
+        # Проверяем, что олимпиада активна
+        if not self.is_active():
+            return False
+        
+        # Проверяем, что олимпиада открытая или пользователь приглашен
+        if not self.is_open:
+            return OlympiadInvitation.objects.filter(olympiad=self, user=user, is_accepted=True).exists()
+        
+        # Проверяем, что пользователь еще не начал олимпиаду, или еще не истекло время
+        participation = OlympiadParticipation.objects.filter(olympiad=self, user=user).first()
+        if participation and participation.is_completed:
+            return False
+        
+        # Если установлен лимит времени, проверяем, не истекло ли время
+        if participation and self.time_limit_minutes > 0:
+            time_passed = (timezone.now() - participation.started_at).total_seconds() / 60
+            if time_passed >= self.time_limit_minutes:
+                participation.is_completed = True
+                participation.save()
+                return False
+        
+        return True
 
 
-class Problem(models.Model):
-    """Модель задачи в олимпиаде"""
-    olympiad = models.ForeignKey(
-        Olympiad,
-        on_delete=models.CASCADE,
-        related_name='problems',
-        verbose_name='Олимпиада'
-    )
-    title = models.CharField('Название задачи', max_length=200)
-    description = models.TextField('Условие задачи')
-    time_limit = models.PositiveIntegerField('Ограничение по времени (мс)', default=1000)
-    memory_limit = models.PositiveIntegerField('Ограничение по памяти (МБ)', default=256)
-    points = models.PositiveIntegerField('Баллы за решение', default=100)
-    order = models.PositiveIntegerField('Порядковый номер', default=0)
-    created_at = models.DateTimeField('Дата создания', auto_now_add=True)
-    updated_at = models.DateTimeField('Дата обновления', auto_now=True)
+class OlympiadTask(models.Model):
+    """Модель задания олимпиады"""
+    
+    class TaskType(models.TextChoices):
+        PROGRAMMING = 'programming', _('Программирование')
+        MULTIPLE_CHOICE = 'multiple_choice', _('Тест с выбором ответа')
+        THEORETICAL = 'theoretical', _('Теоретический вопрос')
+    
+    olympiad = models.ForeignKey(Olympiad, on_delete=models.CASCADE, 
+                               related_name='tasks', verbose_name=_('Олимпиада'))
+    title = models.CharField(_('Название'), max_length=255)
+    description = models.TextField(_('Условие задачи'))
+    task_type = models.CharField(_('Тип задания'), max_length=20, choices=TaskType.choices)
+    
+    points = models.PositiveIntegerField(_('Баллы'), default=1)
+    time_limit_minutes = models.PositiveIntegerField(_('Ограничение по времени (мин)'), default=0,
+                                                  help_text=_('0 означает без ограничения'))
+    memory_limit_mb = models.PositiveIntegerField(_('Ограничение по памяти (МБ)'), default=0,
+                                               help_text=_('0 означает без ограничения'))
+    
+    order = models.PositiveIntegerField(_('Порядок'), default=0)
+    min_passing_score = models.PositiveIntegerField(_('Минимальный проходной балл'), default=0)
+    
+    initial_code = models.TextField(_('Начальный код'), blank=True,
+                                 help_text=_('Код, который будет предоставлен участнику в начале'))
+    
+    created_at = models.DateTimeField(_('Создано'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('Обновлено'), auto_now=True)
     
     class Meta:
-        verbose_name = 'Задача'
-        verbose_name_plural = 'Задачи'
-        ordering = ['order']
+        verbose_name = _('Задание олимпиады')
+        verbose_name_plural = _('Задания олимпиад')
+        ordering = ['olympiad', 'order']
     
     def __str__(self):
-        return self.title
-    
-    def get_absolute_url(self):
-        return reverse('problem_detail', kwargs={
-            'olympiad_slug': self.olympiad.slug,
-            'pk': self.pk
-        })
-    
-    @property
-    def total_test_cases(self):
-        """Возвращает общее количество тестовых случаев для задачи"""
-        return self.test_cases.count()
+        return f"{self.olympiad.title} - {self.title}"
 
 
-class TestCase(models.Model):
-    """Модель тестового случая для задачи"""
-    problem = models.ForeignKey(
-        Problem,
-        on_delete=models.CASCADE,
-        related_name='test_cases',
-        verbose_name='Задача'
-    )
-    input_data = models.TextField('Входные данные')
-    expected_output = models.TextField('Ожидаемый результат')
-    is_example = models.BooleanField('Пример для отображения', default=False)
-    weight = models.PositiveIntegerField('Вес теста', default=1,
-                                        help_text='Относительный вес теста при подсчете баллов')
-    order = models.PositiveIntegerField('Порядковый номер', default=0)
-    created_at = models.DateTimeField('Дата создания', auto_now_add=True)
+class OlympiadTestCase(models.Model):
+    """Модель тестового случая для задания олимпиады"""
+    
+    task = models.ForeignKey(OlympiadTask, on_delete=models.CASCADE, 
+                          related_name='test_cases', verbose_name=_('Задание'))
+    input_data = models.TextField(_('Входные данные'))
+    expected_output = models.TextField(_('Ожидаемый результат'))
+    is_hidden = models.BooleanField(_('Скрытый тест'), default=False,
+                                help_text=_('Если отмечено, данные теста не будут видны участнику'))
+    explanation = models.TextField(_('Пояснение'), blank=True)
+    points = models.PositiveIntegerField(_('Баллы за прохождение'), default=1)
+    
+    order = models.PositiveIntegerField(_('Порядок'), default=0)
+    
+    created_at = models.DateTimeField(_('Создан'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('Обновлен'), auto_now=True)
     
     class Meta:
-        verbose_name = 'Тестовый случай'
-        verbose_name_plural = 'Тестовые случаи'
-        ordering = ['order']
+        verbose_name = _('Тестовый случай')
+        verbose_name_plural = _('Тестовые случаи')
+        ordering = ['task', 'order']
     
     def __str__(self):
-        return f"Тест {self.order} для задачи {self.problem.title}"
+        return f"{self.task.title} - Тест #{self.order}"
 
 
-class Submission(models.Model):
-    """Модель отправки решения задачи участником"""
-    STATUS_CHOICES = [
-        ('pending', 'В обработке'),
-        ('testing', 'Тестируется'),
-        ('accepted', 'Принято'),
-        ('partial', 'Частично верно'),
-        ('wrong_answer', 'Неправильный ответ'),
-        ('time_limit', 'Превышено время выполнения'),
-        ('memory_limit', 'Превышен лимит памяти'),
-        ('runtime_error', 'Ошибка выполнения'),
-        ('compilation_error', 'Ошибка компиляции'),
-        ('system_error', 'Системная ошибка'),
-    ]
+class OlympiadMultipleChoiceOption(models.Model):
+    """Модель варианта ответа для тестового задания олимпиады"""
     
-    problem = models.ForeignKey(
-        Problem,
-        on_delete=models.CASCADE,
-        related_name='submissions',
-        verbose_name='Задача'
-    )
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='olympiad_submissions',
-        verbose_name='Участник'
-    )
-    olympiad = models.ForeignKey(
-        Olympiad,
-        on_delete=models.CASCADE,
-        related_name='submissions',
-        verbose_name='Олимпиада'
-    )
-    code = models.TextField('Код решения')
-    status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES, default='pending')
-    points = models.PositiveIntegerField('Набранные баллы', default=0)
-    executed_time = models.PositiveIntegerField('Время выполнения (мс)', null=True, blank=True)
-    error_message = models.TextField('Сообщение об ошибке', blank=True)
-    submitted_at = models.DateTimeField('Время отправки', auto_now_add=True)
+    task = models.ForeignKey(OlympiadTask, on_delete=models.CASCADE,
+                          related_name='options', verbose_name=_('Задание'))
+    text = models.TextField(_('Текст варианта'))
+    is_correct = models.BooleanField(_('Правильный ответ'), default=False)
+    explanation = models.TextField(_('Пояснение'), blank=True)
+    
+    order = models.PositiveIntegerField(_('Порядок'), default=0)
+    
+    created_at = models.DateTimeField(_('Создан'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('Обновлен'), auto_now=True)
     
     class Meta:
-        verbose_name = 'Отправка решения'
-        verbose_name_plural = 'Отправки решений'
-        ordering = ['-submitted_at']
-
+        verbose_name = _('Вариант ответа')
+        verbose_name_plural = _('Варианты ответов')
+        ordering = ['task', 'order']
+    
     def __str__(self):
-        return f"{self.user.username} - {self.problem.title} ({self.status})"
-
-    @property
-    def status_display_color(self):
-        """Возвращает цвет для отображения статуса"""
-        color_map = {
-            'pending': 'gray',
-            'testing': 'blue',
-            'accepted': 'green',
-            'partial': 'yellow',
-            'wrong_answer': 'red',
-            'time_limit': 'orange',
-            'memory_limit': 'orange',
-            'runtime_error': 'red',
-            'compilation_error': 'red',
-            'system_error': 'purple',
-        }
-        return color_map.get(self.status, 'gray')
+        return f"{self.task.title} - {self.text[:30]}{'...' if len(self.text) > 30 else ''}"
 
 
-class TestResult(models.Model):
-    """Модель результата прохождения отдельного тестового случая"""
-    submission = models.ForeignKey(
-        Submission,
-        on_delete=models.CASCADE,
-        related_name='test_results',
-        verbose_name='Отправка'
-    )
-    test_case = models.ForeignKey(
-        TestCase,
-        on_delete=models.CASCADE,
-        related_name='test_results',
-        verbose_name='Тестовый случай'
-    )
-    passed = models.BooleanField('Пройден', default=False)
-    execution_time = models.PositiveIntegerField('Время выполнения (мс)', null=True, blank=True)
-    memory_used = models.PositiveIntegerField('Использовано памяти (КБ)', null=True, blank=True)
-    output = models.TextField('Вывод решения', blank=True)
-    error_message = models.TextField('Сообщение об ошибке', blank=True)
+class OlympiadParticipation(models.Model):
+    """Модель участия в олимпиаде"""
+    
+    olympiad = models.ForeignKey(Olympiad, on_delete=models.CASCADE,
+                               related_name='participations', verbose_name=_('Олимпиада'))
+    user = models.ForeignKey(User, on_delete=models.CASCADE,
+                           related_name='olympiad_participations', verbose_name=_('Участник'))
+    
+    started_at = models.DateTimeField(_('Время начала'), auto_now_add=True)
+    finished_at = models.DateTimeField(_('Время окончания'), null=True, blank=True)
+    
+    score = models.PositiveIntegerField(_('Набранные баллы'), default=0)
+    max_score = models.PositiveIntegerField(_('Максимальные баллы'), default=0)
+    is_completed = models.BooleanField(_('Завершил'), default=False)
+    passed = models.BooleanField(_('Сдал'), default=False)
     
     class Meta:
-        verbose_name = 'Результат теста'
-        verbose_name_plural = 'Результаты тестов'
-        ordering = ['test_case__order']
-
-    def __str__(self):
-        status = 'Пройден' if self.passed else 'Не пройден'
-        return f"Тест {self.test_case.order} - {status}"
-
-
-class OlympiadParticipant(models.Model):
-    """Модель участника олимпиады для отслеживания регистраций"""
-    olympiad = models.ForeignKey(
-        Olympiad,
-        on_delete=models.CASCADE,
-        related_name='participants',
-        verbose_name='Олимпиада'
-    )
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='participating_olympiads',
-        verbose_name='Участник'
-    )
-    registered_at = models.DateTimeField('Время регистрации', auto_now_add=True)
-    total_points = models.PositiveIntegerField('Общее количество баллов', default=0)
-    solved_problems = models.PositiveIntegerField('Решено задач', default=0)
-    
-    class Meta:
-        verbose_name = 'Участник олимпиады'
-        verbose_name_plural = 'Участники олимпиады'
+        verbose_name = _('Участие в олимпиаде')
+        verbose_name_plural = _('Участия в олимпиадах')
         unique_together = ['olympiad', 'user']
-        ordering = ['-total_points', 'solved_problems']
-
+    
     def __str__(self):
         return f"{self.user.username} - {self.olympiad.title}"
-
-    def update_statistics(self):
-        """Обновляет статистику участника по решенным задачам и набранным баллам"""
-        # Получаем список успешно решенных задач
-        from django.db.models import Max
-        
-        solved_problems = set()
-        total_points = 0
-        
-        submissions = Submission.objects.filter(
-            user=self.user,
-            olympiad=self.olympiad
+    
+    def calculate_score(self):
+        """Рассчитывает общий балл участника на основе выполненных заданий"""
+        total_score = 0
+        task_submissions = OlympiadTaskSubmission.objects.filter(
+            participation=self,
+            is_correct=True
         )
         
-        for problem in self.olympiad.problems.all():
-            # Для каждой задачи находим лучшую отправку по баллам
-            best_submission = submissions.filter(
-                problem=problem
-            ).order_by('-points', 'submitted_at').first()
-            
-            if best_submission:
-                # Считаем задачу полностью решенной только для статуса accepted
-                if best_submission.status == 'accepted':
-                    solved_problems.add(best_submission.problem_id)
-                # Накапливаем баллы со всех задач, даже если они решены частично
-                total_points += best_submission.points
+        for submission in task_submissions:
+            total_score += submission.score
         
-        self.solved_problems = len(solved_problems)
-        self.total_points = total_points
+        self.score = total_score
+        self.passed = total_score >= self.olympiad.min_passing_score
         self.save()
+        
+        return total_score
+
+
+class OlympiadTaskSubmission(models.Model):
+    """Модель отправки решения задания олимпиады"""
+    
+    participation = models.ForeignKey(OlympiadParticipation, on_delete=models.CASCADE,
+                                    related_name='submissions', verbose_name=_('Участие'))
+    task = models.ForeignKey(OlympiadTask, on_delete=models.CASCADE,
+                          related_name='submissions', verbose_name=_('Задание'))
+    
+    code = models.TextField(_('Код решения'), blank=True)
+    text_answer = models.TextField(_('Текстовый ответ'), blank=True)
+    selected_options = models.ManyToManyField(OlympiadMultipleChoiceOption, 
+                                           blank=True,
+                                           related_name='submissions',
+                                           verbose_name=_('Выбранные варианты'))
+    
+    score = models.PositiveIntegerField(_('Набранные баллы'), default=0)
+    max_score = models.PositiveIntegerField(_('Максимальные баллы'), default=0)
+    is_correct = models.BooleanField(_('Правильное решение'), default=False)
+    
+    # Для программирования - результаты тестирования
+    passed_test_cases = models.PositiveIntegerField(_('Пройдено тестов'), default=0)
+    total_test_cases = models.PositiveIntegerField(_('Всего тестов'), default=0)
+    
+    # Информация для отладки
+    execution_time = models.FloatField(_('Время выполнения (сек)'), default=0)
+    memory_usage = models.FloatField(_('Использовано памяти (МБ)'), default=0)
+    error_message = models.TextField(_('Сообщение об ошибке'), blank=True)
+    
+    submitted_at = models.DateTimeField(_('Время отправки'), auto_now_add=True)
+    
+    class Meta:
+        verbose_name = _('Отправка решения')
+        verbose_name_plural = _('Отправки решений')
+        ordering = ['-submitted_at']
+    
+    def __str__(self):
+        return f"{self.participation.user.username} - {self.task.title}"
+
+
+class OlympiadInvitation(models.Model):
+    """Модель приглашения на участие в закрытой олимпиаде"""
+    
+    olympiad = models.ForeignKey(Olympiad, on_delete=models.CASCADE,
+                               related_name='invitations', verbose_name=_('Олимпиада'))
+    user = models.ForeignKey(User, on_delete=models.CASCADE,
+                           related_name='olympiad_invitations', verbose_name=_('Пользователь'))
+    
+    invited_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,
+                                 related_name='sent_olympiad_invitations', verbose_name=_('Пригласил'))
+    
+    is_accepted = models.BooleanField(_('Принято'), default=False)
+    
+    created_at = models.DateTimeField(_('Создано'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('Обновлено'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('Приглашение на олимпиаду')
+        verbose_name_plural = _('Приглашения на олимпиады')
+        unique_together = ['olympiad', 'user']
+    
+    def __str__(self):
+        return f"{self.olympiad.title} - {self.user.username}"
+
+
+class OlympiadCertificate(models.Model):
+    """Модель сертификата за прохождение олимпиады"""
+    
+    participation = models.OneToOneField(OlympiadParticipation, on_delete=models.CASCADE,
+                                       related_name='certificate', verbose_name=_('Участие'))
+    
+    certificate_id = models.CharField(_('Номер сертификата'), max_length=255, unique=True)
+    certificate_file = models.FileField(_('Файл сертификата'), upload_to='olympiad_certificates/')
+    
+    issue_date = models.DateTimeField(_('Дата выдачи'), auto_now_add=True)
+    
+    class Meta:
+        verbose_name = _('Сертификат олимпиады')
+        verbose_name_plural = _('Сертификаты олимпиад')
+    
+    def __str__(self):
+        return f"Сертификат {self.certificate_id} - {self.participation.user.username}"

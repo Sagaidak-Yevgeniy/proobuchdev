@@ -159,7 +159,7 @@ class GoalStep(models.Model):
         verbose_name=_('Дата выполнения')
     )
     created_at = models.DateTimeField(
-        auto_now_add=True,
+        default=timezone.now,
         verbose_name=_('Создан')
     )
     updated_at = models.DateTimeField(

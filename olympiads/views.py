@@ -1,722 +1,817 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
-from django.core.paginator import Paginator
-from django.http import Http404, JsonResponse
 from django.utils import timezone
-from django.db.models import Max, Q, Case, When, Value, IntegerField
-from django.urls import reverse
+from django.db.models import Sum, Count, Q, F, Max
+from django.utils.translation import gettext_lazy as _
+from django.core.paginator import Paginator
 
-from .models import Olympiad, Problem, TestCase, Submission, OlympiadParticipant, TestResult
-from .forms import OlympiadForm, ProblemForm, TestCaseForm, SubmissionForm
+from .models import (
+    Olympiad, 
+    OlympiadTask, 
+    OlympiadTestCase, 
+    OlympiadMultipleChoiceOption,
+    OlympiadParticipation, 
+    OlympiadTaskSubmission,
+    OlympiadInvitation,
+    OlympiadCertificate
+)
 
-import json
-from datetime import datetime, timedelta
+from users.models import CustomUser
 
-
+# Просмотр списка олимпиад
 def olympiad_list(request):
-    """Отображает список всех опубликованных олимпиад с фильтрацией"""
-    # Получение параметров фильтрации
-    status = request.GET.get('status')
-    search = request.GET.get('search')
+    now = timezone.now()
+    upcoming_olympiads = Olympiad.objects.filter(
+        status=Olympiad.OlympiadStatus.PUBLISHED, 
+        start_datetime__gt=now
+    ).order_by('start_datetime')
     
-    # Базовый запрос - только опубликованные олимпиады
-    olympiads = Olympiad.objects.filter(is_published=True)
+    active_olympiads = Olympiad.objects.filter(
+        status=Olympiad.OlympiadStatus.ACTIVE,
+        start_datetime__lte=now,
+        end_datetime__gte=now
+    ).order_by('end_datetime')
     
-    # Фильтрация по статусу
-    if status == 'active':
-        olympiads = olympiads.filter(
-            start_time__lte=timezone.now(),
-            end_time__gte=timezone.now()
+    completed_olympiads = Olympiad.objects.filter(
+        Q(status=Olympiad.OlympiadStatus.COMPLETED) | 
+        Q(status=Olympiad.OlympiadStatus.ACTIVE, end_datetime__lt=now)
+    ).order_by('-end_datetime')[:10]
+    
+    # Если пользователь авторизован, добавляем информацию об участии
+    if request.user.is_authenticated:
+        user_participations = OlympiadParticipation.objects.filter(user=request.user)
+        user_participation_ids = {p.olympiad_id for p in user_participations}
+        
+        # Добавляем информацию о приглашениях
+        user_invitations = OlympiadInvitation.objects.filter(
+            user=request.user, 
+            is_accepted=False,
+            olympiad__start_datetime__gt=now
         )
-    elif status == 'future':
-        olympiads = olympiads.filter(start_time__gt=timezone.now())
-    elif status == 'past':
-        olympiads = olympiads.filter(end_time__lt=timezone.now())
-    
-    # Поиск по названию или описанию
-    if search:
-        olympiads = olympiads.filter(
-            Q(title__icontains=search) | Q(description__icontains=search)
-        )
-    
-    # Сортировка: сначала активные, затем предстоящие, затем завершенные
-    # Создаем новое поле для сортировки
-    olympiads = olympiads.annotate(
-        sort_order=Case(
-            When(
-                start_time__lte=timezone.now(), 
-                end_time__gte=timezone.now(), 
-                then=Value(0)
-            ),
-            When(
-                start_time__gt=timezone.now(), 
-                then=Value(1)
-            ),
-            default=Value(2),
-            output_field=IntegerField()
-        )
-    ).order_by('sort_order', 'start_time')
-    
-    # Пагинация
-    paginator = Paginator(olympiads, 9)  # 9 олимпиад на странице
-    page_number = request.GET.get('page')
-    olympiads = paginator.get_page(page_number)
-    
-    # Отображение статуса для пустых состояний
-    status_display = {
-        'active': 'Активные',
-        'future': 'Предстоящие',
-        'past': 'Завершенные',
-    }.get(status, '')
+        user_invitation_ids = {i.olympiad_id for i in user_invitations}
+    else:
+        user_participation_ids = set()
+        user_invitation_ids = set()
     
     context = {
-        'olympiads': olympiads,
-        'status': status,
-        'search': search,
-        'status_display': status_display,
+        'upcoming_olympiads': upcoming_olympiads,
+        'active_olympiads': active_olympiads,
+        'completed_olympiads': completed_olympiads,
+        'user_participation_ids': user_participation_ids,
+        'user_invitation_ids': user_invitation_ids
     }
     
     return render(request, 'olympiads/olympiad_list.html', context)
 
-
-def olympiad_detail(request, slug):
-    """Отображает детальную информацию об олимпиаде и её задачах"""
-    olympiad = get_object_or_404(Olympiad, slug=slug, is_published=True)
+# Просмотр деталей олимпиады
+def olympiad_detail(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    now = timezone.now()
     
-    # Проверка, участвует ли пользователь в олимпиаде
-    is_participating = False
+    # Определяем статус олимпиады для текущего пользователя
+    user_participation = None
+    user_invitation = None
+    can_register = False
+    
     if request.user.is_authenticated:
-        is_participating = OlympiadParticipant.objects.filter(
-            olympiad=olympiad, user=request.user
-        ).exists()
-    
-    # Получение задач олимпиады
-    problems = olympiad.problems.all().order_by('order')
-    
-    # Вычисление продолжительности олимпиады
-    duration = olympiad.end_time - olympiad.start_time
-    days, seconds = duration.days, duration.seconds
-    hours = seconds // 3600
-    minutes = (seconds % 3600) // 60
-    
-    if days > 0:
-        duration_str = f"{days} д. {hours} ч."
-    else:
-        duration_str = f"{hours} ч. {minutes} мин."
-    
-    # Статистика решений (только для участников олимпиады или после завершения)
-    user_submissions = {}
-    solved_problems = 0
-    total_points = 0
-    # Правильно использовать Sum из django.db.models.functions
-    from django.db.models import Sum
-    total_available_points = problems.aggregate(total=Sum('points'))['total'] or 0
-    
-    if request.user.is_authenticated and (is_participating or olympiad.is_past() or request.user.is_staff):
-        # Получение лучших отправок пользователя по каждой задаче
-        submissions = Submission.objects.filter(
+        user_participation = OlympiadParticipation.objects.filter(
             olympiad=olympiad,
             user=request.user
-        )
+        ).first()
         
-        for problem in problems:
-            best_submission = submissions.filter(
-                problem=problem
-            ).order_by('-points', 'submitted_at').first()
-            
-            if best_submission:
-                user_submissions[problem.id] = {
-                    'id': best_submission.id,
-                    'status': best_submission.status,
-                    'points': best_submission.points,
-                }
-                
-                if best_submission.status == 'accepted':
-                    solved_problems += 1
-                    total_points += best_submission.points
+        user_invitation = OlympiadInvitation.objects.filter(
+            olympiad=olympiad,
+            user=request.user,
+            is_accepted=False
+        ).first()
+        
+        # Пользователь может зарегистрироваться, если:
+        # 1. Олимпиада еще не началась
+        # 2. Олимпиада открытая или пользователь приглашен
+        # 3. Пользователь еще не зарегистрирован
+        if olympiad.start_datetime > now and not user_participation:
+            if olympiad.is_open or user_invitation:
+                can_register = True
     
-    # Вычисляем процент выполнения
-    completion_percent = round((total_points / total_available_points) * 100) if total_available_points > 0 else 0
+    # Подсчитываем общее количество заданий и баллов
+    task_count = olympiad.tasks.count()
+    total_points = olympiad.tasks.aggregate(total=Sum('points'))['total'] or 0
+    
+    # Получаем топ-5 участников
+    top_participants = OlympiadParticipation.objects.filter(
+        olympiad=olympiad,
+        is_completed=True
+    ).order_by('-score')[:5]
     
     context = {
         'olympiad': olympiad,
-        'problems': problems,
-        'duration': duration_str,
-        'is_participating': is_participating,
-        'user_submissions': user_submissions,
-        'solved_problems': solved_problems,
+        'user_participation': user_participation,
+        'user_invitation': user_invitation,
+        'can_register': can_register,
+        'task_count': task_count,
         'total_points': total_points,
-        'total_available_points': total_available_points,
-        'completion_percent': completion_percent
+        'top_participants': top_participants,
+        'now': now
     }
     
     return render(request, 'olympiads/olympiad_detail.html', context)
 
-
+# Регистрация на олимпиаду
 @login_required
-def olympiad_register(request, slug):
-    """Регистрирует пользователя для участия в олимпиаде"""
-    olympiad = get_object_or_404(Olympiad, slug=slug, is_published=True)
+def olympiad_register(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    now = timezone.now()
     
-    # Проверяем, что олимпиада активна или ещё не началась
-    if olympiad.is_past():
-        messages.error(request, "Невозможно зарегистрироваться. Олимпиада уже завершена.")
-        return redirect('olympiad_detail', slug=slug)
+    # Проверяем, может ли пользователь зарегистрироваться
+    if olympiad.start_datetime <= now:
+        messages.error(request, _('Регистрация на эту олимпиаду уже закрыта'))
+        return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
     
-    # Проверяем, уже ли пользователь участвует
-    if OlympiadParticipant.objects.filter(olympiad=olympiad, user=request.user).exists():
-        messages.info(request, "Вы уже зарегистрированы для участия в этой олимпиаде.")
-    else:
-        # Регистрируем пользователя
-        OlympiadParticipant.objects.create(
+    # Проверяем, не зарегистрирован ли пользователь уже
+    if OlympiadParticipation.objects.filter(olympiad=olympiad, user=request.user).exists():
+        messages.info(request, _('Вы уже зарегистрированы на эту олимпиаду'))
+        return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
+    
+    # Проверяем, открытая ли олимпиада или есть ли приглашение
+    if not olympiad.is_open:
+        invitation = OlympiadInvitation.objects.filter(
             olympiad=olympiad,
-            user=request.user
-        )
-        messages.success(request, f"Вы успешно зарегистрированы для участия в олимпиаде '{olympiad.title}'.")
-    
-    return redirect('olympiad_detail', slug=slug)
-
-
-def problem_detail(request, olympiad_slug, pk):
-    """Отображает детальную информацию о задаче олимпиады и форму отправки решения"""
-    olympiad = get_object_or_404(Olympiad, slug=olympiad_slug, is_published=True)
-    problem = get_object_or_404(Problem, pk=pk, olympiad=olympiad)
-    
-    # Проверка доступа к задаче
-    can_submit = False
-    is_participating = False
-    
-    if request.user.is_authenticated:
-        is_participating = OlympiadParticipant.objects.filter(
-            olympiad=olympiad, user=request.user
-        ).exists()
+            user=request.user,
+            is_accepted=False
+        ).first()
         
-        # Пользователь может отправлять решения, если он участник и олимпиада активна
-        can_submit = is_participating and olympiad.is_active()
-    
-    # Получаем примеры тестовых случаев (is_example=True)
-    examples = problem.test_cases.filter(is_example=True).order_by('order')
-    
-    # Считаем общее количество тестов
-    test_count = problem.test_cases.count()
-    
-    # Получаем лучшую отправку пользователя для этой задачи
-    best_submission = None
-    submissions = []
-    
-    if request.user.is_authenticated:
-        user_submissions = Submission.objects.filter(
-            problem=problem,
-            user=request.user
-        ).order_by('-submitted_at')
+        if not invitation:
+            messages.error(request, _('Эта олимпиада закрыта для регистрации'))
+            return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
         
-        submissions = user_submissions[:5]  # Последние 5 отправок
-        
-        best_submission = user_submissions.order_by('-points', 'submitted_at').first()
+        # Принимаем приглашение
+        invitation.is_accepted = True
+        invitation.save()
     
-    # Форма отправки решения
-    form = SubmissionForm() if can_submit else None
+    # Регистрируем пользователя
+    max_score = olympiad.tasks.aggregate(total=Sum('points'))['total'] or 0
     
-    context = {
-        'olympiad': olympiad,
-        'problem': problem,
-        'examples': examples,
-        'test_count': test_count,
-        'can_submit': can_submit,
-        'is_participating': is_participating,
-        'best_submission': best_submission,
-        'submissions': submissions,
-        'form': form
-    }
+    OlympiadParticipation.objects.create(
+        olympiad=olympiad,
+        user=request.user,
+        max_score=max_score
+    )
     
-    return render(request, 'olympiads/problem_detail.html', context)
+    messages.success(request, _('Вы успешно зарегистрировались на олимпиаду'))
+    return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
 
-
+# Просмотр заданий олимпиады
 @login_required
-def submit_solution(request, olympiad_slug, problem_id):
-    """Обрабатывает отправку решения задачи"""
-    olympiad = get_object_or_404(Olympiad, slug=olympiad_slug, is_published=True)
-    problem = get_object_or_404(Problem, pk=problem_id, olympiad=olympiad)
+def olympiad_tasks(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
     
-    # Проверяем, что пользователь зарегистрирован как участник
-    is_participant = OlympiadParticipant.objects.filter(
-        olympiad=olympiad, user=request.user
-    ).exists()
+    # Проверяем, зарегистрирован ли пользователь
+    participation = get_object_or_404(
+        OlympiadParticipation, 
+        olympiad=olympiad,
+        user=request.user
+    )
     
-    if not is_participant:
-        messages.error(request, "Вы должны быть зарегистрированы как участник олимпиады.")
-        return redirect('problem_detail', olympiad_slug=olympiad_slug, pk=problem_id)
+    now = timezone.now()
     
-    # Проверяем, что олимпиада активна
-    if not olympiad.is_active():
-        messages.error(request, "Отправка решений возможна только во время проведения олимпиады.")
-        return redirect('problem_detail', olympiad_slug=olympiad_slug, pk=problem_id)
+    # Проверяем, началась ли олимпиада
+    if olympiad.start_datetime > now:
+        messages.error(request, _('Олимпиада еще не началась'))
+        return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
     
-    if request.method == 'POST':
-        form = SubmissionForm(request.POST)
-        if form.is_valid():
-            submission = form.save(commit=False)
-            submission.user = request.user
-            submission.problem = problem
-            submission.olympiad = olympiad
-            submission.save()
-            
-            # Проверяем безопасность кода
-            from .code_checker import check_code_safety
-            is_safe, safety_message = check_code_safety(submission.code)
-            
-            if is_safe:
-                # Запускаем проверку решения
-                from .code_checker import check_submission
-                
-                try:
-                    # Создаем отдельный поток для проверки
-                    import threading
-                    thread = threading.Thread(target=check_submission, args=(submission,))
-                    thread.daemon = True
-                    thread.start()
-                    
-                    messages.success(request, "Ваше решение отправлено на проверку.")
-                except Exception as e:
-                    submission.status = 'system_error'
-                    submission.error_message = f"Ошибка при запуске проверки: {str(e)}"
-                    submission.save(update_fields=['status', 'error_message'])
-                    messages.warning(request, "Произошла ошибка при запуске проверки. Попробуйте позже.")
-            else:
-                submission.status = 'system_error'
-                submission.error_message = safety_message
-                submission.save(update_fields=['status', 'error_message'])
-                messages.error(request, f"Ваш код содержит запрещенные операции: {safety_message}")
-            return redirect('submission_detail', olympiad_slug=olympiad_slug, submission_id=submission.id)
-    else:
-        form = SubmissionForm()
+    # Проверяем, не завершил ли пользователь олимпиаду
+    if participation.is_completed:
+        messages.info(request, _('Вы уже завершили эту олимпиаду'))
+        return redirect('olympiads:olympiad_results', olympiad_id=olympiad.id)
     
-    # Если мы здесь, значит форма невалидна или это GET-запрос
-    context = {
-        'olympiad': olympiad,
-        'problem': problem,
-        'form': form
-    }
-    
-    return render(request, 'olympiads/problem_detail.html', context)
-
-
-def submission_detail(request, olympiad_slug, submission_id):
-    """Отображает детальную информацию о отправке решения"""
-    olympiad = get_object_or_404(Olympiad, slug=olympiad_slug, is_published=True)
-    submission = get_object_or_404(Submission, pk=submission_id, olympiad=olympiad)
-    
-    # Проверка прав доступа: только владелец, администраторы или после завершения олимпиады
-    if not (request.user == submission.user or request.user.is_staff or olympiad.is_past()):
-        messages.error(request, "У вас нет прав для просмотра этой отправки.")
-        return redirect('olympiad_detail', slug=olympiad_slug)
-    
-    # Получаем результаты тестирования
-    test_results = submission.test_results.all().order_by('test_case__order')
-    
-    # Определяем, показывать ли детали для непримерных тестов
-    show_details = olympiad.is_past() or request.user.is_staff
-    is_creator = request.user.is_staff
-    
-    context = {
-        'olympiad': olympiad,
-        'submission': submission,
-        'test_results': test_results,
-        'show_details': show_details,
-        'is_creator': is_creator
-    }
-    
-    return render(request, 'olympiads/submission_detail.html', context)
-
-
-def submission_list(request, slug):
-    """Отображает список отправок решений для олимпиады с фильтрацией"""
-    olympiad = get_object_or_404(Olympiad, slug=slug, is_published=True)
-    
-    # Проверка доступа
-    is_participating = False
-    if request.user.is_authenticated:
-        is_participating = OlympiadParticipant.objects.filter(
-            olympiad=olympiad, user=request.user
-        ).exists()
-    
-    if not (is_participating or request.user.is_staff or olympiad.is_past()):
-        messages.error(request, "У вас нет прав для просмотра отправок.")
-        return redirect('olympiad_detail', slug=slug)
-    
-    # Фильтрация
-    submissions = Submission.objects.filter(olympiad=olympiad)
-    
-    # Если не администратор, показываем только отправки текущего пользователя
-    if not request.user.is_staff:
-        submissions = submissions.filter(user=request.user)
-    
-    # Фильтр по задаче
-    problem_id = request.GET.get('problem')
-    if problem_id:
-        submissions = submissions.filter(problem_id=problem_id)
-    
-    # Фильтр по статусу
-    status = request.GET.get('status')
-    if status:
-        submissions = submissions.filter(status=status)
-    
-    # Фильтр по пользователю (только для администраторов)
-    user_id = request.GET.get('user')
-    if user_id and request.user.is_staff:
-        submissions = submissions.filter(user_id=user_id)
-    
-    # Сортировка по времени отправки (по умолчанию - сначала новые)
-    submissions = submissions.order_by('-submitted_at')
-    
-    # Пагинация
-    paginator = Paginator(submissions, 25)  # 25 отправок на странице
-    page_number = request.GET.get('page')
-    submissions = paginator.get_page(page_number)
-    
-    # Получаем список задач для фильтра
-    problems = Problem.objects.filter(olympiad=olympiad).order_by('order')
-    
-    context = {
-        'olympiad': olympiad,
-        'submissions': submissions,
-        'problem_id': int(problem_id) if problem_id and problem_id.isdigit() else None,
-        'status': status,
-        'problems': problems,
-        'is_staff': request.user.is_staff
-    }
-    
-    return render(request, 'olympiads/submission_list.html', context)
-
-
-def olympiad_leaderboard(request, slug):
-    """Отображает таблицу результатов олимпиады"""
-    olympiad = get_object_or_404(Olympiad, slug=slug, is_published=True)
-    
-    # Получаем список участников, отсортированный по количеству баллов
-    participants = OlympiadParticipant.objects.filter(
-        olympiad=olympiad
-    ).order_by('-total_points', '-solved_problems', 'registered_at')
-    
-    # Получаем список задач
-    problems = Problem.objects.filter(olympiad=olympiad).order_by('order')
-    
-    # Собираем результаты для всех участников
-    results = {}
-    for participant in participants:
-        # Обновляем статистику участника
-        participant.update_statistics()
+    # Проверяем, не истекло ли время
+    if olympiad.end_datetime < now:
+        participation.is_completed = True
+        participation.finished_at = now
+        participation.save()
         
-        # Получаем статус решения каждой задачи участником
-        user_results = {
-            'user_id': participant.user_id,
-            'username': participant.user.username,
-            'total_points': participant.total_points,
-            'solved_problems': participant.solved_problems,
-            'problems': {}
+        messages.info(request, _('Время олимпиады истекло'))
+        return redirect('olympiads:olympiad_results', olympiad_id=olympiad.id)
+    
+    # Если установлен лимит времени, проверяем, не истекло ли время для конкретного участника
+    if olympiad.time_limit_minutes > 0:
+        time_passed = (now - participation.started_at).total_seconds() / 60
+        
+        if time_passed >= olympiad.time_limit_minutes:
+            participation.is_completed = True
+            participation.finished_at = participation.started_at + timezone.timedelta(minutes=olympiad.time_limit_minutes)
+            participation.save()
+            
+            messages.info(request, _('Ваше время на выполнение олимпиады истекло'))
+            return redirect('olympiads:olympiad_results', olympiad_id=olympiad.id)
+        
+        # Сколько времени осталось
+        time_left = olympiad.time_limit_minutes - time_passed
+    else:
+        # Сколько времени осталось до конца олимпиады
+        time_left = (olympiad.end_datetime - now).total_seconds() / 60
+    
+    # Получаем все задания олимпиады
+    tasks = olympiad.tasks.all().order_by('order')
+    
+    # Для каждого задания получаем информацию о сдаче
+    task_statuses = {}
+    for task in tasks:
+        submission = OlympiadTaskSubmission.objects.filter(
+            participation=participation,
+            task=task
+        ).order_by('-submitted_at').first()
+        
+        task_statuses[task.id] = {
+            'submitted': submission is not None,
+            'is_correct': submission.is_correct if submission else False,
+            'score': submission.score if submission else 0,
+            'submission_id': submission.id if submission else None
         }
-        
-        # Находим лучшие отправки пользователя для каждой задачи
-        submissions = Submission.objects.filter(
-            olympiad=olympiad,
-            user=participant.user
-        )
-        
-        for problem in problems:
-            best_submission = submissions.filter(
-                problem=problem
-            ).order_by('-points', 'submitted_at').first()
-            
-            if best_submission:
-                user_results['problems'][problem.id] = {
-                    'status': best_submission.status,
-                    'points': best_submission.points,
-                    'submission_id': best_submission.id
-                }
-        
-        results[participant.user_id] = user_results
     
     context = {
         'olympiad': olympiad,
-        'participants': participants,
-        'problems': problems,
-        'results': results
+        'participation': participation,
+        'tasks': tasks,
+        'task_statuses': task_statuses,
+        'time_left_minutes': int(time_left)
     }
     
-    return render(request, 'olympiads/leaderboard.html', context)
+    return render(request, 'olympiads/olympiad_tasks.html', context)
 
-
-# Административные представления для управления олимпиадами
-
+# Просмотр детальной информации о задании
 @login_required
-def olympiad_create(request):
-    """Создание новой олимпиады (только для персонала)"""
-    if not request.user.is_staff:
-        messages.error(request, "У вас нет прав для создания олимпиад.")
-        return redirect('olympiad_list')
+def olympiad_task_detail(request, olympiad_id, task_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    task = get_object_or_404(OlympiadTask, id=task_id, olympiad=olympiad)
     
-    if request.method == 'POST':
-        form = OlympiadForm(request.POST)
-        if form.is_valid():
-            olympiad = form.save(commit=False)
-            olympiad.creator = request.user
-            olympiad.save()
-            messages.success(request, f"Олимпиада '{olympiad.title}' успешно создана.")
-            return redirect('olympiad_detail', slug=olympiad.slug)
-    else:
-        # Устанавливаем начальные значения для олимпиады
-        tomorrow = timezone.now() + timedelta(days=1)
-        next_week = tomorrow + timedelta(days=7)
+    # Проверяем, зарегистрирован ли пользователь
+    participation = get_object_or_404(
+        OlympiadParticipation, 
+        olympiad=olympiad,
+        user=request.user
+    )
+    
+    now = timezone.now()
+    
+    # Проверяем, не завершил ли пользователь олимпиаду
+    if participation.is_completed:
+        messages.info(request, _('Вы уже завершили эту олимпиаду'))
+        return redirect('olympiads:olympiad_results', olympiad_id=olympiad.id)
+    
+    # Проверяем, не истекло ли время
+    if olympiad.end_datetime < now:
+        participation.is_completed = True
+        participation.finished_at = now
+        participation.save()
         
-        # Устанавливаем время начала на 10:00, а время окончания на 14:00
-        start_time = tomorrow.replace(hour=10, minute=0, second=0, microsecond=0)
-        end_time = next_week.replace(hour=14, minute=0, second=0, microsecond=0)
+        messages.info(request, _('Время олимпиады истекло'))
+        return redirect('olympiads:olympiad_results', olympiad_id=olympiad.id)
+    
+    # Получаем последнюю отправку для этого задания
+    submission = OlympiadTaskSubmission.objects.filter(
+        participation=participation,
+        task=task
+    ).order_by('-submitted_at').first()
+    
+    # Получаем тестовые случаи (только нескрытые)
+    test_cases = task.test_cases.filter(is_hidden=False).order_by('order')
+    
+    # Если задание с выбором вариантов, получаем варианты
+    options = None
+    if task.task_type == OlympiadTask.TaskType.MULTIPLE_CHOICE:
+        options = task.options.all().order_by('order')
+    
+    context = {
+        'olympiad': olympiad,
+        'participation': participation,
+        'task': task,
+        'submission': submission,
+        'test_cases': test_cases,
+        'options': options
+    }
+    
+    return render(request, 'olympiads/olympiad_task_detail.html', context)
+
+# Отправка решения задания
+@login_required
+def olympiad_task_submit(request, olympiad_id, task_id):
+    if request.method != 'POST':
+        return redirect('olympiads:olympiad_task_detail', olympiad_id=olympiad_id, task_id=task_id)
+    
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    task = get_object_or_404(OlympiadTask, id=task_id, olympiad=olympiad)
+    
+    # Проверяем, зарегистрирован ли пользователь
+    participation = get_object_or_404(
+        OlympiadParticipation, 
+        olympiad=olympiad,
+        user=request.user
+    )
+    
+    now = timezone.now()
+    
+    # Проверяем, не завершил ли пользователь олимпиаду
+    if participation.is_completed:
+        messages.info(request, _('Вы уже завершили эту олимпиаду'))
+        return redirect('olympiads:olympiad_results', olympiad_id=olympiad.id)
+    
+    # Проверяем, не истекло ли время
+    if olympiad.end_datetime < now:
+        participation.is_completed = True
+        participation.finished_at = now
+        participation.save()
         
-        form = OlympiadForm(initial={
-            'start_time': start_time,
-            'end_time': end_time,
-            'is_published': False
+        messages.info(request, _('Время олимпиады истекло'))
+        return redirect('olympiads:olympiad_results', olympiad_id=olympiad.id)
+    
+    # Создаем новую отправку
+    submission = OlympiadTaskSubmission(
+        participation=participation,
+        task=task,
+        max_score=task.points
+    )
+    
+    # Обрабатываем тип задания
+    if task.task_type == OlympiadTask.TaskType.PROGRAMMING:
+        code = request.POST.get('code', '')
+        submission.code = code
+        
+        # Здесь должен быть код для проверки программы
+        # Для примера просто считаем, что решение верное, если код непустой
+        if code.strip():
+            submission.is_correct = True
+            submission.score = task.points
+            submission.passed_test_cases = task.test_cases.count()
+            submission.total_test_cases = task.test_cases.count()
+        
+    elif task.task_type == OlympiadTask.TaskType.THEORETICAL:
+        answer = request.POST.get('answer', '')
+        submission.text_answer = answer
+        
+        # Для теоретического вопроса нужна проверка преподавателем
+        # Пока считаем, что ответ не проверен
+        submission.is_correct = False
+        submission.score = 0
+        
+    elif task.task_type == OlympiadTask.TaskType.MULTIPLE_CHOICE:
+        # Сохраняем отправку сначала без опций
+        submission.save()
+        
+        # Добавляем выбранные опции
+        selected_option_ids = request.POST.getlist('options')
+        
+        if selected_option_ids:
+            selected_options = OlympiadMultipleChoiceOption.objects.filter(id__in=selected_option_ids, task=task)
+            submission.selected_options.set(selected_options)
+            
+            # Проверяем правильность ответа
+            all_options = task.options.all()
+            correct_options = all_options.filter(is_correct=True)
+            
+            # Считаем ответ правильным, если выбраны все правильные опции и только они
+            selected_correct = selected_options.filter(is_correct=True).count()
+            selected_incorrect = selected_options.filter(is_correct=False).count()
+            
+            if selected_correct == correct_options.count() and selected_incorrect == 0:
+                submission.is_correct = True
+                submission.score = task.points
+    
+    # Сохраняем отправку
+    if task.task_type != OlympiadTask.TaskType.MULTIPLE_CHOICE:
+        submission.save()
+    
+    # Обновляем общий балл участника
+    participation.calculate_score()
+    
+    messages.success(request, _('Решение успешно отправлено!'))
+    return redirect('olympiads:olympiad_task_detail', olympiad_id=olympiad.id, task_id=task.id)
+
+# Просмотр результатов олимпиады
+@login_required
+def olympiad_results(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    
+    # Проверяем, зарегистрирован ли пользователь
+    participation = get_object_or_404(
+        OlympiadParticipation, 
+        olympiad=olympiad,
+        user=request.user
+    )
+    
+    # Получаем все задания и отправки
+    tasks = olympiad.tasks.all().order_by('order')
+    submissions = OlympiadTaskSubmission.objects.filter(
+        participation=participation
+    )
+    
+    # Группируем отправки по заданиям
+    submission_by_task = {}
+    for submission in submissions:
+        if submission.task_id not in submission_by_task or submission.submitted_at > submission_by_task[submission.task_id].submitted_at:
+            submission_by_task[submission.task_id] = submission
+    
+    # Формируем данные о результатах
+    results = []
+    for task in tasks:
+        submission = submission_by_task.get(task.id)
+        results.append({
+            'task': task,
+            'submission': submission,
+            'is_correct': submission.is_correct if submission else False,
+            'score': submission.score if submission else 0,
+            'max_score': task.points
         })
     
-    context = {
-        'form': form,
-        'is_creating': True
-    }
+    # Проверяем, доступен ли сертификат
+    has_certificate = False
+    certificate = None
     
-    return render(request, 'olympiads/olympiad_form.html', context)
-
-
-@login_required
-def olympiad_edit(request, slug):
-    """Редактирование существующей олимпиады (только для персонала)"""
-    if not request.user.is_staff:
-        messages.error(request, "У вас нет прав для редактирования олимпиад.")
-        return redirect('olympiad_list')
+    if participation.passed:
+        certificate = OlympiadCertificate.objects.filter(participation=participation).first()
+        has_certificate = certificate is not None
     
-    olympiad = get_object_or_404(Olympiad, slug=slug)
+    # Получаем топ-10 участников
+    top_participants = OlympiadParticipation.objects.filter(
+        olympiad=olympiad,
+        is_completed=True
+    ).order_by('-score')[:10]
     
-    if request.method == 'POST':
-        form = OlympiadForm(request.POST, instance=olympiad)
-        if form.is_valid():
-            form.save()
-            messages.success(request, f"Олимпиада '{olympiad.title}' успешно обновлена.")
-            return redirect('olympiad_detail', slug=olympiad.slug)
+    # Определяем место пользователя в рейтинге
+    if participation.is_completed:
+        user_rank = OlympiadParticipation.objects.filter(
+            olympiad=olympiad,
+            is_completed=True,
+            score__gt=participation.score
+        ).count() + 1
     else:
-        form = OlympiadForm(instance=olympiad)
+        user_rank = None
     
     context = {
-        'form': form,
         'olympiad': olympiad,
-        'is_creating': False
+        'participation': participation,
+        'results': results,
+        'has_certificate': has_certificate,
+        'certificate': certificate,
+        'top_participants': top_participants,
+        'user_rank': user_rank
     }
     
-    return render(request, 'olympiads/olympiad_form.html', context)
+    return render(request, 'olympiads/olympiad_results.html', context)
 
-
+# Получение сертификата
 @login_required
-def olympiad_delete(request, slug):
-    """Удаление олимпиады (только для персонала)"""
-    if not request.user.is_staff:
-        messages.error(request, "У вас нет прав для удаления олимпиад.")
-        return redirect('olympiad_list')
+def olympiad_certificate(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
     
-    olympiad = get_object_or_404(Olympiad, slug=slug)
+    # Проверяем, зарегистрирован ли пользователь
+    participation = get_object_or_404(
+        OlympiadParticipation, 
+        olympiad=olympiad,
+        user=request.user
+    )
+    
+    # Проверяем, имеет ли пользователь сертификат
+    if not participation.passed:
+        messages.error(request, _('Вы не прошли олимпиаду'))
+        return redirect('olympiads:olympiad_results', olympiad_id=olympiad.id)
+    
+    # Проверяем, есть ли уже сертификат
+    certificate = OlympiadCertificate.objects.filter(participation=participation).first()
+    
+    if certificate:
+        # Возвращаем существующий сертификат
+        return redirect(certificate.certificate_file.url)
+    
+    # Создаем новый сертификат
+    # Генерируем уникальный ID сертификата
+    import uuid
+    certificate_id = str(uuid.uuid4())
+    
+    # Создаем сертификат
+    certificate = OlympiadCertificate.objects.create(
+        participation=participation,
+        certificate_id=certificate_id
+    )
+    
+    # Генерируем PDF-файл сертификата (заглушка)
+    # Здесь должен быть код для генерации PDF-сертификата
+    
+    messages.success(request, _('Сертификат успешно создан!'))
+    return redirect('olympiads:olympiad_results', olympiad_id=olympiad.id)
+
+# === Управление олимпиадами (для преподавателей и администраторов) ===
+
+# Список олимпиад для управления
+@login_required
+def olympiad_manage_list(request):
+    # Проверяем права доступа
+    if not (request.user.profile.is_teacher or request.user.profile.is_admin):
+        messages.error(request, _('У вас нет прав для доступа к этой странице'))
+        return redirect('olympiads:olympiad_list')
+    
+    # Получаем все олимпиады, созданные пользователем
+    olympiads = Olympiad.objects.filter(created_by=request.user).order_by('-created_at')
+    
+    # Для администраторов показываем все олимпиады
+    if request.user.profile.is_admin:
+        olympiads = Olympiad.objects.all().order_by('-created_at')
+    
+    context = {
+        'olympiads': olympiads
+    }
+    
+    return render(request, 'olympiads/manage/olympiad_list.html', context)
+
+# Создание новой олимпиады
+@login_required
+def olympiad_create(request):
+    # Проверяем права доступа
+    if not (request.user.profile.is_teacher or request.user.profile.is_admin):
+        messages.error(request, _('У вас нет прав для доступа к этой странице'))
+        return redirect('olympiads:olympiad_list')
     
     if request.method == 'POST':
-        olympiad.delete()
-        messages.success(request, f"Олимпиада '{olympiad.title}' успешно удалена.")
-        return redirect('olympiad_list')
+        # Обрабатываем данные формы
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        short_description = request.POST.get('short_description', '')
+        start_date = request.POST.get('start_date')
+        start_time = request.POST.get('start_time')
+        end_date = request.POST.get('end_date')
+        end_time = request.POST.get('end_time')
+        time_limit = request.POST.get('time_limit', 0)
+        is_open = request.POST.get('is_open') == 'on'
+        min_passing_score = request.POST.get('min_passing_score', 0)
+        
+        # Объединяем дату и время
+        from datetime import datetime
+        start_datetime = datetime.strptime(f"{start_date} {start_time}", "%Y-%m-%d %H:%M")
+        end_datetime = datetime.strptime(f"{end_date} {end_time}", "%Y-%m-%d %H:%M")
+        
+        # Создаем новую олимпиаду
+        olympiad = Olympiad.objects.create(
+            title=title,
+            description=description,
+            short_description=short_description,
+            start_datetime=start_datetime,
+            end_datetime=end_datetime,
+            time_limit_minutes=time_limit,
+            is_open=is_open,
+            min_passing_score=min_passing_score,
+            created_by=request.user,
+            status=Olympiad.OlympiadStatus.DRAFT
+        )
+        
+        messages.success(request, _('Олимпиада успешно создана!'))
+        return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
     
-    return redirect('olympiad_detail', slug=slug)
+    context = {}
+    return render(request, 'olympiads/manage/olympiad_create.html', context)
 
-
+# Редактирование олимпиады
 @login_required
-def olympiad_publish(request, slug):
-    """Публикация олимпиады (только для персонала)"""
-    if not request.user.is_staff:
-        messages.error(request, "У вас нет прав для публикации олимпиад.")
-        return redirect('olympiad_list')
+def olympiad_edit(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
     
-    olympiad = get_object_or_404(Olympiad, slug=slug)
+    # Проверяем права доступа
+    if not (request.user == olympiad.created_by or request.user.profile.is_admin):
+        messages.error(request, _('У вас нет прав для редактирования этой олимпиады'))
+        return redirect('olympiads:olympiad_list')
     
     if request.method == 'POST':
-        olympiad.is_published = not olympiad.is_published
+        # Обрабатываем данные формы
+        olympiad.title = request.POST.get('title')
+        olympiad.description = request.POST.get('description')
+        olympiad.short_description = request.POST.get('short_description', '')
+        
+        start_date = request.POST.get('start_date')
+        start_time = request.POST.get('start_time')
+        end_date = request.POST.get('end_date')
+        end_time = request.POST.get('end_time')
+        
+        # Объединяем дату и время
+        from datetime import datetime
+        olympiad.start_datetime = datetime.strptime(f"{start_date} {start_time}", "%Y-%m-%d %H:%M")
+        olympiad.end_datetime = datetime.strptime(f"{end_date} {end_time}", "%Y-%m-%d %H:%M")
+        
+        olympiad.time_limit_minutes = request.POST.get('time_limit', 0)
+        olympiad.is_open = request.POST.get('is_open') == 'on'
+        olympiad.min_passing_score = request.POST.get('min_passing_score', 0)
+        
+        # Сохраняем изменения
         olympiad.save()
         
-        status = "опубликована" if olympiad.is_published else "снята с публикации"
-        messages.success(request, f"Олимпиада '{olympiad.title}' успешно {status}.")
+        messages.success(request, _('Олимпиада успешно обновлена!'))
+        return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
     
-    return redirect('olympiad_detail', slug=slug)
-
-
-@login_required
-def problem_create(request, olympiad_slug):
-    """Создание новой задачи для олимпиады (только для персонала)"""
-    if not request.user.is_staff:
-        messages.error(request, "У вас нет прав для создания задач.")
-        return redirect('olympiad_detail', slug=olympiad_slug)
-    
-    olympiad = get_object_or_404(Olympiad, slug=olympiad_slug)
-    
-    if request.method == 'POST':
-        form = ProblemForm(request.POST)
-        if form.is_valid():
-            problem = form.save(commit=False)
-            problem.olympiad = olympiad
-            
-            # Устанавливаем порядковый номер
-            if not problem.order:
-                max_order = Problem.objects.filter(olympiad=olympiad).aggregate(Max('order'))['order__max'] or 0
-                problem.order = max_order + 1
-            
-            problem.save()
-            messages.success(request, f"Задача '{problem.title}' успешно создана.")
-            return redirect('problem_detail', olympiad_slug=olympiad_slug, pk=problem.pk)
-    else:
-        form = ProblemForm()
+    # Получаем все задания олимпиады
+    tasks = olympiad.tasks.all().order_by('order')
     
     context = {
-        'form': form,
         'olympiad': olympiad,
-        'is_creating': True
+        'tasks': tasks
     }
     
-    return render(request, 'olympiads/problem_form.html', context)
+    return render(request, 'olympiads/manage/olympiad_edit.html', context)
 
-
+# Публикация олимпиады
 @login_required
-def problem_edit(request, olympiad_slug, pk):
-    """Редактирование задачи олимпиады (только для персонала)"""
-    if not request.user.is_staff:
-        messages.error(request, "У вас нет прав для редактирования задач.")
-        return redirect('olympiad_detail', slug=olympiad_slug)
+def olympiad_publish(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
     
-    olympiad = get_object_or_404(Olympiad, slug=olympiad_slug)
-    problem = get_object_or_404(Problem, pk=pk, olympiad=olympiad)
+    # Проверяем права доступа
+    if not (request.user == olympiad.created_by or request.user.profile.is_admin):
+        messages.error(request, _('У вас нет прав для публикации этой олимпиады'))
+        return redirect('olympiads:olympiad_list')
+    
+    # Проверяем, есть ли задания
+    if olympiad.tasks.count() == 0:
+        messages.error(request, _('Невозможно опубликовать олимпиаду без заданий'))
+        return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
+    
+    # Проверяем статус олимпиады
+    if olympiad.status == Olympiad.OlympiadStatus.DRAFT:
+        olympiad.status = Olympiad.OlympiadStatus.PUBLISHED
+        messages.success(request, _('Олимпиада успешно опубликована!'))
+    elif olympiad.status == Olympiad.OlympiadStatus.PUBLISHED:
+        # Если дата начала уже наступила, активируем олимпиаду
+        now = timezone.now()
+        if olympiad.start_datetime <= now:
+            olympiad.status = Olympiad.OlympiadStatus.ACTIVE
+            messages.success(request, _('Олимпиада успешно активирована!'))
+        else:
+            messages.info(request, _('Олимпиада уже опубликована'))
+    elif olympiad.status == Olympiad.OlympiadStatus.ACTIVE:
+        olympiad.status = Olympiad.OlympiadStatus.COMPLETED
+        messages.success(request, _('Олимпиада отмечена как завершенная!'))
+    else:
+        messages.info(request, _('Невозможно изменить статус олимпиады'))
+    
+    olympiad.save()
+    return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
+
+# Создание нового задания для олимпиады
+@login_required
+def olympiad_task_create(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    
+    # Проверяем права доступа
+    if not (request.user == olympiad.created_by or request.user.profile.is_admin):
+        messages.error(request, _('У вас нет прав для добавления заданий к этой олимпиаде'))
+        return redirect('olympiads:olympiad_list')
     
     if request.method == 'POST':
-        form = ProblemForm(request.POST, instance=problem)
-        if form.is_valid():
-            form.save()
-            messages.success(request, f"Задача '{problem.title}' успешно обновлена.")
-            return redirect('problem_detail', olympiad_slug=olympiad_slug, pk=problem.pk)
-    else:
-        form = ProblemForm(instance=problem)
-    
-    # Получаем список тестовых случаев для этой задачи
-    test_cases = TestCase.objects.filter(problem=problem).order_by('order')
+        # Обрабатываем данные формы
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        task_type = request.POST.get('task_type')
+        points = request.POST.get('points', 1)
+        
+        # Находим максимальный порядок и добавляем 10
+        max_order = olympiad.tasks.aggregate(max_order=Max('order'))['max_order'] or 0
+        order = max_order + 10
+        
+        # Создаем новое задание
+        task = OlympiadTask.objects.create(
+            olympiad=olympiad,
+            title=title,
+            description=description,
+            task_type=task_type,
+            points=points,
+            order=order
+        )
+        
+        # Если это задание на программирование, добавляем начальный код
+        if task_type == OlympiadTask.TaskType.PROGRAMMING:
+            initial_code = request.POST.get('initial_code', '')
+            task.initial_code = initial_code
+            task.save()
+        
+        messages.success(request, _('Задание успешно создано!'))
+        return redirect('olympiads:olympiad_task_edit', olympiad_id=olympiad.id, task_id=task.id)
     
     context = {
-        'form': form,
         'olympiad': olympiad,
-        'problem': problem,
+        'task_types': OlympiadTask.TaskType.choices
+    }
+    
+    return render(request, 'olympiads/manage/task_create.html', context)
+
+# Редактирование задания
+@login_required
+def olympiad_task_edit(request, olympiad_id, task_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    task = get_object_or_404(OlympiadTask, id=task_id, olympiad=olympiad)
+    
+    # Проверяем права доступа
+    if not (request.user == olympiad.created_by or request.user.profile.is_admin):
+        messages.error(request, _('У вас нет прав для редактирования заданий этой олимпиады'))
+        return redirect('olympiads:olympiad_list')
+    
+    if request.method == 'POST':
+        # Обрабатываем данные формы
+        task.title = request.POST.get('title')
+        task.description = request.POST.get('description')
+        task.points = request.POST.get('points', 1)
+        task.order = request.POST.get('order', task.order)
+        
+        # Если это задание на программирование, обновляем начальный код
+        if task.task_type == OlympiadTask.TaskType.PROGRAMMING:
+            task.initial_code = request.POST.get('initial_code', '')
+            
+            # Обрабатываем тестовые случаи
+            # ...
+        
+        # Если это задание с выбором вариантов, обрабатываем варианты
+        elif task.task_type == OlympiadTask.TaskType.MULTIPLE_CHOICE:
+            # Обработка вариантов выбора будет реализована позже
+            pass
+        
+        # Сохраняем изменения
+        task.save()
+        
+        messages.success(request, _('Задание успешно обновлено!'))
+        return redirect('olympiads:olympiad_task_edit', olympiad_id=olympiad.id, task_id=task.id)
+    
+    # Получаем тестовые случаи и варианты ответов
+    test_cases = task.test_cases.all().order_by('order')
+    options = task.options.all().order_by('order')
+    
+    context = {
+        'olympiad': olympiad,
+        'task': task,
         'test_cases': test_cases,
-        'is_creating': False
+        'options': options
     }
     
-    return render(request, 'olympiads/problem_form.html', context)
+    return render(request, 'olympiads/manage/task_edit.html', context)
 
-
+# Просмотр списка участников олимпиады
 @login_required
-def problem_delete(request, olympiad_slug, pk):
-    """Удаление задачи олимпиады (только для персонала)"""
-    if not request.user.is_staff:
-        messages.error(request, "У вас нет прав для удаления задач.")
-        return redirect('olympiad_detail', slug=olympiad_slug)
+def olympiad_participants(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
     
-    olympiad = get_object_or_404(Olympiad, slug=olympiad_slug)
-    problem = get_object_or_404(Problem, pk=pk, olympiad=olympiad)
+    # Проверяем права доступа
+    if not (request.user == olympiad.created_by or request.user.profile.is_admin):
+        messages.error(request, _('У вас нет прав для просмотра участников этой олимпиады'))
+        return redirect('olympiads:olympiad_list')
     
-    if request.method == 'POST':
-        problem.delete()
-        messages.success(request, f"Задача '{problem.title}' успешно удалена.")
-        return redirect('olympiad_detail', slug=olympiad_slug)
-    
-    return redirect('problem_detail', olympiad_slug=olympiad_slug, pk=pk)
-
-
-@login_required
-def testcase_create(request, olympiad_slug, problem_pk):
-    """Создание нового тестового случая для задачи (только для персонала)"""
-    if not request.user.is_staff:
-        messages.error(request, "У вас нет прав для создания тестовых случаев.")
-        return redirect('problem_detail', olympiad_slug=olympiad_slug, pk=problem_pk)
-    
-    olympiad = get_object_or_404(Olympiad, slug=olympiad_slug)
-    problem = get_object_or_404(Problem, pk=problem_pk, olympiad=olympiad)
-    
-    if request.method == 'POST':
-        form = TestCaseForm(request.POST)
-        if form.is_valid():
-            test_case = form.save(commit=False)
-            test_case.problem = problem
-            
-            # Устанавливаем порядковый номер
-            if not test_case.order:
-                max_order = TestCase.objects.filter(problem=problem).aggregate(Max('order'))['order__max'] or 0
-                test_case.order = max_order + 1
-            
-            test_case.save()
-            messages.success(request, "Тестовый случай успешно создан.")
-            return redirect('problem_edit', olympiad_slug=olympiad_slug, pk=problem_pk)
-    else:
-        form = TestCaseForm()
+    # Получаем всех участников
+    participants = OlympiadParticipation.objects.filter(olympiad=olympiad).order_by('-score')
     
     context = {
-        'form': form,
         'olympiad': olympiad,
-        'problem': problem,
-        'is_creating': True
+        'participants': participants
     }
     
-    return render(request, 'olympiads/testcase_form.html', context)
+    return render(request, 'olympiads/manage/participants.html', context)
 
-
+# Управление приглашениями на олимпиаду
 @login_required
-def testcase_edit(request, olympiad_slug, problem_pk, pk):
-    """Редактирование тестового случая (только для персонала)"""
-    if not request.user.is_staff:
-        messages.error(request, "У вас нет прав для редактирования тестовых случаев.")
-        return redirect('problem_detail', olympiad_slug=olympiad_slug, pk=problem_pk)
+def olympiad_invitations(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
     
-    olympiad = get_object_or_404(Olympiad, slug=olympiad_slug)
-    problem = get_object_or_404(Problem, pk=problem_pk, olympiad=olympiad)
-    test_case = get_object_or_404(TestCase, pk=pk, problem=problem)
+    # Проверяем права доступа
+    if not (request.user == olympiad.created_by or request.user.profile.is_admin):
+        messages.error(request, _('У вас нет прав для управления приглашениями этой олимпиады'))
+        return redirect('olympiads:olympiad_list')
     
     if request.method == 'POST':
-        form = TestCaseForm(request.POST, instance=test_case)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Тестовый случай успешно обновлен.")
-            return redirect('problem_edit', olympiad_slug=olympiad_slug, pk=problem_pk)
-    else:
-        form = TestCaseForm(instance=test_case)
+        # Обрабатываем форму приглашения
+        username = request.POST.get('username')
+        
+        try:
+            user = CustomUser.objects.get(username=username)
+            
+            # Проверяем, не зарегистрирован ли уже пользователь
+            if OlympiadParticipation.objects.filter(olympiad=olympiad, user=user).exists():
+                messages.info(request, _('Пользователь уже зарегистрирован на эту олимпиаду'))
+            
+            # Проверяем, не приглашен ли уже пользователь
+            elif OlympiadInvitation.objects.filter(olympiad=olympiad, user=user).exists():
+                messages.info(request, _('Пользователь уже приглашен на эту олимпиаду'))
+            
+            else:
+                # Создаем новое приглашение
+                OlympiadInvitation.objects.create(
+                    olympiad=olympiad,
+                    user=user,
+                    invited_by=request.user
+                )
+                messages.success(request, _('Приглашение успешно отправлено!'))
+        
+        except CustomUser.DoesNotExist:
+            messages.error(request, _('Пользователь с таким именем не найден'))
+    
+    # Получаем все приглашения
+    invitations = OlympiadInvitation.objects.filter(olympiad=olympiad).order_by('-created_at')
     
     context = {
-        'form': form,
         'olympiad': olympiad,
-        'problem': problem,
-        'test_case': test_case,
-        'is_creating': False
+        'invitations': invitations
     }
     
-    return render(request, 'olympiads/testcase_form.html', context)
-
-
-@login_required
-def testcase_delete(request, olympiad_slug, problem_pk, pk):
-    """Удаление тестового случая (только для персонала)"""
-    if not request.user.is_staff:
-        messages.error(request, "У вас нет прав для удаления тестовых случаев.")
-        return redirect('problem_detail', olympiad_slug=olympiad_slug, pk=problem_pk)
-    
-    olympiad = get_object_or_404(Olympiad, slug=olympiad_slug)
-    problem = get_object_or_404(Problem, pk=problem_pk, olympiad=olympiad)
-    test_case = get_object_or_404(TestCase, pk=pk, problem=problem)
-    
-    if request.method == 'POST':
-        test_case.delete()
-        messages.success(request, "Тестовый случай успешно удален.")
-    
-    return redirect('problem_edit', olympiad_slug=olympiad_slug, pk=problem_pk)
+    return render(request, 'olympiads/manage/invitations.html', context)
