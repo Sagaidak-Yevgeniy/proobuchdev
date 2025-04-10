@@ -36,9 +36,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const maxHeight = window.innerHeight * 0.8; // 80% от высоты экрана
             notificationDropdown.style.maxHeight = `${maxHeight}px`;
             
-            // Гарантируем, что на мобильных устройствах меню выровнено по правому краю
-            notificationDropdown.style.left = 'auto';
-            notificationDropdown.style.right = '8px'; // 2rem, соответствует right-2 в tailwind
+            // Для мобильных устройств всегда центрируем меню
+            // и убираем свойства, которые могут повлиять на позиционирование
+            notificationDropdown.style.margin = '0 auto';
+            notificationDropdown.style.width = 'calc(100vw - 16px)';
+            notificationDropdown.style.left = '8px';  // Отступ слева 8px (0.5rem)
+            notificationDropdown.style.right = '8px'; // Отступ справа 8px (0.5rem)
             
             // Устанавливаем максимальную высоту для внутреннего контейнера с уведомлениями
             const listContainer = notificationDropdown.querySelector('.overflow-y-auto');
@@ -51,6 +54,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // На десктопе используем абсолютное позиционирование
         notificationDropdown.style.maxHeight = '80vh';
+        notificationDropdown.style.margin = '0';
+        notificationDropdown.style.width = '';
         notificationDropdown.style.left = 'auto';
         notificationDropdown.style.right = '0';
         
