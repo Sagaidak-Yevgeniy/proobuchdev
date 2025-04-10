@@ -538,18 +538,29 @@ def olympiad_create(request):
         title = request.POST.get('title')
         description = request.POST.get('description')
         short_description = request.POST.get('short_description', '')
-        start_date = request.POST.get('start_date')
-        start_time = request.POST.get('start_time')
-        end_date = request.POST.get('end_date')
-        end_time = request.POST.get('end_time')
-        time_limit = request.POST.get('time_limit', 0)
+        start_datetime_str = request.POST.get('start_datetime')
+        end_datetime_str = request.POST.get('end_datetime')
+        time_limit_minutes = int(request.POST.get('time_limit_minutes', '0') or '0')
         is_open = request.POST.get('is_open') == 'on'
-        min_passing_score = request.POST.get('min_passing_score', 0)
+        min_passing_score = int(request.POST.get('min_passing_score', '0') or '0')
         
-        # Объединяем дату и время
+        # Преобразуем строки дат в объекты datetime
         from datetime import datetime
-        start_datetime = datetime.strptime(f"{start_date} {start_time}", "%Y-%m-%d %H:%M")
-        end_datetime = datetime.strptime(f"{end_date} {end_time}", "%Y-%m-%d %H:%M")
+        
+        if not start_datetime_str:
+            messages.error(request, _('Необходимо указать дату и время начала олимпиады'))
+            return redirect('olympiads:olympiad_create')
+            
+        if not end_datetime_str:
+            messages.error(request, _('Необходимо указать дату и время окончания олимпиады'))
+            return redirect('olympiads:olympiad_create')
+            
+        try:
+            start_datetime = datetime.fromisoformat(start_datetime_str.replace('T', ' '))
+            end_datetime = datetime.fromisoformat(end_datetime_str.replace('T', ' '))
+        except ValueError:
+            messages.error(request, _('Некорректный формат даты и времени'))
+            return redirect('olympiads:olympiad_create')
         
         # Создаем новую олимпиаду
         olympiad = Olympiad.objects.create(
@@ -558,7 +569,7 @@ def olympiad_create(request):
             short_description=short_description,
             start_datetime=start_datetime,
             end_datetime=end_datetime,
-            time_limit_minutes=time_limit,
+            time_limit_minutes=time_limit_minutes,
             is_open=is_open,
             min_passing_score=min_passing_score,
             created_by=request.user,
