@@ -17,6 +17,7 @@ from .models import (
     OlympiadTestCase, OlympiadCertificate
 )
 from users.models import CustomUser
+from courses.models import Course
 
 import json
 import datetime
@@ -945,38 +946,77 @@ def olympiad_task_create(request, olympiad_id):
         return redirect('olympiads:olympiad_list')
     
     if request.method == 'POST':
-        # Обрабатываем данные формы
+        # Основные поля
         title = request.POST.get('title')
         description = request.POST.get('description')
         task_type = request.POST.get('task_type')
-        points = request.POST.get('points', 1)
+        points = int(request.POST.get('points', 1))
         
-        # Находим максимальный порядок и добавляем 10
-        max_order = olympiad.tasks.aggregate(max_order=Max('order'))['max_order'] or 0
-        order = max_order + 10
+        # Дополнительные поля
+        difficulty = int(request.POST.get('difficulty', 3))
+        topic = request.POST.get('topic', '')
+        course_id = request.POST.get('course', '')
         
-        # Создаем новое задание
-        task = OlympiadTask.objects.create(
-            olympiad=olympiad,
-            title=title,
-            description=description,
-            task_type=task_type,
-            points=points,
-            order=order
-        )
+        # Настройки отображения
+        use_markdown = 'use_markdown' in request.POST
+        use_latex = 'use_latex' in request.POST
+        
+        # Лимиты и ограничения
+        max_attempts = int(request.POST.get('max_attempts', 0))
+        time_limit_minutes = int(request.POST.get('time_limit_minutes', 0))
+        memory_limit_mb = int(request.POST.get('memory_limit_mb', 0)) if task_type == 'programming' else 0
+        
+        # Порядок и другие параметры
+        order = int(request.POST.get('order', 0))
+        if order == 0:
+            # Находим максимальный порядок и добавляем 10
+            max_order = olympiad.tasks.aggregate(max_order=Max('order'))['max_order'] or 0
+            order = max_order + 10
+            
+        min_passing_score = int(request.POST.get('min_passing_score', 0))
+        
+        # Создаем новое задание с расширенными параметрами
+        task_data = {
+            'olympiad': olympiad,
+            'title': title,
+            'description': description,
+            'task_type': task_type,
+            'points': points,
+            'order': order,
+            'difficulty': difficulty,
+            'topic': topic,
+            'use_markdown': use_markdown,
+            'use_latex': use_latex,
+            'max_attempts': max_attempts,
+            'time_limit_minutes': time_limit_minutes,
+            'memory_limit_mb': memory_limit_mb,
+            'min_passing_score': min_passing_score
+        }
         
         # Если это задание на программирование, добавляем начальный код
-        if task_type == OlympiadTask.TaskType.PROGRAMMING:
-            initial_code = request.POST.get('initial_code', '')
-            task.initial_code = initial_code
-            task.save()
+        if task_type == 'programming':
+            task_data['initial_code'] = request.POST.get('initial_code', '')
+        
+        # Если указан связанный курс, добавляем его
+        if course_id:
+            try:
+                course = Course.objects.get(id=course_id)
+                task_data['course'] = course
+            except Course.DoesNotExist:
+                pass
+        
+        task = OlympiadTask.objects.create(**task_data)
         
         messages.success(request, _('Задание успешно создано!'))
         return redirect('olympiads:olympiad_task_edit', olympiad_id=olympiad.id, task_id=task.id)
     
+    # Получаем список доступных курсов для выбора
+    courses = Course.objects.all()
+    
     context = {
         'olympiad': olympiad,
-        'task_types': OlympiadTask.TaskType.choices
+        'task_types': OlympiadTask.TaskType.choices,
+        'courses': courses
     }
     
     return render(request, 'olympiads/manage/task_create.html', context)
@@ -993,23 +1033,48 @@ def olympiad_task_edit(request, olympiad_id, task_id):
         return redirect('olympiads:olympiad_list')
     
     if request.method == 'POST':
-        # Обрабатываем данные формы
+        # Основные поля
         task.title = request.POST.get('title')
         task.description = request.POST.get('description')
-        task.points = request.POST.get('points', 1)
-        task.order = request.POST.get('order', task.order)
+        task.points = int(request.POST.get('points', 1))
+        task.order = int(request.POST.get('order', task.order))
         
-        # Если это задание на программирование, обновляем начальный код
-        if task.task_type == OlympiadTask.TaskType.PROGRAMMING:
+        # Дополнительные поля
+        task.difficulty = int(request.POST.get('difficulty', 3))
+        task.topic = request.POST.get('topic', '')
+        course_id = request.POST.get('course', '')
+        
+        # Настройки отображения
+        task.use_markdown = 'use_markdown' in request.POST
+        task.use_latex = 'use_latex' in request.POST
+        
+        # Лимиты и ограничения
+        task.max_attempts = int(request.POST.get('max_attempts', 0))
+        task.time_limit_minutes = int(request.POST.get('time_limit_minutes', 0))
+        task.min_passing_score = int(request.POST.get('min_passing_score', 0))
+        
+        # Если это задание на программирование, обновляем особые поля
+        if task.task_type == 'programming':
             task.initial_code = request.POST.get('initial_code', '')
+            task.memory_limit_mb = int(request.POST.get('memory_limit_mb', 0))
             
-            # Обрабатываем тестовые случаи
+            # Обработка тестовых случаев будет здесь
             # ...
         
         # Если это задание с выбором вариантов, обрабатываем варианты
-        elif task.task_type == OlympiadTask.TaskType.MULTIPLE_CHOICE:
+        elif task.task_type == 'multiple_choice':
             # Обработка вариантов выбора будет реализована позже
             pass
+        
+        # Связанный курс
+        if course_id:
+            try:
+                course = Course.objects.get(id=course_id)
+                task.course = course
+            except Course.DoesNotExist:
+                task.course = None
+        else:
+            task.course = None
         
         # Сохраняем изменения
         task.save()
@@ -1021,11 +1086,16 @@ def olympiad_task_edit(request, olympiad_id, task_id):
     test_cases = task.test_cases.all().order_by('order')
     options = task.options.all().order_by('order')
     
+    # Получаем список доступных курсов для выбора
+    courses = Course.objects.all()
+    
     context = {
         'olympiad': olympiad,
         'task': task,
         'test_cases': test_cases,
-        'options': options
+        'options': options,
+        'courses': courses,
+        'task_types': OlympiadTask.TaskType.choices,
     }
     
     return render(request, 'olympiads/manage/task_edit.html', context)
