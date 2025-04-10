@@ -101,8 +101,8 @@ def olympiad_list(request):
         
         # Добавляем информацию о приглашениях (используем существующую модель OlympiadInvitation)
         user_invitations = OlympiadInvitation.objects.filter(
-            user=request.user, 
-            is_accepted=False
+            user=request.user,
+            is_active=True  # используем поле is_active вместо is_accepted
         ).filter(
             Q(expires_at__isnull=True) | Q(expires_at__gt=now)
         )
@@ -200,15 +200,16 @@ def olympiad_register(request, olympiad_id):
         invitation = OlympiadInvitation.objects.filter(
             olympiad=olympiad,
             user=request.user,
-            is_accepted=False
+            is_active=True
         ).first()
         
         if not invitation:
             messages.error(request, _('Эта олимпиада закрыта для регистрации'))
             return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
         
-        # Принимаем приглашение
-        invitation.is_accepted = True
+        # Помечаем приглашение как использованное
+        invitation.is_active = False
+        invitation.used_count += 1
         invitation.save()
     
     # Регистрируем пользователя
