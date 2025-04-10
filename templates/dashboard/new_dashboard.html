@@ -1,0 +1,1514 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Панель управления{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Переменные для тем */
+    :root {
+        --primary-gradient: linear-gradient(135deg, #4361ee, #4895ef);
+        --secondary-gradient: linear-gradient(135deg, #3a0ca3, #4361ee);
+        --success-gradient: linear-gradient(135deg, #4cc9f0, #4895ef);
+        --danger-gradient: linear-gradient(135deg, #f72585, #b5179e);
+        --warning-gradient: linear-gradient(135deg, #ffd166, #ffba08);
+        --info-gradient: linear-gradient(135deg, #4895ef, #4cc9f0);
+
+        --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        --card-shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        
+        --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Анимации */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+    
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-6px); }
+    }
+    
+    /* Основные стили дашборда */
+    .dashboard-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 1.5rem;
+    }
+    
+    .dashboard-greeting {
+        background: var(--primary-gradient);
+        border-radius: 12px;
+        padding: 2rem;
+        color: white;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+    }
+    
+    .dashboard-greeting h2 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .dashboard-greeting p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        max-width: 600px;
+    }
+    
+    .greeting-decoration {
+        position: absolute;
+        right: -50px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    
+    .greeting-decoration:before {
+        content: '';
+        position: absolute;
+        right: -80px;
+        top: -80px;
+        width: 200px;
+        height: 200px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 50%;
+    }
+    
+    /* Статистика */
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background-color: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--card-shadow);
+        transition: var(--transition-smooth);
+        display: flex;
+        flex-direction: column;
+        animation: fadeIn 0.5s forwards;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .stat-card:hover {
+        box-shadow: var(--card-shadow-hover);
+        transform: translateY(-3px);
+    }
+    
+    .stat-icon {
+        background: var(--primary-gradient);
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        color: white;
+        font-size: 1.25rem;
+    }
+    
+    .stat-card.achievement .stat-icon {
+        background: var(--secondary-gradient);
+    }
+    
+    .stat-card.courses .stat-icon {
+        background: var(--success-gradient);
+    }
+    
+    .stat-card.time .stat-icon {
+        background: var(--info-gradient);
+    }
+    
+    .stat-card.points .stat-icon {
+        background: var(--warning-gradient);
+    }
+    
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+        color: #111827;
+    }
+    
+    .stat-label {
+        color: #4B5563;
+        font-size: 0.95rem;
+    }
+    
+    .stat-trend {
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .trend-up {
+        color: #10B981;
+    }
+    
+    .trend-down {
+        color: #EF4444;
+    }
+    
+    /* Widgets Grid */
+    .dashboard-widgets {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 1.5rem;
+    }
+    
+    .widget-card {
+        background-color: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+        transition: var(--transition-smooth);
+        animation: fadeIn 0.5s forwards;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .widget-card:hover {
+        box-shadow: var(--card-shadow-hover);
+    }
+    
+    .widget-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .widget-title {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: #111827;
+        display: flex;
+        align-items: center;
+    }
+    
+    .widget-title i {
+        margin-right: 0.5rem;
+    }
+    
+    .widget-content {
+        padding: 1.5rem;
+        flex: 1;
+    }
+    
+    .widget-sm {
+        grid-column: span 3;
+    }
+    
+    .widget-md {
+        grid-column: span 6;
+    }
+    
+    .widget-lg {
+        grid-column: span 9;
+    }
+    
+    .widget-xl {
+        grid-column: span 12;
+    }
+    
+    @media (max-width: 1200px) {
+        .widget-sm {
+            grid-column: span 4;
+        }
+        
+        .widget-md {
+            grid-column: span 6;
+        }
+        
+        .widget-lg {
+            grid-column: span 12;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .widget-sm {
+            grid-column: span 6;
+        }
+        
+        .widget-md {
+            grid-column: span 12;
+        }
+    }
+    
+    @media (max-width: 640px) {
+        .widget-sm {
+            grid-column: span 12;
+        }
+    }
+    
+    /* Прогресс курса */
+    .course-progress-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .course-progress-item {
+        background-color: #F9FAFB;
+        border-radius: 8px;
+        padding: 1rem;
+        transition: var(--transition-smooth);
+    }
+    
+    .course-progress-item:hover {
+        background-color: #F3F4F6;
+    }
+    
+    .course-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        font-size: 1rem;
+    }
+    
+    .course-title a {
+        color: #2563EB;
+        text-decoration: none;
+    }
+    
+    .course-title a:hover {
+        text-decoration: underline;
+    }
+    
+    .course-stats {
+        font-size: 0.875rem;
+        color: #6B7280;
+        margin-bottom: 0.75rem;
+    }
+    
+    .progress-bar-container {
+        height: 8px;
+        background-color: #E5E7EB;
+        border-radius: 9999px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .progress-bar {
+        height: 100%;
+        background: var(--primary-gradient);
+        border-radius: 9999px;
+        transition: width 0.3s ease;
+    }
+    
+    .progress-text {
+        font-size: 0.75rem;
+        color: #4B5563;
+        margin-top: 0.25rem;
+        text-align: right;
+    }
+    
+    /* Активность и достижения */
+    .activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        max-height: 350px;
+        overflow-y: auto;
+    }
+    
+    .activity-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #F3F4F6;
+    }
+    
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    
+    .activity-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        flex-shrink: 0;
+    }
+    
+    .activity-icon.lesson {
+        background: var(--info-gradient);
+    }
+    
+    .activity-icon.achievement {
+        background: var(--secondary-gradient);
+    }
+    
+    .activity-icon.certificate {
+        background: var(--success-gradient);
+    }
+    
+    .activity-icon.login {
+        background: var(--warning-gradient);
+    }
+    
+    .activity-content {
+        flex: 1;
+    }
+    
+    .activity-title {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #111827;
+        margin-bottom: 0.25rem;
+    }
+    
+    .activity-time {
+        font-size: 0.8rem;
+        color: #6B7280;
+    }
+    
+    /* Achievements */
+    .achievement-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 1rem;
+    }
+    
+    .achievement-card {
+        background-color: #F9FAFB;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+        transition: var(--transition-smooth);
+    }
+    
+    .achievement-card:hover {
+        background-color: #F3F4F6;
+        transform: translateY(-3px);
+    }
+    
+    .achievement-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 0.75rem;
+        color: white;
+        font-size: 1.25rem;
+        background: var(--secondary-gradient);
+    }
+    
+    .achievement-name {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #111827;
+        margin-bottom: 0.5rem;
+    }
+    
+    .achievement-date {
+        font-size: 0.75rem;
+        color: #6B7280;
+    }
+    
+    /* Расписание и календарь */
+    .schedule-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .schedule-item {
+        display: flex;
+        padding: 0.75rem;
+        border-radius: 8px;
+        background-color: #F9FAFB;
+        border-left: 4px solid #4361ee;
+        transition: var(--transition-smooth);
+    }
+    
+    .schedule-item:hover {
+        background-color: #F3F4F6;
+        border-left-width: 6px;
+    }
+    
+    .schedule-time {
+        width: 70px;
+        flex-shrink: 0;
+        margin-right: 1rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #6B7280;
+    }
+    
+    .schedule-content {
+        flex: 1;
+    }
+    
+    .schedule-title {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #111827;
+        margin-bottom: 0.25rem;
+    }
+    
+    .schedule-course {
+        font-size: 0.85rem;
+        color: #6B7280;
+    }
+    
+    /* Пустое состояние */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 2rem;
+        background-color: #F9FAFB;
+        border-radius: 12px;
+        border: 2px dashed #E5E7EB;
+    }
+    
+    .empty-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #F3F4F6;
+        color: #9CA3AF;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-title {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: #111827;
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-desc {
+        color: #6B7280;
+        margin-bottom: 1.5rem;
+        max-width: 400px;
+    }
+    
+    /* Рейтинг */
+    .leaderboard-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .leaderboard-table th {
+        text-align: left;
+        padding: 0.75rem 1rem;
+        color: #6B7280;
+        font-weight: 600;
+        font-size: 0.85rem;
+        border-bottom: 2px solid #E5E7EB;
+    }
+    
+    .leaderboard-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #F3F4F6;
+    }
+    
+    .leaderboard-table tr:hover td {
+        background-color: #F9FAFB;
+    }
+    
+    .leaderboard-rank {
+        font-weight: 700;
+        color: #111827;
+    }
+    
+    .leaderboard-user {
+        display: flex;
+        align-items: center;
+    }
+    
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #E5E7EB;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        font-weight: 600;
+        color: #4B5563;
+    }
+    
+    .user-name {
+        font-weight: 600;
+        color: #111827;
+    }
+    
+    .user-points {
+        font-weight: 600;
+        color: #2563EB;
+    }
+    
+    /* Медиа запросы */
+    @media (max-width: 768px) {
+        .greeting-decoration {
+            display: none;
+        }
+        
+        .dashboard-greeting {
+            padding: 1.5rem;
+        }
+        
+        .dashboard-greeting h2 {
+            font-size: 1.5rem;
+        }
+        
+        .dashboard-greeting p {
+            font-size: 1rem;
+        }
+        
+        .stats-container {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+        }
+    }
+
+    /* Темная тема */
+    .dark .stat-card,
+    .dark .widget-card {
+        background-color: #1F2937;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .dark .stat-value {
+        color: white;
+    }
+    
+    .dark .stat-label {
+        color: #9CA3AF;
+    }
+    
+    .dark .widget-title {
+        color: white;
+    }
+    
+    .dark .widget-header {
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .dark .course-progress-item,
+    .dark .schedule-item,
+    .dark .achievement-card {
+        background-color: #2D3748;
+    }
+    
+    .dark .course-progress-item:hover,
+    .dark .schedule-item:hover,
+    .dark .achievement-card:hover {
+        background-color: #374151;
+    }
+    
+    .dark .course-title a {
+        color: #60A5FA;
+    }
+    
+    .dark .course-stats,
+    .dark .activity-time,
+    .dark .schedule-time,
+    .dark .schedule-course,
+    .dark .achievement-date {
+        color: #9CA3AF;
+    }
+    
+    .dark .activity-title,
+    .dark .schedule-title,
+    .dark .achievement-name {
+        color: #E5E7EB;
+    }
+    
+    .dark .progress-bar-container {
+        background-color: #374151;
+    }
+    
+    .dark .progress-text {
+        color: #9CA3AF;
+    }
+    
+    .dark .activity-item {
+        border-bottom-color: #374151;
+    }
+    
+    .dark .empty-state {
+        background-color: #2D3748;
+        border-color: #4B5563;
+    }
+    
+    .dark .empty-icon {
+        background-color: #374151;
+        color: #9CA3AF;
+    }
+    
+    .dark .empty-title {
+        color: white;
+    }
+    
+    .dark .empty-desc {
+        color: #9CA3AF;
+    }
+    
+    .dark .leaderboard-table th {
+        color: #9CA3AF;
+        border-bottom-color: #4B5563;
+    }
+    
+    .dark .leaderboard-table td {
+        border-bottom-color: #374151;
+    }
+    
+    .dark .leaderboard-table tr:hover td {
+        background-color: #2D3748;
+    }
+    
+    .dark .leaderboard-rank {
+        color: white;
+    }
+    
+    .dark .user-avatar {
+        background-color: #4B5563;
+        color: #E5E7EB;
+    }
+    
+    .dark .user-name {
+        color: white;
+    }
+    
+    .dark .user-points {
+        color: #60A5FA;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Приветствие -->
+<div class="dashboard-container">
+    <div class="dashboard-greeting" id="greeting">
+        <div>
+            <h2>Добро пожаловать, {{ request.user.first_name|default:request.user.username }}!</h2>
+            <p class="mt-2">Отслеживайте свой прогресс обучения, управляйте курсами и достигайте новых целей с нашей образовательной платформой.</p>
+        </div>
+        <div class="greeting-decoration"></div>
+    </div>
+    
+    <!-- Статистика -->
+    <div class="stats-container">
+        <div class="stat-card lessons">
+            <div class="stat-icon">
+                <i class="fas fa-book"></i>
+            </div>
+            <div class="stat-value" id="lessons-count">--</div>
+            <div class="stat-label">Завершенных уроков</div>
+            <div class="stat-trend trend-up" id="lessons-trend">
+                <i class="fas fa-arrow-up mr-1"></i> <span>--</span>
+            </div>
+        </div>
+        
+        <div class="stat-card achievement">
+            <div class="stat-icon">
+                <i class="fas fa-award"></i>
+            </div>
+            <div class="stat-value" id="achievements-count">--</div>
+            <div class="stat-label">Достижений</div>
+            <div class="stat-trend trend-up" id="achievements-trend">
+                <i class="fas fa-arrow-up mr-1"></i> <span>--</span>
+            </div>
+        </div>
+        
+        <div class="stat-card courses">
+            <div class="stat-icon">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div class="stat-value" id="courses-count">--</div>
+            <div class="stat-label">Активных курсов</div>
+            <div class="stat-trend" id="courses-trend">
+                <i class="fas fa-equals mr-1"></i> <span>--</span>
+            </div>
+        </div>
+        
+        <div class="stat-card points">
+            <div class="stat-icon">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <div class="stat-value" id="points-count">--</div>
+            <div class="stat-label">Рейтинговых очков</div>
+            <div class="stat-trend trend-up" id="points-trend">
+                <i class="fas fa-arrow-up mr-1"></i> <span>--</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Виджеты -->
+    <div class="dashboard-widgets">
+        <!-- Виджет прогресса по курсам -->
+        <div class="widget-card widget-md" id="courses-progress-widget">
+            <div class="widget-header">
+                <div class="widget-title">
+                    <i class="fas fa-chart-line"></i> Прогресс по курсам
+                </div>
+                <div class="widget-actions">
+                    <button class="btn-icon btn-sm" id="refresh-courses">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="widget-content">
+                <div class="course-progress-list" id="course-progress-list">
+                    <div class="flex items-center justify-center h-40">
+                        <div class="text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                            <p class="mt-3 text-sm text-gray-500">Загрузка данных...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Виджет недавней активности -->
+        <div class="widget-card widget-md" id="activity-widget">
+            <div class="widget-header">
+                <div class="widget-title">
+                    <i class="fas fa-clock"></i> Недавняя активность
+                </div>
+                <div class="widget-actions">
+                    <button class="btn-icon btn-sm" id="refresh-activity">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="widget-content">
+                <div class="activity-list" id="activity-list">
+                    <div class="flex items-center justify-center h-40">
+                        <div class="text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                            <p class="mt-3 text-sm text-gray-500">Загрузка данных...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Виджет достижений -->
+        <div class="widget-card widget-sm" id="achievements-widget">
+            <div class="widget-header">
+                <div class="widget-title">
+                    <i class="fas fa-award"></i> Достижения
+                </div>
+                <div class="widget-actions">
+                    <a href="{% url 'achievement_list' %}" class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                        Все достижения
+                    </a>
+                </div>
+            </div>
+            <div class="widget-content">
+                <div class="achievement-grid" id="achievement-grid">
+                    <div class="flex items-center justify-center h-40">
+                        <div class="text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                            <p class="mt-3 text-sm text-gray-500">Загрузка данных...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Виджет расписания -->
+        <div class="widget-card widget-sm" id="schedule-widget">
+            <div class="widget-header">
+                <div class="widget-title">
+                    <i class="fas fa-calendar-alt"></i> Расписание
+                </div>
+                <div class="widget-actions">
+                    <button class="btn-icon btn-sm" id="refresh-schedule">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="widget-content">
+                <div class="schedule-list" id="schedule-list">
+                    <div class="flex items-center justify-center h-40">
+                        <div class="text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                            <p class="mt-3 text-sm text-gray-500">Загрузка данных...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Виджет рейтинга -->
+        <div class="widget-card widget-md" id="leaderboard-widget">
+            <div class="widget-header">
+                <div class="widget-title">
+                    <i class="fas fa-list-ol"></i> Рейтинг пользователей
+                </div>
+                <div class="widget-actions">
+                    <a href="{% url 'leaderboard' %}" class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                        Полный рейтинг
+                    </a>
+                </div>
+            </div>
+            <div class="widget-content">
+                <div id="leaderboard-container">
+                    <div class="flex items-center justify-center h-40">
+                        <div class="text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                            <p class="mt-3 text-sm text-gray-500">Загрузка данных...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Виджет целей обучения -->
+        <div class="widget-card widget-sm" id="goals-widget">
+            <div class="widget-header">
+                <div class="widget-title">
+                    <i class="fas fa-bullseye"></i> Цели обучения
+                </div>
+                <div class="widget-actions">
+                    <button class="btn-icon btn-sm" id="add-goal">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="widget-content">
+                <div id="goals-container">
+                    <div class="flex items-center justify-center h-40">
+                        <div class="text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                            <p class="mt-3 text-sm text-gray-500">Загрузка данных...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Загружаем данные для всех виджетов
+        loadDashboardData();
+        
+        // Обработчики событий для кнопок обновления
+        document.getElementById('refresh-courses').addEventListener('click', function() {
+            loadCoursesProgress();
+        });
+        
+        document.getElementById('refresh-activity').addEventListener('click', function() {
+            loadRecentActivity();
+        });
+        
+        document.getElementById('refresh-schedule').addEventListener('click', function() {
+            loadSchedule();
+        });
+        
+        // Автоматическое обновление данных каждые 5 минут
+        setInterval(loadDashboardData, 300000);
+    });
+    
+    // Загрузка всех данных дашборда
+    function loadDashboardData() {
+        loadStatistics();
+        loadCoursesProgress();
+        loadRecentActivity();
+        loadAchievements();
+        loadSchedule();
+        loadLeaderboard();
+        loadGoals();
+    }
+    
+    // Загрузка статистики
+    function loadStatistics() {
+        fetch('/dashboard/api/statistics/')
+            .then(response => response.json())
+            .then(data => {
+                // Уроки
+                document.getElementById('lessons-count').textContent = data.completed_lessons;
+                document.getElementById('lessons-trend').innerHTML = `
+                    <i class="fas fa-arrow-up mr-1"></i> <span>${data.lessons_trend}% за неделю</span>
+                `;
+                
+                // Достижения
+                document.getElementById('achievements-count').textContent = data.earned_achievements;
+                document.getElementById('achievements-trend').innerHTML = `
+                    <i class="fas fa-arrow-up mr-1"></i> <span>${data.achievements_trend}% за месяц</span>
+                `;
+                
+                // Курсы
+                document.getElementById('courses-count').textContent = data.enrolled_courses;
+                document.getElementById('courses-trend').innerHTML = `
+                    <i class="fas fa-equals mr-1"></i> <span>без изменений</span>
+                `;
+                
+                // Очки
+                document.getElementById('points-count').textContent = data.total_points;
+                document.getElementById('points-trend').innerHTML = `
+                    <i class="fas fa-arrow-up mr-1"></i> <span>${data.points_trend} за неделю</span>
+                `;
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки статистики:', error);
+            });
+    }
+    
+    // Загрузка прогресса курсов
+    function loadCoursesProgress() {
+        const container = document.getElementById('course-progress-list');
+        container.innerHTML = `
+            <div class="flex items-center justify-center h-40">
+                <div class="text-center">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                    <p class="mt-3 text-sm text-gray-500">Загрузка данных...</p>
+                </div>
+            </div>
+        `;
+        
+        fetch('/dashboard/api/courses-progress/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.courses && data.courses.length > 0) {
+                    let html = '';
+                    data.courses.forEach(course => {
+                        html += `
+                            <div class="course-progress-item">
+                                <div class="course-title">
+                                    <a href="/courses/${course.slug}/">${course.title}</a>
+                                </div>
+                                <div class="course-stats">
+                                    ${course.completed_lessons} из ${course.total_lessons} уроков
+                                </div>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: ${course.progress_percent}%"></div>
+                                </div>
+                                <div class="progress-text">${course.progress_percent}%</div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <h3 class="empty-title">Нет активных курсов</h3>
+                            <p class="empty-desc">Запишитесь на курсы, чтобы начать обучение</p>
+                            <a href="/courses/" class="btn btn-primary">Просмотреть курсы</a>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки прогресса курсов:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h3 class="empty-title">Не удалось загрузить данные</h3>
+                        <p class="empty-desc">Произошла ошибка при загрузке прогресса курсов</p>
+                        <button class="btn btn-primary" onclick="loadCoursesProgress()">Попробовать снова</button>
+                    </div>
+                `;
+            });
+    }
+    
+    // Загрузка недавней активности
+    function loadRecentActivity() {
+        const container = document.getElementById('activity-list');
+        container.innerHTML = `
+            <div class="flex items-center justify-center h-40">
+                <div class="text-center">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                    <p class="mt-3 text-sm text-gray-500">Загрузка данных...</p>
+                </div>
+            </div>
+        `;
+        
+        fetch('/dashboard/api/recent-activity/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.activities && data.activities.length > 0) {
+                    let html = '';
+                    data.activities.forEach(activity => {
+                        let iconClass = 'lesson';
+                        switch(activity.type) {
+                            case 'lesson_completed':
+                                iconClass = 'lesson';
+                                break;
+                            case 'achievement_earned':
+                                iconClass = 'achievement';
+                                break;
+                            case 'certificate_earned':
+                                iconClass = 'certificate';
+                                break;
+                            case 'login':
+                                iconClass = 'login';
+                                break;
+                        }
+                        
+                        html += `
+                            <div class="activity-item">
+                                <div class="activity-icon ${iconClass}">
+                                    <i class="${getActivityIcon(activity.type)}"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <div class="activity-title">${activity.message}</div>
+                                    <div class="activity-time">${activity.date}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-history"></i>
+                            </div>
+                            <h3 class="empty-title">Нет активности</h3>
+                            <p class="empty-desc">Начните изучать курсы, чтобы отслеживать вашу активность</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки активности:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h3 class="empty-title">Не удалось загрузить данные</h3>
+                        <p class="empty-desc">Произошла ошибка при загрузке недавней активности</p>
+                        <button class="btn btn-primary" onclick="loadRecentActivity()">Попробовать снова</button>
+                    </div>
+                `;
+            });
+    }
+    
+    // Получение иконки для типа активности
+    function getActivityIcon(activityType) {
+        switch(activityType) {
+            case 'lesson_completed':
+                return 'fas fa-book';
+            case 'achievement_earned':
+                return 'fas fa-award';
+            case 'certificate_earned':
+                return 'fas fa-certificate';
+            case 'login':
+                return 'fas fa-sign-in-alt';
+            default:
+                return 'fas fa-history';
+        }
+    }
+    
+    // Загрузка достижений
+    function loadAchievements() {
+        const container = document.getElementById('achievement-grid');
+        container.innerHTML = `
+            <div class="flex items-center justify-center h-40">
+                <div class="text-center">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                    <p class="mt-3 text-sm text-gray-500">Загрузка данных...</p>
+                </div>
+            </div>
+        `;
+        
+        fetch('/dashboard/api/achievements/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.achievements && data.achievements.length > 0) {
+                    let html = '';
+                    // Показываем только последние 6 достижений
+                    const recentAchievements = data.achievements.slice(0, 6);
+                    recentAchievements.forEach(achievement => {
+                        html += `
+                            <div class="achievement-card">
+                                <div class="achievement-icon">
+                                    <i class="${achievement.icon || 'fas fa-medal'}"></i>
+                                </div>
+                                <div class="achievement-name">${achievement.title}</div>
+                                <div class="achievement-date">${achievement.earned_at}</div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-award"></i>
+                            </div>
+                            <h3 class="empty-title">Нет достижений</h3>
+                            <p class="empty-desc">Проходите курсы и выполняйте задания, чтобы получать достижения</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки достижений:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h3 class="empty-title">Не удалось загрузить данные</h3>
+                        <p class="empty-desc">Произошла ошибка при загрузке достижений</p>
+                        <button class="btn btn-primary" onclick="loadAchievements()">Попробовать снова</button>
+                    </div>
+                `;
+            });
+    }
+    
+    // Загрузка расписания
+    function loadSchedule() {
+        const container = document.getElementById('schedule-list');
+        container.innerHTML = `
+            <div class="flex items-center justify-center h-40">
+                <div class="text-center">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                    <p class="mt-3 text-sm text-gray-500">Загрузка данных...</p>
+                </div>
+            </div>
+        `;
+        
+        fetch('/dashboard/api/schedule/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.schedule && data.schedule.length > 0) {
+                    let html = '';
+                    data.schedule.forEach(item => {
+                        html += `
+                            <div class="schedule-item">
+                                <div class="schedule-time">${item.time}</div>
+                                <div class="schedule-content">
+                                    <div class="schedule-title">
+                                        <a href="${item.url}">${item.title}</a>
+                                    </div>
+                                    <div class="schedule-course">${item.course}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <h3 class="empty-title">Нет запланированных занятий</h3>
+                            <p class="empty-desc">Ваше расписание на сегодня пусто</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки расписания:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h3 class="empty-title">Не удалось загрузить данные</h3>
+                        <p class="empty-desc">Произошла ошибка при загрузке расписания</p>
+                        <button class="btn btn-primary" onclick="loadSchedule()">Попробовать снова</button>
+                    </div>
+                `;
+            });
+    }
+    
+    // Загрузка рейтинга
+    function loadLeaderboard() {
+        const container = document.getElementById('leaderboard-container');
+        container.innerHTML = `
+            <div class="flex items-center justify-center h-40">
+                <div class="text-center">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                    <p class="mt-3 text-sm text-gray-500">Загрузка данных...</p>
+                </div>
+            </div>
+        `;
+        
+        fetch('/dashboard/api/leaderboard/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.leaderboard && data.leaderboard.length > 0) {
+                    let html = `
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Место</th>
+                                    <th>Пользователь</th>
+                                    <th>Очки</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    data.leaderboard.forEach(user => {
+                        const isCurrentUser = user.is_current_user;
+                        html += `
+                            <tr class="${isCurrentUser ? 'bg-blue-50 dark:bg-blue-900/20' : ''}">
+                                <td class="leaderboard-rank">${user.rank}</td>
+                                <td>
+                                    <div class="leaderboard-user">
+                                        <div class="user-avatar">
+                                            ${user.username.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div class="user-name">${user.full_name || user.username}</div>
+                                    </div>
+                                </td>
+                                <td class="user-points">${user.points}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += `
+                            </tbody>
+                        </table>
+                    `;
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-list-ol"></i>
+                            </div>
+                            <h3 class="empty-title">Рейтинг пуст</h3>
+                            <p class="empty-desc">Пока никто не набрал очков</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки рейтинга:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h3 class="empty-title">Не удалось загрузить данные</h3>
+                        <p class="empty-desc">Произошла ошибка при загрузке рейтинга</p>
+                        <button class="btn btn-primary" onclick="loadLeaderboard()">Попробовать снова</button>
+                    </div>
+                `;
+            });
+    }
+    
+    // Загрузка целей обучения
+    function loadGoals() {
+        const container = document.getElementById('goals-container');
+        container.innerHTML = `
+            <div class="flex items-center justify-center h-40">
+                <div class="text-center">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                    <p class="mt-3 text-sm text-gray-500">Загрузка данных...</p>
+                </div>
+            </div>
+        `;
+        
+        fetch('/dashboard/api/goals/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.goals && data.goals.length > 0) {
+                    let html = '<div class="space-y-3">';
+                    data.goals.forEach(goal => {
+                        html += `
+                            <div class="flex items-start space-x-3">
+                                <div class="flex-shrink-0 pt-0.5">
+                                    <input type="checkbox" id="goal-${goal.id}" class="h-5 w-5 rounded text-blue-600" ${goal.completed ? 'checked' : ''} 
+                                    onchange="toggleGoal(${goal.id}, this.checked)">
+                                </div>
+                                <div class="flex-1 ${goal.completed ? 'line-through text-gray-500' : ''}">
+                                    <label for="goal-${goal.id}" class="text-sm font-medium cursor-pointer">${goal.title}</label>
+                                    ${goal.due_date ? `<p class="text-xs text-gray-500 mt-1">До: ${goal.due_date}</p>` : ''}
+                                </div>
+                                <button class="text-red-500 hover:text-red-700" onclick="deleteGoal(${goal.id})">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
+                            <h3 class="empty-title">Нет целей обучения</h3>
+                            <p class="empty-desc">Добавьте цели, чтобы отслеживать свой прогресс</p>
+                            <button class="btn btn-primary" onclick="openAddGoalModal()">Добавить цель</button>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки целей:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h3 class="empty-title">Не удалось загрузить данные</h3>
+                        <p class="empty-desc">Произошла ошибка при загрузке целей обучения</p>
+                        <button class="btn btn-primary" onclick="loadGoals()">Попробовать снова</button>
+                    </div>
+                `;
+            });
+    }
+    
+    // Функция для переключения статуса цели
+    function toggleGoal(goalId, completed) {
+        fetch(`/dashboard/api/goals/${goalId}/toggle/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ completed: completed })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Обновляем стиль элемента
+                const label = document.querySelector(`label[for="goal-${goalId}"]`);
+                const container = label.parentElement;
+                
+                if (completed) {
+                    container.classList.add('line-through', 'text-gray-500');
+                } else {
+                    container.classList.remove('line-through', 'text-gray-500');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка при обновлении цели:', error);
+            // Возвращаем чекбокс в исходное состояние
+            document.getElementById(`goal-${goalId}`).checked = !completed;
+        });
+    }
+    
+    // Функция для удаления цели
+    function deleteGoal(goalId) {
+        if (confirm('Вы действительно хотите удалить эту цель?')) {
+            fetch(`/dashboard/api/goals/${goalId}/delete/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadGoals(); // Перезагружаем список целей
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка при удалении цели:', error);
+            });
+        }
+    }
+    
+    // Функция для открытия модального окна добавления цели
+    function openAddGoalModal() {
+        // Здесь можно реализовать модальное окно или использовать встроенный prompt
+        const goalTitle = prompt('Введите название цели:');
+        if (goalTitle) {
+            addGoal(goalTitle);
+        }
+    }
+    
+    // Функция для добавления новой цели
+    function addGoal(title, dueDate = null) {
+        fetch('/dashboard/api/goals/add/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                title: title,
+                due_date: dueDate
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadGoals(); // Перезагружаем список целей
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка при добавлении цели:', error);
+        });
+    }
+    
+    // Получение CSRF токена из cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Инициализация кнопки добавления цели
+    document.getElementById('add-goal').addEventListener('click', function() {
+        openAddGoalModal();
+    });
+</script>
+{% endblock %}

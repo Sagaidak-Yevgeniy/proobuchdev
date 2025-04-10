@@ -21,8 +21,20 @@ from .forms import WidgetForm, DashboardLayoutForm, WidgetPositionForm, WidgetSi
 
 
 @login_required
+def new_dashboard(request):
+    """Отображает новый, улучшенный дашборд пользователя"""
+    user = request.user
+    
+    # Получаем базовую информацию о пользователе для приветствия
+    context = {
+        'user': user,
+    }
+    
+    return render(request, 'dashboard/new_dashboard.html', context)
+
+@login_required
 def dashboard(request):
-    """Отображает дашборд пользователя"""
+    """Отображает классический дашборд пользователя"""
     user = request.user
     
     # Получаем или создаем макет дашборда пользователя
