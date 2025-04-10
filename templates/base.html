@@ -131,14 +131,14 @@
 
                     <!-- Выпадающее меню пользователя (только на desktop) -->
                     <div class="relative hidden lg:block">
-                        <button class="flex items-center space-x-2 text-white hover:bg-blue-700 transition-colors rounded-md px-3 py-2" onclick="toggleDropdown()">
+                        <button id="desktopUserMenuButton" class="flex items-center space-x-2 text-white hover:bg-blue-700 transition-colors rounded-md px-3 py-2">
                             <div class="w-8 h-8 rounded-full bg-blue-800 flex items-center justify-center">
                                 <span class="text-sm font-bold">{{ user.username|first|upper }}</span>
                             </div>
                             <span class="text-sm font-medium max-w-[120px] truncate">{{ user.username }}</span>
                             <i class="fas fa-chevron-down text-xs"></i>
                         </button>
-                        <div id="userDropdown" class="absolute right-0 hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-lg rounded-lg mt-2 py-2 w-60 z-10">
+                        <div id="desktopUserDropdown" class="absolute right-0 hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-lg rounded-lg mt-2 py-2 w-60 z-10">
                             <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-600">
                                 <div class="font-medium">{{ user.get_full_name|default:user.username }}</div>
                                 <div class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</div>
@@ -216,15 +216,18 @@
                     <div class="flex flex-col lg:flex-row lg:items-center lg:space-x-4">
                         {% if user.is_authenticated %}
                             <div class="relative py-2 lg:py-0">
-                                <button class="flex items-center hover:text-blue-200 w-full lg:w-auto" onclick="toggleDropdown()">
+                                <button id="mobileUserMenuButton" class="flex items-center hover:text-blue-200 w-full lg:w-auto">
                                     <span class="truncate max-w-[150px]">{{ user.username }}</span> <span class="text-xs">({{ user.profile.get_role_display }})</span> <i class="fas fa-chevron-down ml-1 text-xs"></i>
                                 </button>
-                                <div id="userDropdown" class="absolute right-0 lg:right-0 hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-lg rounded-lg mt-2 py-2 w-full lg:w-48 z-10">
+                                <div id="mobileUserDropdown" class="absolute right-0 lg:right-0 hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-lg rounded-lg mt-2 py-2 w-full lg:w-48 z-10">
                                     <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
                                         <i class="fas fa-user mr-2"></i>Мой профиль
                                     </a>
                                     <a href="{% url 'achievement_list' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
                                         <i class="fas fa-trophy mr-2"></i>Достижения
+                                    </a>
+                                    <a href="{% url 'my_certificates' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                        <i class="fas fa-certificate mr-2"></i>Мои сертификаты
                                     </a>
                                     <a href="{% url 'leaderboard' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
                                         <i class="fas fa-list-ol mr-2"></i>Рейтинг
@@ -237,7 +240,7 @@
                                         <i class="fas fa-cog mr-2"></i>Админ-панель
                                     </a>
                                     {% endif %}
-                                    <a href="{% url 'logout' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                    <a href="{% url 'logout' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 text-red-600 dark:text-red-400">
                                         <i class="fas fa-sign-out-alt mr-2"></i>Выйти
                                     </a>
                                 </div>
@@ -252,17 +255,20 @@
         </div>
     </nav>
     
-    <!-- JavaScript для мобильного меню -->
+    <!-- JavaScript для интерактивных элементов -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        /* ---- МОБИЛЬНОЕ МЕНЮ ---- */
         const mobileMenuButton = document.getElementById('mobile-menu-button');
         const navigationMenu = document.getElementById('navigation-menu');
         
-        mobileMenuButton.addEventListener('click', function() {
-            navigationMenu.classList.toggle('hidden');
-        });
+        if (mobileMenuButton) {
+            mobileMenuButton.addEventListener('click', function() {
+                navigationMenu.classList.toggle('hidden');
+            });
+        }
         
-        // Закрывает меню при изменении размера экрана на desktop
+        // Закрывает мобильное меню при изменении размера экрана на desktop
         window.addEventListener('resize', function() {
             if (window.innerWidth >= 1024) { // lg breakpoint
                 navigationMenu.classList.remove('hidden');
@@ -271,35 +277,43 @@
             }
         });
         
-        // Инициализация состояния при загрузке
+        // Инициализация состояния мобильного меню при загрузке
         if (window.innerWidth >= 1024) {
             navigationMenu.classList.remove('hidden');
         }
-    });
-    
-    let isDropdownOpen = false;
-    
-    function toggleDropdown() {
-        const dropdown = document.getElementById("userDropdown");
-        isDropdownOpen = !isDropdownOpen;
         
-        if (isDropdownOpen) {
-            dropdown.classList.remove("hidden");
-        } else {
-            dropdown.classList.add("hidden");
-        }
-    }
-    
-    // Закрыть выпадающий список при клике вне его
-    document.addEventListener('click', function(event) {
-        const dropdown = document.getElementById("userDropdown");
-        const button = event.target.closest('button');
+        /* ---- ВЫПАДАЮЩИЕ МЕНЮ ПОЛЬЗОВАТЕЛЯ ---- */
         
-        // Если клик был не по кнопке и не по выпадающему меню, закрываем меню
-        if (!button && !event.target.closest('#userDropdown') && dropdown && !dropdown.classList.contains('hidden')) {
-            dropdown.classList.add('hidden');
-            isDropdownOpen = false;
+        // Инициализация выпадающих меню
+        function initDropdown(buttonId, dropdownId) {
+            const button = document.getElementById(buttonId);
+            const dropdown = document.getElementById(dropdownId);
+            
+            if (!button || !dropdown) return;
+            
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+                
+                // Закрываем другие меню
+                document.querySelectorAll('.absolute:not(.hidden)').forEach(menu => {
+                    if (menu.id !== dropdownId && menu.id.includes('Dropdown')) {
+                        menu.classList.add('hidden');
+                    }
+                });
+            });
+            
+            // Закрываем меню при клике вне его
+            document.addEventListener('click', function(e) {
+                if (!dropdown.contains(e.target) && !button.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
         }
+        
+        // Инициализация обоих меню пользователя
+        initDropdown('desktopUserMenuButton', 'desktopUserDropdown');
+        initDropdown('mobileUserMenuButton', 'mobileUserDropdown');
     });
     </script>
     
