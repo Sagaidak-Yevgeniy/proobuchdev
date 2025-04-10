@@ -117,9 +117,30 @@ class OlympiadTask(models.Model):
     
     order = models.PositiveIntegerField(_('Порядок'), default=0)
     min_passing_score = models.PositiveIntegerField(_('Минимальный проходной балл'), default=0)
+    max_attempts = models.PositiveIntegerField(_('Максимальное количество попыток'), default=0,
+                                            help_text=_('0 означает без ограничения'))
     
     initial_code = models.TextField(_('Начальный код'), blank=True,
                                  help_text=_('Код, который будет предоставлен участнику в начале'))
+    
+    # Дополнительные поля для связей
+    course = models.ForeignKey('courses.Course', on_delete=models.SET_NULL, 
+                             null=True, blank=True, 
+                             related_name='olympiad_tasks', 
+                             verbose_name=_('Связанный курс'))
+    
+    topic = models.CharField(_('Тема'), max_length=255, blank=True,
+                           help_text=_('Тематика задания для группировки'))
+    
+    difficulty = models.PositiveSmallIntegerField(_('Сложность'), default=1,
+                                               help_text=_('Уровень сложности от 1 до 5'))
+    
+    # Опции отображения и форматирования
+    use_markdown = models.BooleanField(_('Использовать Markdown'), default=True,
+                                    help_text=_('Отображать описание с поддержкой Markdown'))
+    
+    use_latex = models.BooleanField(_('Использовать LaTeX'), default=False,
+                                   help_text=_('Включить поддержку математических формул в формате LaTeX'))
     
     created_at = models.DateTimeField(_('Создано'), auto_now_add=True)
     updated_at = models.DateTimeField(_('Обновлено'), auto_now=True)

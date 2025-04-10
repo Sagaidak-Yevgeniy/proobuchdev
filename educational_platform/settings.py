@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Сторонние приложения
+    'markdownify.apps.MarkdownifyConfig',
     # Собственные приложения
     'users.apps.UsersConfig',
     'courses.apps.CoursesConfig',
@@ -52,6 +54,31 @@ INSTALLED_APPS = [
     'dashboard.apps.DashboardConfig',
     'notifications.apps.NotificationsConfig',
 ]
+
+# Настройки Markdownify
+MARKDOWNIFY = {
+    'default': {
+        'MARKDOWN_EXTENSIONS': [
+            'markdown.extensions.fenced_code',
+            'markdown.extensions.codehilite',
+            'markdown.extensions.tables',
+            'markdown.extensions.toc',
+            'mdx_math',  # LaTeX поддержка
+        ],
+        'WHITELIST_TAGS': [
+            'a', 'abbr', 'b', 'blockquote', 'br', 'code', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+            'hr', 'i', 'img', 'li', 'ol', 'p', 'pre', 'strong', 'table', 'tbody', 'td', 'th', 'thead',
+            'tr', 'ul', 'div', 'span', 'math',
+        ],
+        'WHITELIST_ATTRS': [
+            'href', 'src', 'alt', 'title', 'class', 'style', 'id',
+        ],
+        'WHITELIST_STYLES': [
+            'width', 'height', 'margin', 'padding', 'color', 'background-color', 'text-align',
+            'border', 'font-weight', 'font-size', 'font-family',
+        ],
+    }
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

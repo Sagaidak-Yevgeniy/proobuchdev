@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
+    "django-markdownify>=0.9.5",
     "django>=5.2",
     "openai>=1.72.0",
     "pillow>=11.1.0",
@@ -13,4 +14,6 @@ dependencies = [
     "sendgrid>=6.11.0",
     "trafilatura>=2.0.0",
     "xhtml2pdf>=0.2.17",
+    "markdown>=3.7",
+    "python-markdown-math>=0.9",
 ]
