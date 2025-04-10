@@ -16,6 +16,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/mode/python/python.min.js"></script>
 
+<!-- Marked.js для обработки Markdown -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
 <!-- KaTeX для отображения математических формул -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -413,8 +416,8 @@ document.addEventListener('DOMContentLoaded', function() {
             },
         ],
         previewRender: function(text) {
-            // Обработка Markdown с LaTeX
-            let html = this.parent.markdown(text);
+            // Обработка Markdown с marked.js
+            let html = marked.parse(text);
             
             // Обновляем предпросмотр описания
             setTimeout(() => {
