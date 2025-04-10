@@ -69,3 +69,27 @@ def task_availability_icon(task, task_statuses):
         return mark_safe('<i class="fas fa-unlock text-blue-500"></i>')
     
     return mark_safe('<i class="fas fa-lock text-gray-500"></i>')
+
+@register.filter
+def percentage(value, max_value):
+    """Вычисляет процент от максимального значения"""
+    if not max_value:
+        return 0
+    return int((float(value) / float(max_value)) * 100)
+
+@register.filter
+def multiply(value, arg):
+    """Умножает значение на аргумент"""
+    return float(value) * float(arg)
+
+@register.filter
+def divide(value, arg):
+    """Делит значение на аргумент"""
+    if not arg:
+        return 0
+    return float(value) / float(arg)
+
+@register.filter
+def subtract(value, arg):
+    """Вычитает аргумент из значения"""
+    return float(value) - float(arg)

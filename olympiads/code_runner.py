@@ -1,397 +1,438 @@
-"""
-Модуль для запуска и проверки программного кода для олимпиадных заданий
-"""
-
 import os
 import subprocess
 import tempfile
-import uuid
 import time
+import signal
+import resource
 import json
-from django.conf import settings
+from typing import Dict, List, Optional, Tuple, Any
 
-# Максимальное время выполнения кода (в секундах)
-DEFAULT_TIMEOUT = 5
+# Константы для ограничений
+DEFAULT_TIME_LIMIT = 5  # секунд
+DEFAULT_MEMORY_LIMIT = 128 * 1024 * 1024  # 128 MB в байтах
+MAX_OUTPUT_LENGTH = 100 * 1024  # 100 KB
 
-# Максимальный объем памяти (в мегабайтах)
-DEFAULT_MEMORY_LIMIT = 100
+# Классы для исключений
+class ExecutionError(Exception):
+    """Базовый класс для ошибок выполнения"""
+    pass
 
-# Поддерживаемые языки программирования и их компиляторы/интерпретаторы
-SUPPORTED_LANGUAGES = {
+class CompilationError(ExecutionError):
+    """Ошибка компиляции"""
+    pass
+
+class ExecutionTimeLimitExceeded(ExecutionError):
+    """Превышено ограничение времени выполнения"""
+    pass
+
+class ExecutionMemoryLimitExceeded(ExecutionError):
+    """Превышено ограничение памяти"""
+    pass
+
+class ExecutionRuntimeError(ExecutionError):
+    """Ошибка времени выполнения"""
+    pass
+
+# Конфигурация для разных языков
+LANGUAGE_CONFIG = {
     'python': {
-        'extension': 'py',
-        'compile': None,
-        'run': ['python', '{file}'],
-        'version_cmd': ['python', '--version'],
-        'name': 'Python',
+        'file_ext': '.py',
+        'compile_cmd': None,
+        'run_cmd': ['python', '{file}'],
+        'format_cmd': ['black', '-q', '{file}'],
     },
     'javascript': {
-        'extension': 'js',
-        'compile': None,
-        'run': ['node', '{file}'],
-        'version_cmd': ['node', '--version'],
-        'name': 'JavaScript (Node.js)',
+        'file_ext': '.js',
+        'compile_cmd': None,
+        'run_cmd': ['node', '{file}'],
+        'format_cmd': ['prettier', '--write', '{file}'],
     },
     'java': {
-        'extension': 'java',
-        'compile': ['javac', '{file}'],
-        'run': ['java', '-cp', '{dir}', 'Main'],
-        'version_cmd': ['java', '--version'],
-        'name': 'Java',
+        'file_ext': '.java',
+        'compile_cmd': ['javac', '{file}'],
+        'run_cmd': ['java', '-cp', '{dir}', 'Main'],
+        'format_cmd': ['google-java-format', '-i', '{file}'],
         'main_class': 'Main',
     },
     'cpp': {
-        'extension': 'cpp',
-        'compile': ['g++', '-std=c++17', '{file}', '-o', '{dir}/a.out'],
-        'run': ['{dir}/a.out'],
-        'version_cmd': ['g++', '--version'],
-        'name': 'C++',
-    },
-    'csharp': {
-        'extension': 'cs',
-        'compile': ['csc', '{file}', '-out:{dir}/program.exe'],
-        'run': ['mono', '{dir}/program.exe'],
-        'version_cmd': ['csc', '--version'],
-        'name': 'C#',
-    },
-    'ruby': {
-        'extension': 'rb',
-        'compile': None,
-        'run': ['ruby', '{file}'],
-        'version_cmd': ['ruby', '--version'],
-        'name': 'Ruby',
-    },
-    'php': {
-        'extension': 'php',
-        'compile': None,
-        'run': ['php', '{file}'],
-        'version_cmd': ['php', '--version'],
-        'name': 'PHP',
-    },
+        'file_ext': '.cpp',
+        'compile_cmd': ['g++', '-std=c++17', '-o', '{dir}/a.out', '{file}'],
+        'run_cmd': ['{dir}/a.out'],
+        'format_cmd': ['clang-format', '-i', '{file}'],
+    }
 }
 
-# Рабочая директория для временных файлов
-WORK_DIR = os.path.join(settings.BASE_DIR, 'tmp', 'code_runner')
-os.makedirs(WORK_DIR, exist_ok=True)
-
-def get_language_config(language):
+def create_temp_file(code: str, language: str) -> Tuple[str, str, str]:
     """
-    Получает конфигурацию для указанного языка программирования
+    Создает временный файл с кодом и возвращает путь к файлу и директории
     
     Args:
-        language (str): Идентификатор языка программирования
+        code: Исходный код
+        language: Язык программирования
     
     Returns:
-        dict: Конфигурация языка или None, если язык не поддерживается
+        Кортеж из (путь_к_файлу, имя_файла, директория)
     """
-    language = language.lower()
-    return SUPPORTED_LANGUAGES.get(language)
+    config = LANGUAGE_CONFIG.get(language)
+    if not config:
+        raise ValueError(f"Неподдерживаемый язык: {language}")
+    
+    # Для Java создаем файл с именем Main.java
+    if language == 'java':
+        file_name = f"{config['main_class']}{config['file_ext']}"
+        temp_dir = tempfile.mkdtemp()
+        file_path = os.path.join(temp_dir, file_name)
+    else:
+        # Для других языков используем временный файл
+        fd, file_path = tempfile.mkstemp(suffix=config['file_ext'])
+        os.close(fd)
+        temp_dir = os.path.dirname(file_path)
+        file_name = os.path.basename(file_path)
+    
+    # Записываем код в файл
+    with open(file_path, 'w') as f:
+        f.write(code)
+    
+    return file_path, file_name, temp_dir
 
-def run_code(code, language, input_data=None, timeout=DEFAULT_TIMEOUT, memory_limit=DEFAULT_MEMORY_LIMIT):
+def compile_code(file_path: str, language: str) -> None:
     """
-    Запускает код на указанном языке программирования
+    Компилирует код, если это необходимо (для языков типа C++, Java)
     
     Args:
-        code (str): Код для запуска
-        language (str): Язык программирования
-        input_data (str, optional): Входные данные для программы
-        timeout (int, optional): Максимальное время выполнения в секундах
-        memory_limit (int, optional): Максимальный объем памяти в мегабайтах
+        file_path: Путь к файлу с исходным кодом
+        language: Язык программирования
     
-    Returns:
-        dict: Результат выполнения кода
+    Raises:
+        CompilationError: Если компиляция завершилась с ошибкой
     """
-    # Получаем конфигурацию языка
-    lang_config = get_language_config(language)
-    if not lang_config:
-        return {
-            'status': 'error',
-            'error': f'Язык "{language}" не поддерживается'
-        }
+    config = LANGUAGE_CONFIG.get(language)
+    if not config or not config['compile_cmd']:
+        return  # Компиляция не требуется (Python, JavaScript)
     
-    # Создаем временный файл для кода
-    uid = uuid.uuid4().hex
-    temp_dir = os.path.join(WORK_DIR, uid)
-    os.makedirs(temp_dir, exist_ok=True)
+    cmd = [c.format(file=file_path, dir=os.path.dirname(file_path)) for c in config['compile_cmd']]
     
     try:
-        # Формируем имя файла
-        file_name = f"main.{lang_config['extension']}"
-        file_path = os.path.join(temp_dir, file_name)
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True
+        )
+        stdout, stderr = process.communicate(timeout=30)
         
-        # Если это Java, нужно использовать имя класса Main
-        if language == 'java':
-            code = code.replace('public class', 'class')
-            code = f"public class {lang_config['main_class']} {{\n{code.strip()}\n}}"
+        if process.returncode != 0:
+            raise CompilationError(f"Ошибка компиляции ({language}):\n{stderr}")
+    except subprocess.TimeoutExpired:
+        process.kill()
+        raise CompilationError(f"Компиляция превысила лимит времени (30 секунд)")
+
+def limit_resources(max_memory_bytes: int) -> None:
+    """
+    Ограничивает ресурсы для дочернего процесса
+    
+    Args:
+        max_memory_bytes: Максимальное количество памяти в байтах
+    """
+    # Ограничение использования памяти
+    resource.setrlimit(resource.RLIMIT_AS, (max_memory_bytes, max_memory_bytes))
+    
+    # Запрещаем создание новых процессов
+    resource.setrlimit(resource.RLIMIT_NPROC, (0, 0))
+
+def run_code_with_input(
+    file_path: str, 
+    language: str, 
+    input_data: str = "",
+    time_limit: float = DEFAULT_TIME_LIMIT,
+    memory_limit: int = DEFAULT_MEMORY_LIMIT
+) -> Dict[str, Any]:
+    """
+    Запускает код с заданными входными данными и ограничениями
+    
+    Args:
+        file_path: Путь к файлу с исходным кодом
+        language: Язык программирования
+        input_data: Входные данные
+        time_limit: Ограничение времени выполнения в секундах
+        memory_limit: Ограничение памяти в байтах
+    
+    Returns:
+        Словарь с результатами выполнения:
+        {
+            'status': 'success' или 'error',
+            'output': строка вывода (при успехе) или сообщение об ошибке,
+            'execution_time': время выполнения в секундах,
+            'memory_used': использованная память в байтах (приблизительно)
+        }
+    """
+    try:
+        config = LANGUAGE_CONFIG.get(language)
+        if not config:
+            return {
+                'status': 'error',
+                'output': f"Неподдерживаемый язык: {language}"
+            }
         
-        # Записываем код во временный файл
-        with open(file_path, 'w') as f:
-            f.write(code)
+        # Компилируем код, если требуется
+        if config['compile_cmd']:
+            compile_code(file_path, language)
         
-        # Компилируем код, если нужно
-        if lang_config['compile']:
-            compile_cmd = [
-                cmd.format(file=file_path, dir=temp_dir)
-                for cmd in lang_config['compile']
-            ]
-            
-            compile_process = subprocess.run(
-                compile_cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=timeout,
-                text=True
-            )
-            
-            if compile_process.returncode != 0:
-                return {
-                    'status': 'error',
-                    'error': f'Ошибка компиляции:\n{compile_process.stderr}'
-                }
-        
-        # Запускаем программу
-        run_cmd = [
-            cmd.format(file=file_path, dir=temp_dir)
-            for cmd in lang_config['run']
-        ]
-        
-        # Если есть входные данные, записываем их во временный файл
-        input_file = None
-        if input_data:
-            input_file = os.path.join(temp_dir, 'input.txt')
-            with open(input_file, 'w') as f:
-                f.write(input_data)
+        # Подготавливаем команду запуска
+        cmd = [c.format(file=file_path, dir=os.path.dirname(file_path)) for c in config['run_cmd']]
         
         # Запускаем процесс
         start_time = time.time()
         
-        with open(input_file, 'r') if input_file else None as inp:
-            try:
-                process = subprocess.run(
-                    run_cmd,
-                    stdin=inp,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    timeout=timeout,
-                    text=True
-                )
-                
-                execution_time = time.time() - start_time
-                
-                if process.returncode != 0:
-                    return {
-                        'status': 'error',
-                        'error': f'Ошибка выполнения:\n{process.stderr}',
-                        'output': process.stdout,
-                        'execution_time': execution_time
-                    }
+        process = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            preexec_fn=lambda: limit_resources(memory_limit)
+        )
+        
+        try:
+            stdout, stderr = process.communicate(input=input_data, timeout=time_limit)
+            execution_time = time.time() - start_time
+            
+            # Ограничиваем размер вывода
+            if len(stdout) > MAX_OUTPUT_LENGTH:
+                stdout = stdout[:MAX_OUTPUT_LENGTH] + "\n... (вывод обрезан)"
+            
+            if process.returncode != 0:
+                return {
+                    'status': 'error',
+                    'output': f"Ошибка выполнения (код {process.returncode}):\n{stderr}",
+                    'execution_time': execution_time
+                }
+            
+            # Если есть вывод ошибок, но код возврата 0, добавляем их к stdout
+            if stderr and process.returncode == 0:
+                full_output = stdout
+                if stderr.strip():
+                    full_output += "\n--- Stderr ---\n" + stderr
                 
                 return {
                     'status': 'success',
-                    'output': process.stdout,
-                    'execution_time': execution_time,
-                    'memory_usage': 0  # В простой версии не измеряем использование памяти
-                }
-                
-            except subprocess.TimeoutExpired:
-                return {
-                    'status': 'error',
-                    'error': f'Превышено ограничение по времени ({timeout} сек)'
+                    'output': full_output,
+                    'execution_time': execution_time
                 }
             
+            return {
+                'status': 'success',
+                'output': stdout,
+                'execution_time': execution_time
+            }
+            
+        except subprocess.TimeoutExpired:
+            # Если процесс не завершился вовремя, убиваем его
+            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+            process.kill()
+            
+            return {
+                'status': 'error',
+                'output': f"Превышено ограничение времени выполнения ({time_limit} сек)",
+                'execution_time': time_limit
+            }
+    
+    except CompilationError as e:
+        return {
+            'status': 'error',
+            'output': str(e)
+        }
     except Exception as e:
         return {
             'status': 'error',
-            'error': f'Произошла ошибка: {str(e)}'
+            'output': f"Внутренняя ошибка: {str(e)}"
         }
-    
-    finally:
-        # Удаляем временные файлы
-        cleanup_temp_files(temp_dir)
 
-def run_test_case(code, language, test_case, timeout=DEFAULT_TIMEOUT, memory_limit=DEFAULT_MEMORY_LIMIT):
+def check_solution(
+    code: str,
+    language: str,
+    test_cases: List[Dict[str, str]],
+    time_limit: float = DEFAULT_TIME_LIMIT,
+    memory_limit: int = DEFAULT_MEMORY_LIMIT
+) -> Dict[str, Any]:
     """
-    Запускает код на указанном языке программирования с тестовым случаем
+    Проверяет решение на наборе тестовых случаев
     
     Args:
-        code (str): Код для запуска
-        language (str): Язык программирования
-        test_case (dict): Тестовый случай с входными данными и ожидаемым результатом
-        timeout (int, optional): Максимальное время выполнения в секундах
-        memory_limit (int, optional): Максимальный объем памяти в мегабайтах
+        code: Исходный код
+        language: Язык программирования
+        test_cases: Список тестовых случаев вида [{'input': '...', 'expected': '...'}]
+        time_limit: Ограничение времени выполнения в секундах
+        memory_limit: Ограничение памяти в байтах
     
     Returns:
-        dict: Результат прохождения теста
-    """
-    # Получаем входные данные и ожидаемый результат
-    input_data = test_case.get('input_data', '')
-    expected_output = test_case.get('expected_output', '').strip()
-    
-    # Запускаем код
-    result = run_code(code, language, input_data, timeout, memory_limit)
-    
-    # Если произошла ошибка, возвращаем её
-    if result['status'] == 'error':
-        return {
-            'status': 'error',
-            'error': result['error'],
-            'passed': False,
-            'test_id': test_case.get('id')
+        Словарь с результатами проверки:
+        {
+            'status': 'success' или 'error',
+            'all_passed': True/False если все тесты пройдены,
+            'passed_count': количество пройденных тестов,
+            'total_count': общее количество тестов,
+            'test_results': список результатов по каждому тесту,
+            'error': сообщение об ошибке (если есть)
         }
-    
-    # Получаем выходные данные
-    actual_output = result['output'].strip()
-    
-    # Сравниваем выходные данные с ожидаемым результатом
-    passed = actual_output == expected_output
-    
-    return {
-        'status': 'success',
-        'passed': passed,
-        'expected_output': expected_output,
-        'actual_output': actual_output,
-        'execution_time': result['execution_time'],
-        'memory_usage': result.get('memory_usage', 0),
-        'test_id': test_case.get('id')
-    }
-
-def format_code(code, language):
     """
-    Форматирует код на указанном языке программирования
-    
-    Args:
-        code (str): Код для форматирования
-        language (str): Язык программирования
-    
-    Returns:
-        dict: Результат форматирования
-    """
-    # Получаем конфигурацию языка
-    lang_config = get_language_config(language)
-    if not lang_config:
-        return {
-            'status': 'error',
-            'error': f'Язык "{language}" не поддерживается'
-        }
-    
-    # Создаем временный файл для кода
-    with tempfile.TemporaryDirectory() as temp_dir:
+    try:
+        # Создаем временный файл с кодом
+        file_path, _, _ = create_temp_file(code, language)
+        
+        # Компилируем код, если требуется
         try:
-            # Формируем имя файла
-            file_name = f"main.{lang_config['extension']}"
-            file_path = os.path.join(temp_dir, file_name)
+            if LANGUAGE_CONFIG[language]['compile_cmd']:
+                compile_code(file_path, language)
+        except CompilationError as e:
+            return {
+                'status': 'error',
+                'error': str(e),
+                'all_passed': False,
+                'passed_count': 0,
+                'total_count': len(test_cases),
+                'test_results': []
+            }
+        
+        # Проверяем каждый тестовый случай
+        test_results = []
+        passed_count = 0
+        
+        for i, test_case in enumerate(test_cases):
+            input_data = test_case.get('input', '')
+            expected_output = test_case.get('expected', '').strip()
             
-            # Записываем код во временный файл
-            with open(file_path, 'w') as f:
-                f.write(code)
+            # Запускаем код с текущим входным набором
+            result = run_code_with_input(
+                file_path, 
+                language, 
+                input_data, 
+                time_limit, 
+                memory_limit
+            )
             
-            # Форматируем код в зависимости от языка
-            if language == 'python':
-                # Используем black для Python
-                try:
-                    subprocess.run(
-                        ['black', '-q', file_path],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        timeout=5,
-                        text=True
-                    )
-                except (subprocess.SubprocessError, FileNotFoundError):
-                    # Если black не установлен, пропускаем форматирование
-                    pass
+            if result['status'] == 'success':
+                actual_output = result['output'].strip()
+                is_passed = actual_output == expected_output
                 
-            elif language == 'javascript':
-                # Используем prettier для JavaScript
-                try:
-                    subprocess.run(
-                        ['prettier', '--write', file_path],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        timeout=5,
-                        text=True
-                    )
-                except (subprocess.SubprocessError, FileNotFoundError):
-                    # Если prettier не установлен, пропускаем форматирование
-                    pass
+                if is_passed:
+                    passed_count += 1
                 
-            elif language in ['java', 'cpp', 'csharp']:
-                # Используем clang-format для C-подобных языков
-                try:
-                    subprocess.run(
-                        ['clang-format', '-i', file_path],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        timeout=5,
-                        text=True
-                    )
-                except (subprocess.SubprocessError, FileNotFoundError):
-                    # Если clang-format не установлен, пропускаем форматирование
-                    pass
+                test_results.append({
+                    'test_number': i + 1,
+                    'input': input_data,
+                    'expected': expected_output,
+                    'actual': actual_output,
+                    'execution_time': result.get('execution_time', 0),
+                    'passed': is_passed
+                })
+            else:
+                # Если произошла ошибка выполнения, помечаем тест как не пройденный
+                test_results.append({
+                    'test_number': i + 1,
+                    'input': input_data,
+                    'expected': expected_output,
+                    'actual': result['output'],
+                    'execution_time': result.get('execution_time', 0),
+                    'passed': False,
+                    'error': True
+                })
+        
+        # Очищаем временный файл
+        try:
+            os.remove(file_path)
+        except:
+            pass
+        
+        return {
+            'status': 'success',
+            'all_passed': passed_count == len(test_cases),
+            'passed_count': passed_count,
+            'total_count': len(test_cases),
+            'test_results': test_results
+        }
+    
+    except Exception as e:
+        return {
+            'status': 'error',
+            'error': f"Внутренняя ошибка при проверке решения: {str(e)}",
+            'all_passed': False,
+            'passed_count': 0,
+            'total_count': len(test_cases),
+            'test_results': []
+        }
+
+def format_code(code: str, language: str) -> Dict[str, Any]:
+    """
+    Форматирует код с использованием соответствующих инструментов
+    
+    Args:
+        code: Исходный код
+        language: Язык программирования
+    
+    Returns:
+        Словарь с результатами форматирования:
+        {
+            'status': 'success' или 'error',
+            'formatted_code': отформатированный код (при успехе),
+            'error': сообщение об ошибке (при неудаче)
+        }
+    """
+    try:
+        config = LANGUAGE_CONFIG.get(language)
+        if not config or not config.get('format_cmd'):
+            # Если нет команды форматирования, возвращаем исходный код
+            return {
+                'status': 'success',
+                'formatted_code': code
+            }
+        
+        # Создаем временный файл с кодом
+        file_path, _, _ = create_temp_file(code, language)
+        
+        # Форматируем код
+        cmd = [c.format(file=file_path, dir=os.path.dirname(file_path)) for c in config['format_cmd']]
+        
+        try:
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True
+            )
+            stdout, stderr = process.communicate(timeout=10)
             
-            # Считываем отформатированный код
+            # Некоторые форматеры выводят сообщения в stderr, но это не обязательно означает ошибку
+            if process.returncode != 0:
+                return {
+                    'status': 'error',
+                    'error': f"Ошибка форматирования ({language}):\n{stderr}"
+                }
+            
+            # Читаем отформатированный код
             with open(file_path, 'r') as f:
                 formatted_code = f.read()
+            
+            # Очищаем временный файл
+            try:
+                os.remove(file_path)
+            except:
+                pass
             
             return {
                 'status': 'success',
                 'formatted_code': formatted_code
             }
-            
-        except Exception as e:
+        
+        except subprocess.TimeoutExpired:
+            process.kill()
             return {
                 'status': 'error',
-                'error': f'Произошла ошибка при форматировании: {str(e)}'
+                'error': "Форматирование превысило лимит времени (10 секунд)"
             }
-
-def cleanup_temp_files(directory):
-    """
-    Удаляет временные файлы
-    
-    Args:
-        directory (str): Путь к директории с временными файлами
-    """
-    try:
-        # Рекурсивно удаляем все файлы в директории
-        for root, dirs, files in os.walk(directory, topdown=False):
-            for file in files:
-                os.remove(os.path.join(root, file))
-            for dir in dirs:
-                os.rmdir(os.path.join(root, dir))
         
-        # Удаляем саму директорию
-        os.rmdir(directory)
     except Exception as e:
-        print(f"Ошибка при удалении временных файлов: {e}")
-
-def get_available_languages():
-    """
-    Возвращает список доступных языков программирования
-    
-    Returns:
-        list: Список доступных языков
-    """
-    languages = []
-    
-    for lang_id, config in SUPPORTED_LANGUAGES.items():
-        # Проверяем, установлен ли компилятор/интерпретатор
-        try:
-            subprocess.run(
-                config['version_cmd'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=2
-            )
-            
-            languages.append({
-                'id': lang_id,
-                'name': config['name'],
-                'available': True
-            })
-        except (subprocess.SubprocessError, FileNotFoundError):
-            languages.append({
-                'id': lang_id,
-                'name': config['name'],
-                'available': False
-            })
-    
-    return languages
+        return {
+            'status': 'error',
+            'error': f"Внутренняя ошибка при форматировании: {str(e)}"
+        }
