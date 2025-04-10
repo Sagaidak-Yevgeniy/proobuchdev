@@ -173,6 +173,11 @@ def olympiad_detail(request, olympiad_id):
         is_completed=True
     ).order_by('-score')[:5]
     
+    # Добавляем состояние олимпиады в контекст для улучшения работы шаблона
+    olympiad_is_active = olympiad.is_active()
+    olympiad_is_completed = olympiad.is_completed()
+    olympiad_has_started = olympiad.has_started()
+    
     context = {
         'olympiad': olympiad,
         'user_participation': user_participation,
@@ -181,7 +186,10 @@ def olympiad_detail(request, olympiad_id):
         'task_count': task_count,
         'total_points': total_points,
         'top_participants': top_participants,
-        'now': now
+        'now': now,
+        'olympiad_is_active': olympiad_is_active,
+        'olympiad_is_completed': olympiad_is_completed, 
+        'olympiad_has_started': olympiad_has_started
     }
     
     return render(request, 'olympiads/olympiad_detail.html', context)
