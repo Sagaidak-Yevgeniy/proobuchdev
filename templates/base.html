@@ -138,7 +138,7 @@
                             <span class="text-sm font-medium max-w-[120px] truncate">{{ user.username }}</span>
                             <i class="fas fa-chevron-down text-xs"></i>
                         </button>
-                        <div id="desktopUserDropdown" class="absolute right-0 hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-lg rounded-lg mt-2 py-2 w-56 max-w-[calc(100vw-2rem)] z-20">
+                        <div id="desktopUserDropdown" class="absolute right-0 hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-lg rounded-lg mt-2 py-2 w-56 max-w-[calc(100vw-2rem)] z-20" style="right: 0; left: auto;">
                             <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-600">
                                 <div class="font-medium">{{ user.get_full_name|default:user.username }}</div>
                                 <div class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</div>
@@ -295,6 +295,11 @@
                 e.stopPropagation();
                 dropdown.classList.toggle('hidden');
                 
+                // Проверка позиционирования и исправление, если нужно
+                if (!dropdown.classList.contains('hidden')) {
+                    checkDropdownPosition(dropdown);
+                }
+                
                 // Закрываем другие меню
                 document.querySelectorAll('.absolute:not(.hidden)').forEach(menu => {
                     if (menu.id !== dropdownId && menu.id.includes('Dropdown')) {
@@ -311,9 +316,49 @@
             });
         }
         
+        // Проверяет и исправляет позицию выпадающего меню
+        function checkDropdownPosition(dropdown) {
+            const rect = dropdown.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            
+            // Если меню выходит за правую границу экрана, корректируем позицию
+            if (rect.right > viewportWidth) {
+                dropdown.style.right = '0px';
+                dropdown.style.left = 'auto';
+            }
+            
+            // Если меню выходит за нижнюю границу экрана, корректируем максимальную высоту
+            const viewportHeight = window.innerHeight;
+            if (rect.bottom > viewportHeight) {
+                const maxHeight = viewportHeight - rect.top - 20; // 20px отступ от края
+                dropdown.style.maxHeight = `${maxHeight}px`;
+                
+                // Если есть контейнер с прокруткой, корректируем его высоту
+                const scrollContainer = dropdown.querySelector('.overflow-y-auto');
+                if (scrollContainer) {
+                    const headerHeight = dropdown.querySelector('.border-b')?.offsetHeight || 0;
+                    const footerHeight = dropdown.querySelector('.bg-gray-50')?.offsetHeight || 0;
+                    scrollContainer.style.maxHeight = `${maxHeight - headerHeight - footerHeight}px`;
+                }
+            }
+        }
+        
         // Инициализация обоих меню пользователя
         initDropdown('desktopUserMenuButton', 'desktopUserDropdown');
         initDropdown('mobileUserMenuButton', 'mobileUserDropdown');
+        
+        // Обновление позиции при изменении размера окна
+        window.addEventListener('resize', function() {
+            const desktopUserDropdown = document.getElementById('desktopUserDropdown');
+            if (desktopUserDropdown && !desktopUserDropdown.classList.contains('hidden')) {
+                checkDropdownPosition(desktopUserDropdown);
+            }
+            
+            const mobileUserDropdown = document.getElementById('mobileUserDropdown');
+            if (mobileUserDropdown && !mobileUserDropdown.classList.contains('hidden')) {
+                checkDropdownPosition(mobileUserDropdown);
+            }
+        });
     });
     </script>
     

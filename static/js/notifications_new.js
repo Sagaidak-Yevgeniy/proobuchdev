@@ -61,6 +61,19 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const isDesktopVisible = desktopDropdown.style.display === 'block';
             desktopDropdown.style.display = isDesktopVisible ? 'none' : 'block';
+            
+            // Проверяем позицию десктопного меню и корректируем, если нужно
+            if (desktopDropdown.style.display === 'block') {
+                const rect = desktopDropdown.getBoundingClientRect();
+                const viewportWidth = window.innerWidth;
+                
+                // Если меню выходит за правую границу экрана, корректируем позицию
+                if (rect.right > viewportWidth) {
+                    const overflow = rect.right - viewportWidth;
+                    desktopDropdown.style.right = `0px`;
+                    desktopDropdown.style.left = `auto`;
+                }
+            }
         }
         
         // Установка максимальной высоты меню
