@@ -286,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!message) return;
             
             if (message.length > 2000) {
-                alert('Сообщение слишком длинное. Максимальная длина - 2000 символов.');
+                showNotification('Сообщение слишком длинное. Максимальная длина - 2000 символов.', 'error');
                 return;
             }
             
@@ -422,7 +422,7 @@ function toggleFeedback(messageId) {
 function submitFeedback(messageId) {
     const rating = document.querySelector(`input[name="rating-${messageId}"]:checked`);
     if (!rating) {
-        alert('Пожалуйста, выберите оценку.');
+        showNotification('Пожалуйста, выберите оценку.', 'warning');
         return;
     }
     
@@ -453,11 +453,11 @@ function submitFeedback(messageId) {
                 feedbackForm.classList.add('hidden');
             }, 2000);
         } else {
-            alert(`Ошибка: ${data.error}`);
+            showNotification(`Ошибка: ${data.error}`, 'error');
         }
     })
     .catch(error => {
-        alert('Ошибка сети. Пожалуйста, попробуйте позже.');
+        showNotification('Ошибка сети. Пожалуйста, попробуйте позже.', 'error');
     });
 }
 
