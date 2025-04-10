@@ -17,6 +17,8 @@ from lessons.models import Lesson, LessonCompletion
 from notifications.models import Notification
 
 from .models import Widget, DashboardLayout, WidgetDataCache
+from .models_events import Event, EventParticipant
+from .models_goals import StudentGoal, GoalStep
 from .forms import WidgetForm, DashboardLayoutForm, WidgetPositionForm, WidgetSizeForm
 
 
@@ -461,35 +463,57 @@ def get_upcoming_lessons_data(user):
 
 def get_goals_data(user):
     """Получает данные о целях обучения пользователя"""
-    # Здесь могла бы быть логика для получения фактических целей обучения
-    # Пока что заглушка с примерами целей
+    # Получаем все цели пользователя
+    student_goals = StudentGoal.objects.filter(user=user)
     
-    # Получаем цели из настроек виджета пользователя, если он их сохранил
-    widget = Widget.objects.filter(user=user, widget_type='goals').first()
+    active_goals = student_goals.filter(is_completed=False).count()
+    completed_goals = student_goals.filter(is_completed=True).count()
+    overdue_goals = sum(1 for goal in student_goals if goal.is_overdue)
     
-    goals = []
-    if widget and widget.settings and 'goals' in widget.settings:
-        goals = widget.settings['goals']
+    goals_data = []
     
-    # Если целей нет или виджет не настроен, добавляем примеры
-    if not goals:
-        goals = [
-            {
-                'id': 1,
-                'title': 'Пройти курс "Python для начинающих"',
-                'completed': False,
-                'created_at': datetime.datetime.now().strftime('%d.%m.%Y')
-            },
-            {
-                'id': 2,
-                'title': 'Заработать все базовые достижения',
-                'completed': False,
-                'created_at': datetime.datetime.now().strftime('%d.%m.%Y')
-            }
-        ]
+    for goal in student_goals:
+        # Получаем все шаги для цели
+        steps = []
+        for step in goal.steps.all().order_by('order'):
+            steps.append({
+                'id': step.id,
+                'title': step.title,
+                'description': step.description,
+                'order': step.order,
+                'is_completed': step.is_completed,
+                'completed_at': step.completed_at.strftime('%Y-%m-%d %H:%M:%S') if step.completed_at else None
+            })
+        
+        goals_data.append({
+            'id': goal.id,
+            'title': goal.title,
+            'description': goal.description,
+            'goal_type': goal.goal_type,
+            'goal_type_display': goal.get_goal_type_display(),
+            'priority': goal.priority,
+            'priority_display': goal.get_priority_display(),
+            'created_at': goal.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'due_date': goal.due_date.strftime('%Y-%m-%d') if goal.due_date else None,
+            'is_completed': goal.is_completed,
+            'completed_at': goal.completed_at.strftime('%Y-%m-%d %H:%M:%S') if goal.completed_at else None,
+            'progress': goal.progress,
+            'is_overdue': goal.is_overdue,
+            'days_left': goal.days_left,
+            'course': {
+                'id': goal.course.id,
+                'title': goal.course.title,
+                'slug': goal.course.slug
+            } if goal.course else None,
+            'steps': steps
+        })
     
     return {
-        'goals': goals
+        'goals': goals_data,
+        'total': len(goals_data),
+        'active': active_goals,
+        'completed': completed_goals,
+        'overdue': overdue_goals
     }
 
 
@@ -534,47 +558,54 @@ def get_study_time_data(user):
 
 def get_calendar_data(user):
     """Получает данные календаря событий"""
-    # Здесь могла бы быть логика для получения фактических событий из календаря
-    # Пока что заглушка с примерами событий
+    # Получаем события из модели
+    now = timezone.now()
     
-    # Получаем события из настроек виджета пользователя, если он их сохранил
-    widget = Widget.objects.filter(user=user, widget_type='calendar').first()
+    # Получаем активные события (текущие и будущие)
+    upcoming_events = Event.objects.filter(
+        end_time__gte=now,
+        is_public=True
+    ).order_by('start_time')
     
-    events = []
-    if widget and widget.settings and 'events' in widget.settings:
-        events = widget.settings['events']
+    # Получаем события, созданные пользователем
+    user_events = Event.objects.filter(
+        created_by=user
+    ).exclude(
+        id__in=upcoming_events.values_list('id', flat=True)
+    ).order_by('start_time')
     
-    # Если событий нет или виджет не настроен, добавляем примеры
-    if not events:
-        today = datetime.datetime.now().date()
-        
-        events = [
-            {
-                'id': 1,
-                'title': 'Вебинар по Python',
-                'date': (today + datetime.timedelta(days=2)).strftime('%d.%m.%Y'),
-                'time': '18:00',
-                'description': 'Углубленное изучение библиотек для анализа данных',
-                'is_past': False
-            },
-            {
-                'id': 2,
-                'title': 'Дедлайн практического задания',
-                'date': (today + datetime.timedelta(days=5)).strftime('%d.%m.%Y'),
-                'time': '23:59',
-                'description': 'Необходимо сдать решение задачи №3 по курсу алгоритмов',
-                'is_past': False
-            }
-        ]
+    # Получаем события, в которых пользователь является участником
+    participation_events = Event.objects.filter(
+        participants__user=user
+    ).exclude(
+        id__in=upcoming_events.values_list('id', flat=True)
+    ).exclude(
+        id__in=user_events.values_list('id', flat=True)
+    ).order_by('start_time')
     
-    # Обновляем статус событий (прошедшие/предстоящие)
-    today = datetime.datetime.now().date()
-    for event in events:
-        event_date = datetime.datetime.strptime(event['date'], '%d.%m.%Y').date()
-        event['is_past'] = event_date < today
+    # Объединяем события (без дубликатов)
+    events_list = list(upcoming_events) + list(user_events) + list(participation_events)
+    
+    # Преобразуем события в формат для виджета
+    events_data = []
+    for event in events_list:
+        events_data.append({
+            'id': event.id,
+            'title': event.title,
+            'date': event.start_time.strftime('%d.%m.%Y'),
+            'time': event.start_time.strftime('%H:%M'),
+            'end_time': event.end_time.strftime('%H:%M'),
+            'description': event.description[:100] + ('...' if len(event.description) > 100 else ''),
+            'location': event.location,
+            'url': event.url,
+            'event_type': event.get_event_type_display(),
+            'is_past': event.is_past,
+            'is_ongoing': event.is_ongoing,
+            'is_owner': event.created_by.id == user.id
+        })
     
     return {
-        'events': sorted(events, key=lambda x: datetime.datetime.strptime(x['date'], '%d.%m.%Y'))
+        'events': sorted(events_data, key=lambda x: datetime.datetime.strptime(x['date'] + ' ' + x['time'], '%d.%m.%Y %H:%M'))
     }
 
 

@@ -1,14 +1,15 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from datetime import datetime
+
 from users.models import CustomUser
-from courses.models import Course
 
 
 class Event(models.Model):
-    """Модель для мероприятий образовательной платформы"""
+    """Модель для мероприятий"""
     
-    TYPE_CHOICES = [
+    EVENT_TYPE_CHOICES = [
         ('webinar', 'Вебинар'),
         ('lecture', 'Лекция'),
         ('seminar', 'Семинар'),
@@ -18,7 +19,7 @@ class Event(models.Model):
     ]
     
     title = models.CharField(
-        max_length=255,
+        max_length=200,
         verbose_name=_('Название')
     )
     description = models.TextField(
@@ -27,7 +28,7 @@ class Event(models.Model):
     )
     event_type = models.CharField(
         max_length=20,
-        choices=TYPE_CHOICES,
+        choices=EVENT_TYPE_CHOICES,
         default='other',
         verbose_name=_('Тип мероприятия')
     )
@@ -44,38 +45,37 @@ class Event(models.Model):
     )
     url = models.URLField(
         blank=True,
-        verbose_name=_('Ссылка на онлайн-мероприятие')
+        verbose_name=_('Ссылка')
     )
     created_by = models.ForeignKey(
         CustomUser,
         on_delete=models.CASCADE,
         related_name='created_events',
-        verbose_name=_('Создатель')
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name=_('Дата создания')
-    )
-    updated_at = models.DateTimeField(
-        auto_now=True,
-        verbose_name=_('Дата обновления')
-    )
-    is_public = models.BooleanField(
-        default=True,
-        verbose_name=_('Публичное мероприятие')
-    )
-    max_participants = models.PositiveIntegerField(
-        default=0,
-        verbose_name=_('Максимальное количество участников'),
-        help_text=_('0 - без ограничений')
+        verbose_name=_('Организатор')
     )
     course = models.ForeignKey(
-        Course,
+        'courses.Course',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='events',
-        verbose_name=_('Связанный курс')
+        verbose_name=_('Курс')
+    )
+    is_public = models.BooleanField(
+        default=True,
+        verbose_name=_('Публичное')
+    )
+    max_participants = models.PositiveIntegerField(
+        default=0,  # 0 - без ограничений
+        verbose_name=_('Максимальное количество участников')
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_('Создано')
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_('Обновлено')
     )
     
     class Meta:
@@ -87,42 +87,43 @@ class Event(models.Model):
         return self.title
     
     @property
-    def is_past(self):
-        """Проверяет, прошло ли мероприятие"""
-        return timezone.now() > self.end_time
-    
-    @property
-    def is_ongoing(self):
-        """Проверяет, идет ли мероприятие сейчас"""
-        now = timezone.now()
-        return self.start_time <= now <= self.end_time
-    
-    @property
-    def is_upcoming(self):
-        """Проверяет, предстоит ли мероприятие"""
-        return timezone.now() < self.start_time
-    
-    @property
     def participants_count(self):
         """Возвращает количество участников мероприятия"""
         return self.participants.count()
     
     @property
     def is_full(self):
-        """Проверяет, заполнено ли мероприятие"""
+        """Проверяет, заполнено ли мероприятие до максимума"""
         if self.max_participants <= 0:
             return False
         return self.participants_count >= self.max_participants
+    
+    @property
+    def is_past(self):
+        """Проверяет, прошло ли мероприятие"""
+        return self.end_time < timezone.now()
+    
+    @property
+    def is_ongoing(self):
+        """Проверяет, идет ли мероприятие в данный момент"""
+        now = timezone.now()
+        return self.start_time <= now <= self.end_time
+    
+    @property
+    def is_upcoming(self):
+        """Проверяет, предстоит ли мероприятие"""
+        return self.start_time > timezone.now()
 
 
 class EventParticipant(models.Model):
-    """Модель для участников мероприятия"""
+    """Модель для участников мероприятий"""
     
     STATUS_CHOICES = [
         ('registered', 'Зарегистрирован'),
         ('confirmed', 'Подтвержден'),
         ('attended', 'Присутствовал'),
-        ('cancelled', 'Отменен'),
+        ('absent', 'Отсутствовал'),
+        ('canceled', 'Отменен'),
     ]
     
     event = models.ForeignKey(
@@ -134,7 +135,7 @@ class EventParticipant(models.Model):
     user = models.ForeignKey(
         CustomUser,
         on_delete=models.CASCADE,
-        related_name='event_registrations',
+        related_name='event_participations',
         verbose_name=_('Пользователь')
     )
     status = models.CharField(
@@ -150,24 +151,23 @@ class EventParticipant(models.Model):
     attended_at = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name=_('Время присутствия')
+        verbose_name=_('Дата посещения')
     )
     feedback = models.TextField(
         blank=True,
-        verbose_name=_('Обратная связь')
+        verbose_name=_('Отзыв')
     )
     rating = models.PositiveSmallIntegerField(
         null=True,
         blank=True,
-        verbose_name=_('Оценка'),
-        help_text=_('Оценка мероприятия от 1 до 5')
+        verbose_name=_('Оценка')
     )
     
     class Meta:
         verbose_name = _('Участник мероприятия')
         verbose_name_plural = _('Участники мероприятий')
         unique_together = ['event', 'user']
-        ordering = ['-registered_at']
+        ordering = ['registered_at']
     
     def __str__(self):
         return f"{self.user.username} - {self.event.title}"

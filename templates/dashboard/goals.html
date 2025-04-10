@@ -1,0 +1,1254 @@
+{% extends 'base.html' %}
+
+{% block title %}Цели обучения - ПроОбучение{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .goal-card {
+        transition: all 0.3s ease;
+    }
+    .goal-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    .goal-badge {
+        font-size: 0.7rem;
+        padding: 0.15rem 0.5rem;
+        border-radius: 1rem;
+    }
+    /* Стили для различных приоритетов */
+    .priority-high {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: rgb(239, 68, 68);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .priority-medium {
+        background-color: rgba(245, 158, 11, 0.1);
+        color: rgb(245, 158, 11);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .priority-low {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: rgb(16, 185, 129);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    /* Стили для типов целей */
+    .goal-course {
+        background-color: rgba(99, 102, 241, 0.1);
+        color: rgb(79, 70, 229);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    .goal-exam {
+        background-color: rgba(6, 182, 212, 0.1);
+        color: rgb(6, 182, 212);
+        border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+    .goal-skill {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: rgb(16, 185, 129);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .goal-project {
+        background-color: rgba(245, 158, 11, 0.1);
+        color: rgb(245, 158, 11);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .goal-custom {
+        background-color: rgba(107, 114, 128, 0.1);
+        color: rgb(107, 114, 128);
+        border: 1px solid rgba(107, 114, 128, 0.3);
+    }
+    /* Стили для состояний целей */
+    .goal-completed {
+        opacity: 0.7;
+    }
+    .goal-overdue {
+        border-left: 3px solid #ef4444;
+    }
+    .goal-active {
+        border-left: 3px solid #10b981;
+    }
+    /* Стили для чекбоксов шагов */
+    .step-checkbox {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #d1d5db;
+        border-radius: 4px;
+        position: relative;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .step-checkbox.checked {
+        background-color: #3b82f6;
+        border-color: #3b82f6;
+    }
+    .step-checkbox.checked:after {
+        content: '';
+        position: absolute;
+        left: 6px;
+        top: 2px;
+        width: 6px;
+        height: 10px;
+        border: solid white;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+    }
+    .step-label {
+        transition: all 0.2s ease;
+    }
+    .step-label.completed {
+        text-decoration: line-through;
+        color: #9ca3af;
+    }
+    .create-goal-btn {
+        transition: all 0.3s ease;
+    }
+    .create-goal-btn:hover {
+        transform: translateY(-2px);
+    }
+    /* Стили для прогресс-бара */
+    .progress-track {
+        height: 6px;
+        width: 100%;
+        background-color: #e5e7eb;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(to right, #10b981, #3b82f6);
+        border-radius: 3px;
+        transition: width 0.5s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row items-center justify-between mb-8">
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-4 md:mb-0">Мои цели обучения</h1>
+        <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 w-full md:w-auto">
+            <button id="createGoalBtn" class="create-goal-btn bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-2 px-6 rounded-lg shadow-md">
+                <i class="fas fa-plus mr-2"></i> Создать цель
+            </button>
+            <div class="relative">
+                <select id="goalTypeFilter" class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg py-2 pl-3 pr-10 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="all">Все типы</option>
+                    <option value="course">Курсы</option>
+                    <option value="exam">Экзамены</option>
+                    <option value="skill">Навыки</option>
+                    <option value="project">Проекты</option>
+                    <option value="custom">Другое</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-200">
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+            <div class="relative">
+                <select id="goalStatusFilter" class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg py-2 pl-3 pr-10 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="active">Активные</option>
+                    <option value="all">Все цели</option>
+                    <option value="completed">Завершенные</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-200">
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Поиск целей -->
+    <div class="mb-6">
+        <div class="relative">
+            <input type="text" id="goalSearch" placeholder="Поиск целей..." class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-search text-gray-400"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика целей -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-md p-4">
+            <h3 class="text-lg font-semibold mb-2">Всего целей</h3>
+            <p class="text-3xl font-bold" id="totalGoals">0</p>
+        </div>
+        <div class="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow-md p-4">
+            <h3 class="text-lg font-semibold mb-2">Активные</h3>
+            <p class="text-3xl font-bold" id="activeGoals">0</p>
+        </div>
+        <div class="bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg shadow-md p-4">
+            <h3 class="text-lg font-semibold mb-2">Просроченные</h3>
+            <p class="text-3xl font-bold" id="overdueGoals">0</p>
+        </div>
+        <div class="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg shadow-md p-4">
+            <h3 class="text-lg font-semibold mb-2">Завершенные</h3>
+            <p class="text-3xl font-bold" id="completedGoals">0</p>
+        </div>
+    </div>
+
+    <!-- Список целей -->
+    <div id="goalsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Здесь будут отображаться карточки целей -->
+        <div class="col-span-full text-center py-8">
+            <div class="animate-spin inline-block w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full mb-4"></div>
+            <p class="text-gray-600 dark:text-gray-300 text-lg">Загрузка целей...</p>
+        </div>
+    </div>
+
+    <!-- Пагинация -->
+    <div id="goalsPagination" class="flex justify-center mt-8 space-x-2 hidden">
+        <button id="prevPageBtn" class="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50">
+            <i class="fas fa-chevron-left mr-1"></i> Назад
+        </button>
+        <div id="paginationInfo" class="px-4 py-2 text-gray-700 dark:text-gray-200">
+            Страница <span id="currentPage">1</span> из <span id="totalPages">1</span>
+        </div>
+        <button id="nextPageBtn" class="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50">
+            Вперед <i class="fas fa-chevron-right ml-1"></i>
+        </button>
+    </div>
+
+    <!-- Модальное окно для создания/редактирования цели -->
+    <div id="goalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4 overflow-hidden">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center">
+                    <h3 id="modalTitle" class="text-xl font-bold text-gray-800 dark:text-white">Создание цели</h3>
+                    <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6 max-h-[70vh] overflow-y-auto">
+                <form id="goalForm">
+                    <input type="hidden" id="goalId" name="goalId" value="">
+                    <div class="mb-4">
+                        <label for="goalTitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Название цели*</label>
+                        <input type="text" id="goalTitle" name="title" required class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 dark:text-gray-200">
+                    </div>
+                    <div class="mb-4">
+                        <label for="goalDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Описание</label>
+                        <textarea id="goalDescription" name="description" rows="3" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 dark:text-gray-200"></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="goalType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Тип цели*</label>
+                            <select id="goalType" name="goal_type" required class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 dark:text-gray-200">
+                                <option value="course">Прохождение курса</option>
+                                <option value="exam">Подготовка к экзамену</option>
+                                <option value="skill">Изучение навыка</option>
+                                <option value="project">Выполнение проекта</option>
+                                <option value="custom">Другое</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="goalPriority" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Приоритет*</label>
+                            <select id="goalPriority" name="priority" required class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 dark:text-gray-200">
+                                <option value="high">Высокий</option>
+                                <option value="medium" selected>Средний</option>
+                                <option value="low">Низкий</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="goalDueDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Срок выполнения</label>
+                            <input type="text" id="goalDueDate" name="due_date" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 dark:text-gray-200">
+                        </div>
+                        <div>
+                            <label for="goalCourse" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Курс (необязательно)</label>
+                            <select id="goalCourse" name="course_id" class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 dark:text-gray-200">
+                                <option value="">Не привязан к курсу</option>
+                                <!-- Здесь будут варианты курсов -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <h4 class="text-lg font-medium text-gray-800 dark:text-white mb-3 flex items-center justify-between">
+                            <span>Шаги к достижению цели</span>
+                            <button type="button" id="addStepBtn" class="text-sm bg-green-500 hover:bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center focus:outline-none">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </h4>
+                        <div id="stepsContainer" class="space-y-3">
+                            <!-- Здесь будут отображаться шаги -->
+                            <div class="step-item flex items-start border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                                <div class="flex-grow">
+                                    <input type="text" placeholder="Название шага" class="step-title w-full border-0 bg-transparent p-0 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-0">
+                                    <input type="text" placeholder="Описание (необязательно)" class="step-description w-full border-0 bg-transparent p-0 mt-1 text-sm text-gray-500 dark:text-gray-400 focus:outline-none focus:ring-0">
+                                </div>
+                                <button type="button" class="remove-step-btn text-red-500 hover:text-red-700 ml-2 focus:outline-none">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+                <button id="cancelGoalBtn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg font-medium">Отмена</button>
+                <button id="saveGoalBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для просмотра деталей цели -->
+    <div id="goalDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl mx-4 overflow-hidden">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center">
+                    <h3 id="detailsModalTitle" class="text-xl font-bold text-gray-800 dark:text-white">Детали цели</h3>
+                    <button id="closeDetailsModalBtn" class="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="goalDetailsContent" class="p-6 max-h-[70vh] overflow-y-auto">
+                <!-- Здесь будут отображаться детали цели -->
+                <div class="animate-pulse">
+                    <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-3"></div>
+                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-3"></div>
+                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3 mb-6"></div>
+                    <div class="h-12 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+                    <div class="space-y-2">
+                        <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                        <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                        <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="goalDetailsActions" class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-between">
+                <div>
+                    <button id="editGoalBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
+                        <i class="fas fa-edit mr-2"></i> Редактировать
+                    </button>
+                    <button id="deleteGoalBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium ml-2">
+                        <i class="fas fa-trash-alt mr-2"></i> Удалить
+                    </button>
+                </div>
+                <div>
+                    <button id="toggleGoalBtn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium">
+                        <i class="fas fa-check mr-2"></i> Отметить как выполненную
+                    </button>
+                    <button id="closeDetailsBtn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg font-medium ml-2">
+                        Закрыть
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+<script>
+    // Инициализация выбора даты
+    flatpickr("#goalDueDate", {
+        dateFormat: "Y-m-d",
+        locale: "ru",
+        minDate: "today"
+    });
+    
+    // Загрузка целей при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        // Загрузка списка курсов для выбора
+        fetch('/dashboard/api/courses-progress/')
+            .then(response => response.json())
+            .then(data => {
+                const courseSelect = document.getElementById('goalCourse');
+                data.courses.forEach(course => {
+                    const option = document.createElement('option');
+                    option.value = course.id;
+                    option.textContent = course.title;
+                    courseSelect.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Ошибка загрузки курсов:', error));
+        
+        // Загрузка списка целей
+        loadGoals();
+        
+        // Обработчики событий для фильтров
+        document.getElementById('goalTypeFilter').addEventListener('change', loadGoals);
+        document.getElementById('goalStatusFilter').addEventListener('change', loadGoals);
+        document.getElementById('goalSearch').addEventListener('input', debounce(loadGoals, 300));
+        
+        // Обработчики для модального окна создания цели
+        document.getElementById('createGoalBtn').addEventListener('click', openCreateGoalModal);
+        document.getElementById('closeModalBtn').addEventListener('click', closeGoalModal);
+        document.getElementById('cancelGoalBtn').addEventListener('click', closeGoalModal);
+        document.getElementById('saveGoalBtn').addEventListener('click', saveGoal);
+        
+        // Обработчик для добавления нового шага
+        document.getElementById('addStepBtn').addEventListener('click', addStepToForm);
+        
+        // Инициализация первого шага
+        initializeStepHandlers();
+        
+        // Обработчики для модального окна просмотра деталей
+        document.getElementById('closeDetailsModalBtn').addEventListener('click', closeDetailsModal);
+        document.getElementById('closeDetailsBtn').addEventListener('click', closeDetailsModal);
+        document.getElementById('editGoalBtn').addEventListener('click', function() {
+            const goalId = this.dataset.goalId;
+            if (goalId) {
+                closeDetailsModal();
+                openEditGoalModal(parseInt(goalId));
+            }
+        });
+        document.getElementById('deleteGoalBtn').addEventListener('click', function() {
+            const goalId = this.dataset.goalId;
+            if (goalId && confirm('Вы уверены, что хотите удалить эту цель?')) {
+                deleteGoal(parseInt(goalId));
+            }
+        });
+        document.getElementById('toggleGoalBtn').addEventListener('click', function() {
+            const goalId = this.dataset.goalId;
+            if (goalId) {
+                toggleGoalStatus(parseInt(goalId));
+            }
+        });
+    });
+    
+    // Функция загрузки целей с учетом фильтров
+    function loadGoals() {
+        const goalsContainer = document.getElementById('goalsContainer');
+        const typeFilter = document.getElementById('goalTypeFilter').value;
+        const statusFilter = document.getElementById('goalStatusFilter').value;
+        const searchQuery = document.getElementById('goalSearch').value;
+        
+        // Показываем индикатор загрузки
+        goalsContainer.innerHTML = `
+            <div class="col-span-full text-center py-8">
+                <div class="animate-spin inline-block w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full mb-4"></div>
+                <p class="text-gray-600 dark:text-gray-300 text-lg">Загрузка целей...</p>
+            </div>
+        `;
+        
+        // Строим URL с параметрами фильтрации
+        let url = '/dashboard/api/student-goals/';
+        const params = new URLSearchParams();
+        if (typeFilter !== 'all') params.append('goal_type', typeFilter);
+        if (statusFilter !== 'all') params.append('status', statusFilter);
+        if (searchQuery) params.append('search', searchQuery);
+        if (params.toString()) url += '?' + params.toString();
+        
+        // Получаем цели
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                // Обновляем статистику
+                document.getElementById('totalGoals').textContent = data.total;
+                document.getElementById('activeGoals').textContent = data.active;
+                document.getElementById('completedGoals').textContent = data.completed;
+                document.getElementById('overdueGoals').textContent = data.overdue;
+                
+                if (data.goals.length === 0) {
+                    goalsContainer.innerHTML = `
+                        <div class="col-span-full text-center py-8">
+                            <i class="far fa-flag text-5xl text-gray-400 dark:text-gray-600 mb-4"></i>
+                            <p class="text-gray-600 dark:text-gray-300 text-lg mb-2">Цели не найдены</p>
+                            <p class="text-gray-500 dark:text-gray-400">Попробуйте изменить параметры фильтрации или создайте новую цель</p>
+                        </div>
+                    `;
+                } else {
+                    goalsContainer.innerHTML = data.goals.map(goal => createGoalCard(goal)).join('');
+                    
+                    // Добавляем обработчики для карточек целей
+                    document.querySelectorAll('.goal-card').forEach(card => {
+                        card.addEventListener('click', function(e) {
+                            // Если клик был по чекбоксу или его метке, не открываем детали
+                            if (e.target.closest('.goal-toggle')) {
+                                e.stopPropagation();
+                                return;
+                            }
+                            const goalId = parseInt(this.dataset.goalId);
+                            openGoalDetails(goalId);
+                        });
+                    });
+                    
+                    // Добавляем обработчики для переключателей статуса цели
+                    document.querySelectorAll('.goal-toggle').forEach(toggle => {
+                        toggle.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            const goalId = parseInt(this.dataset.goalId);
+                            toggleGoalStatus(goalId);
+                        });
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки целей:', error);
+                goalsContainer.innerHTML = `
+                    <div class="col-span-full text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
+                        <p class="text-gray-600 dark:text-gray-300 text-lg mb-2">Ошибка загрузки целей</p>
+                        <p class="text-gray-500 dark:text-gray-400">Пожалуйста, попробуйте обновить страницу</p>
+                    </div>
+                `;
+            });
+    }
+    
+    // Функция создания карточки цели
+    function createGoalCard(goal) {
+        const statusClass = goal.is_completed ? 'goal-completed' : (goal.is_overdue ? 'goal-overdue' : 'goal-active');
+        const goalTypeClass = `goal-${goal.goal_type}`;
+        const priorityClass = `priority-${goal.priority}`;
+        
+        let statusBadge = '';
+        if (goal.is_completed) {
+            statusBadge = '<span class="goal-badge bg-green-100 text-green-700 border border-green-300">Выполнена</span>';
+        } else if (goal.is_overdue) {
+            statusBadge = '<span class="goal-badge bg-red-100 text-red-700 border border-red-300">Просрочена</span>';
+        }
+        
+        // Форматирование даты
+        const formatDate = (dateStr) => {
+            if (!dateStr) return 'Не установлен';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('ru-RU');
+        };
+        
+        // Определяем текст для оставшихся дней
+        let daysLeftText = '';
+        if (goal.is_completed) {
+            daysLeftText = 'Выполнена';
+        } else if (goal.is_overdue) {
+            daysLeftText = 'Просрочена';
+        } else if (goal.days_left === null) {
+            daysLeftText = 'Без срока';
+        } else if (goal.days_left === 0) {
+            daysLeftText = 'Сегодня';
+        } else if (goal.days_left === 1) {
+            daysLeftText = 'Завтра';
+        } else {
+            daysLeftText = `${goal.days_left} ${getDaysText(goal.days_left)}`;
+        }
+        
+        return `
+            <div class="goal-card ${statusClass} bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden" data-goal-id="${goal.id}">
+                <div class="p-5">
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        <span class="goal-badge ${goalTypeClass}">${goal.goal_type_display}</span>
+                        <span class="goal-badge ${priorityClass}">${goal.priority_display}</span>
+                        ${statusBadge}
+                    </div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-white line-clamp-1 flex-grow mr-3">${goal.title}</h3>
+                        <label class="goal-toggle cursor-pointer inline-flex items-center" data-goal-id="${goal.id}">
+                            <input type="checkbox" class="hidden" ${goal.is_completed ? 'checked' : ''}>
+                            <div class="w-5 h-5 rounded border-2 ${goal.is_completed ? 'bg-green-500 border-green-500' : 'border-gray-300 dark:border-gray-600'} flex items-center justify-center">
+                                ${goal.is_completed ? '<i class="fas fa-check text-white text-xs"></i>' : ''}
+                            </div>
+                        </label>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">${goal.description || 'Нет описания'}</p>
+                    
+                    <div class="mb-3">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-600 dark:text-gray-300">Прогресс</span>
+                            <span class="text-gray-700 dark:text-gray-200 font-medium">${goal.progress}%</span>
+                        </div>
+                        <div class="progress-track dark:bg-gray-700">
+                            <div class="progress-bar" style="width: ${goal.progress}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center mb-2 text-sm">
+                        <i class="far fa-calendar-alt text-gray-500 dark:text-gray-400 mr-2"></i>
+                        <span class="text-gray-700 dark:text-gray-300">
+                            Срок: ${formatDate(goal.due_date)}
+                        </span>
+                    </div>
+                    
+                    <div class="flex items-center text-sm">
+                        <i class="far fa-clock text-gray-500 dark:text-gray-400 mr-2"></i>
+                        <span class="text-gray-700 dark:text-gray-300">
+                            ${daysLeftText}
+                        </span>
+                    </div>
+                    
+                    ${goal.course ? `
+                    <div class="flex items-center mt-2 text-sm">
+                        <i class="fas fa-book text-gray-500 dark:text-gray-400 mr-2"></i>
+                        <span class="text-gray-700 dark:text-gray-300">${goal.course.title}</span>
+                    </div>
+                    ` : ''}
+                    
+                    ${goal.steps && goal.steps.length > 0 ? `
+                    <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                        <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Шаги (${goal.steps.filter(s => s.is_completed).length}/${goal.steps.length})</div>
+                        <div class="space-y-1 max-h-24 overflow-hidden">
+                            ${goal.steps.slice(0, 3).map(step => `
+                                <div class="flex items-center">
+                                    <div class="w-4 h-4 rounded border ${step.is_completed ? 'bg-blue-500 border-blue-500' : 'border-gray-300 dark:border-gray-600'} flex items-center justify-center mr-2">
+                                        ${step.is_completed ? '<i class="fas fa-check text-white text-xs"></i>' : ''}
+                                    </div>
+                                    <span class="text-sm ${step.is_completed ? 'line-through text-gray-500 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}">${step.title}</span>
+                                </div>
+                            `).join('')}
+                            ${goal.steps.length > 3 ? `
+                                <div class="text-xs text-center text-blue-600 dark:text-blue-400 mt-1">
+                                    + еще ${goal.steps.length - 3} ${getStepsText(goal.steps.length - 3)}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Функция для правильного склонения слова "день"
+    function getDaysText(days) {
+        const lastDigit = days % 10;
+        const lastTwoDigits = days % 100;
+        
+        if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
+            return 'дней';
+        }
+        
+        if (lastDigit === 1) {
+            return 'день';
+        }
+        
+        if (lastDigit >= 2 && lastDigit <= 4) {
+            return 'дня';
+        }
+        
+        return 'дней';
+    }
+    
+    // Функция для правильного склонения слова "шаг"
+    function getStepsText(count) {
+        const lastDigit = count % 10;
+        const lastTwoDigits = count % 100;
+        
+        if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
+            return 'шагов';
+        }
+        
+        if (lastDigit === 1) {
+            return 'шаг';
+        }
+        
+        if (lastDigit >= 2 && lastDigit <= 4) {
+            return 'шага';
+        }
+        
+        return 'шагов';
+    }
+    
+    // Функция открытия модального окна для создания цели
+    function openCreateGoalModal() {
+        // Сбрасываем форму
+        document.getElementById('goalForm').reset();
+        document.getElementById('goalId').value = '';
+        document.getElementById('modalTitle').textContent = 'Создание цели';
+        
+        // Очищаем контейнер шагов, оставляя только один пустой шаг
+        const stepsContainer = document.getElementById('stepsContainer');
+        stepsContainer.innerHTML = `
+            <div class="step-item flex items-start border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                <div class="flex-grow">
+                    <input type="text" placeholder="Название шага" class="step-title w-full border-0 bg-transparent p-0 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-0">
+                    <input type="text" placeholder="Описание (необязательно)" class="step-description w-full border-0 bg-transparent p-0 mt-1 text-sm text-gray-500 dark:text-gray-400 focus:outline-none focus:ring-0">
+                </div>
+                <button type="button" class="remove-step-btn text-red-500 hover:text-red-700 ml-2 focus:outline-none">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        `;
+        
+        // Инициализируем обработчики для шагов
+        initializeStepHandlers();
+        
+        // Показываем модальное окно
+        document.getElementById('goalModal').classList.remove('hidden');
+    }
+    
+    // Функция для инициализации обработчиков шагов
+    function initializeStepHandlers() {
+        document.querySelectorAll('.remove-step-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const stepItems = document.querySelectorAll('.step-item');
+                if (stepItems.length > 1) {
+                    this.closest('.step-item').remove();
+                } else {
+                    // Если это последний шаг, просто очищаем поля
+                    const stepItem = this.closest('.step-item');
+                    stepItem.querySelector('.step-title').value = '';
+                    stepItem.querySelector('.step-description').value = '';
+                }
+            });
+        });
+    }
+    
+    // Функция для добавления нового шага в форму
+    function addStepToForm() {
+        const stepsContainer = document.getElementById('stepsContainer');
+        const newStep = document.createElement('div');
+        newStep.className = 'step-item flex items-start border border-gray-200 dark:border-gray-700 rounded-lg p-3';
+        newStep.innerHTML = `
+            <div class="flex-grow">
+                <input type="text" placeholder="Название шага" class="step-title w-full border-0 bg-transparent p-0 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-0">
+                <input type="text" placeholder="Описание (необязательно)" class="step-description w-full border-0 bg-transparent p-0 mt-1 text-sm text-gray-500 dark:text-gray-400 focus:outline-none focus:ring-0">
+            </div>
+            <button type="button" class="remove-step-btn text-red-500 hover:text-red-700 ml-2 focus:outline-none">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        `;
+        
+        stepsContainer.appendChild(newStep);
+        
+        // Добавляем обработчик для кнопки удаления
+        newStep.querySelector('.remove-step-btn').addEventListener('click', function() {
+            newStep.remove();
+        });
+        
+        // Фокусируемся на новом поле
+        newStep.querySelector('.step-title').focus();
+    }
+    
+    // Функция закрытия модального окна
+    function closeGoalModal() {
+        document.getElementById('goalModal').classList.add('hidden');
+    }
+    
+    // Функция сохранения цели
+    function saveGoal() {
+        const form = document.getElementById('goalForm');
+        const goalId = document.getElementById('goalId').value;
+        
+        // Проверяем валидность основных полей формы
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        
+        // Собираем данные из формы
+        const formData = {
+            title: document.getElementById('goalTitle').value,
+            description: document.getElementById('goalDescription').value,
+            goal_type: document.getElementById('goalType').value,
+            priority: document.getElementById('goalPriority').value,
+            due_date: document.getElementById('goalDueDate').value || null,
+            course_id: document.getElementById('goalCourse').value || null,
+            steps: []
+        };
+        
+        // Собираем данные о шагах
+        const stepItems = document.querySelectorAll('.step-item');
+        stepItems.forEach((item, index) => {
+            const title = item.querySelector('.step-title').value.trim();
+            if (title) {  // Добавляем только шаги с заполненным названием
+                formData.steps.push({
+                    title: title,
+                    description: item.querySelector('.step-description').value.trim(),
+                    order: index + 1
+                });
+            }
+        });
+        
+        // Определяем URL и метод в зависимости от режима (создание или редактирование)
+        const url = goalId 
+            ? `/dashboard/api/student-goals/${goalId}/update/` 
+            : '/dashboard/api/student-goals/create/';
+        
+        // Отправляем запрос
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Закрываем модальное окно и обновляем список целей
+                closeGoalModal();
+                loadGoals();
+                
+                // Показываем уведомление об успехе
+                showNotification(
+                    goalId ? 'Цель обновлена' : 'Цель создана',
+                    'success'
+                );
+            } else {
+                // Показываем уведомление об ошибке
+                showNotification(
+                    `Ошибка: ${data.error || 'Не удалось сохранить цель'}`,
+                    'error'
+                );
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка сохранения цели:', error);
+            showNotification(
+                'Произошла ошибка при сохранении цели',
+                'error'
+            );
+        });
+    }
+    
+    // Функция открытия деталей цели
+    function openGoalDetails(goalId) {
+        const detailsModal = document.getElementById('goalDetailsModal');
+        const detailsContent = document.getElementById('goalDetailsContent');
+        
+        // Показываем индикатор загрузки
+        detailsContent.innerHTML = `
+            <div class="animate-pulse">
+                <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-3"></div>
+                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-3"></div>
+                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3 mb-6"></div>
+                <div class="h-12 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+                <div class="space-y-2">
+                    <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                </div>
+            </div>
+        `;
+        
+        // Обновляем ID для кнопок действий
+        document.getElementById('editGoalBtn').dataset.goalId = goalId;
+        document.getElementById('deleteGoalBtn').dataset.goalId = goalId;
+        document.getElementById('toggleGoalBtn').dataset.goalId = goalId;
+        
+        // Показываем модальное окно
+        detailsModal.classList.remove('hidden');
+        
+        // Загружаем данные цели
+        fetch(`/dashboard/api/student-goals/${goalId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const goal = data.goal;
+                    
+                    // Обновляем заголовок модального окна
+                    document.getElementById('detailsModalTitle').textContent = goal.title;
+                    
+                    // Обновляем текст кнопки в зависимости от состояния цели
+                    const toggleBtn = document.getElementById('toggleGoalBtn');
+                    if (goal.is_completed) {
+                        toggleBtn.innerHTML = '<i class="fas fa-redo mr-2"></i> Отметить как невыполненную';
+                        toggleBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                        toggleBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+                    } else {
+                        toggleBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Отметить как выполненную';
+                        toggleBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+                        toggleBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                    }
+                    
+                    // Форматирование даты
+                    const formatDate = (dateStr) => {
+                        if (!dateStr) return 'Не установлен';
+                        const date = new Date(dateStr);
+                        return date.toLocaleDateString('ru-RU');
+                    };
+                    
+                    // Определяем текст для оставшихся дней
+                    let daysLeftText = '';
+                    if (goal.is_completed) {
+                        daysLeftText = 'Выполнена';
+                    } else if (goal.is_overdue) {
+                        daysLeftText = 'Просрочена';
+                    } else if (goal.days_left === null) {
+                        daysLeftText = 'Без срока';
+                    } else if (goal.days_left === 0) {
+                        daysLeftText = 'Сегодня';
+                    } else if (goal.days_left === 1) {
+                        daysLeftText = 'Завтра';
+                    } else {
+                        daysLeftText = `${goal.days_left} ${getDaysText(goal.days_left)}`;
+                    }
+                    
+                    // Создаем HTML с деталями цели
+                    const goalDetailsHTML = `
+                        <div class="mb-6">
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="inline-block px-2 py-1 rounded-full goal-${goal.goal_type} text-xs font-medium">${goal.goal_type_display}</span>
+                                <span class="inline-block px-2 py-1 rounded-full priority-${goal.priority} text-xs font-medium">${goal.priority_display}</span>
+                                ${goal.is_completed ? '<span class="inline-block px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-300 text-xs font-medium">Выполнена</span>' : ''}
+                                ${goal.is_overdue && !goal.is_completed ? '<span class="inline-block px-2 py-1 rounded-full bg-red-100 text-red-700 border border-red-300 text-xs font-medium">Просрочена</span>' : ''}
+                            </div>
+                            
+                            <p class="text-gray-700 dark:text-gray-300 mb-6">${goal.description || 'Описание отсутствует'}</p>
+                            
+                            <div class="mb-6">
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="text-gray-600 dark:text-gray-300">Прогресс</span>
+                                    <span class="text-gray-700 dark:text-gray-200 font-medium">${goal.progress}%</span>
+                                </div>
+                                <div class="progress-track dark:bg-gray-700">
+                                    <div class="progress-bar" style="width: ${goal.progress}%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div class="flex items-start">
+                                    <i class="far fa-calendar-alt text-gray-500 dark:text-gray-400 mt-1 mr-3"></i>
+                                    <div>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Срок выполнения</p>
+                                        <p class="text-gray-800 dark:text-gray-200">${formatDate(goal.due_date)}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <i class="far fa-clock text-gray-500 dark:text-gray-400 mt-1 mr-3"></i>
+                                    <div>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Осталось времени</p>
+                                        <p class="text-gray-800 dark:text-gray-200">${daysLeftText}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            ${goal.course ? `
+                            <div class="flex items-start mb-4">
+                                <i class="fas fa-book text-gray-500 dark:text-gray-400 mt-1 mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Связанный курс</p>
+                                    <a href="/courses/${goal.course.slug}/" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">${goal.course.title}</a>
+                                </div>
+                            </div>
+                            ` : ''}
+                            
+                            <div class="flex items-start mb-4">
+                                <i class="far fa-calendar-plus text-gray-500 dark:text-gray-400 mt-1 mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Дата создания</p>
+                                    <p class="text-gray-800 dark:text-gray-200">${formatDate(goal.created_at.split(' ')[0])}</p>
+                                </div>
+                            </div>
+                            
+                            ${goal.completed_at ? `
+                            <div class="flex items-start">
+                                <i class="far fa-calendar-check text-gray-500 dark:text-gray-400 mt-1 mr-3"></i>
+                                <div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Дата выполнения</p>
+                                    <p class="text-gray-800 dark:text-gray-200">${formatDate(goal.completed_at.split(' ')[0])}</p>
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                        
+                        ${goal.steps && goal.steps.length > 0 ? `
+                        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                            <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Шаги к достижению цели</h4>
+                            <div class="space-y-3">
+                                ${goal.steps.map((step, index) => `
+                                <div class="flex items-start p-3 rounded-lg bg-gray-50 dark:bg-gray-750" data-step-id="${step.id}">
+                                    <div class="step-checkbox ${step.is_completed ? 'checked' : ''} cursor-pointer mr-3 flex-shrink-0" onclick="toggleStepStatus(${goal.id}, ${step.id})"></div>
+                                    <div class="flex-grow">
+                                        <p class="font-medium text-gray-800 dark:text-gray-200 ${step.is_completed ? 'line-through text-gray-500 dark:text-gray-500' : ''}">${step.title}</p>
+                                        ${step.description ? `<p class="text-sm text-gray-500 dark:text-gray-400 mt-1 ${step.is_completed ? 'line-through' : ''}">${step.description}</p>` : ''}
+                                    </div>
+                                </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                    `;
+                    
+                    // Обновляем содержимое модального окна
+                    detailsContent.innerHTML = goalDetailsHTML;
+                } else {
+                    detailsContent.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
+                            <p class="text-gray-600 dark:text-gray-300 text-lg mb-2">Ошибка загрузки данных</p>
+                            <p class="text-gray-500 dark:text-gray-400">${data.error || 'Не удалось загрузить данные цели'}</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки деталей цели:', error);
+                detailsContent.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
+                        <p class="text-gray-600 dark:text-gray-300 text-lg mb-2">Ошибка загрузки данных</p>
+                        <p class="text-gray-500 dark:text-gray-400">Произошла ошибка при загрузке деталей цели</p>
+                    </div>
+                `;
+            });
+    }
+    
+    // Функция закрытия модального окна с деталями
+    function closeDetailsModal() {
+        document.getElementById('goalDetailsModal').classList.add('hidden');
+    }
+    
+    // Функция для переключения статуса цели
+    function toggleGoalStatus(goalId) {
+        fetch(`/dashboard/api/student-goals/${goalId}/toggle/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Обновляем список целей и закрываем модальное окно с деталями
+                loadGoals();
+                closeDetailsModal();
+                
+                // Показываем уведомление
+                showNotification(
+                    data.is_completed ? 'Цель отмечена как выполненная' : 'Цель отмечена как невыполненная',
+                    'success'
+                );
+            } else {
+                showNotification(
+                    `Ошибка: ${data.error || 'Не удалось обновить статус цели'}`,
+                    'error'
+                );
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка обновления статуса цели:', error);
+            showNotification(
+                'Произошла ошибка при обновлении статуса цели',
+                'error'
+            );
+        });
+    }
+    
+    // Функция для переключения статуса шага
+    function toggleStepStatus(goalId, stepId) {
+        fetch(`/dashboard/api/student-goals/${goalId}/steps/${stepId}/toggle/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Обновляем внешний вид шага без перезагрузки всей цели
+                const stepElement = document.querySelector(`[data-step-id="${stepId}"]`);
+                if (stepElement) {
+                    const checkbox = stepElement.querySelector('.step-checkbox');
+                    const title = stepElement.querySelector('p:first-of-type');
+                    const description = stepElement.querySelector('p:nth-of-type(2)');
+                    
+                    if (data.is_completed) {
+                        checkbox.classList.add('checked');
+                        title.classList.add('line-through', 'text-gray-500');
+                        if (description) description.classList.add('line-through');
+                    } else {
+                        checkbox.classList.remove('checked');
+                        title.classList.remove('line-through', 'text-gray-500');
+                        if (description) description.classList.remove('line-through');
+                    }
+                }
+                
+                // Показываем уведомление
+                showNotification(
+                    data.is_completed ? 'Шаг отмечен как выполненный' : 'Шаг отмечен как невыполненный',
+                    'success'
+                );
+                
+                // Обновляем список целей для обновления прогресса
+                setTimeout(loadGoals, 1000);
+            } else {
+                showNotification(
+                    `Ошибка: ${data.error || 'Не удалось обновить статус шага'}`,
+                    'error'
+                );
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка обновления статуса шага:', error);
+            showNotification(
+                'Произошла ошибка при обновлении статуса шага',
+                'error'
+            );
+        });
+    }
+    
+    // Функция открытия модального окна для редактирования цели
+    function openEditGoalModal(goalId) {
+        fetch(`/dashboard/api/student-goals/${goalId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const goal = data.goal;
+                    
+                    // Заполняем форму данными цели
+                    document.getElementById('goalId').value = goal.id;
+                    document.getElementById('goalTitle').value = goal.title;
+                    document.getElementById('goalDescription').value = goal.description || '';
+                    document.getElementById('goalType').value = goal.goal_type;
+                    document.getElementById('goalPriority').value = goal.priority;
+                    
+                    // Устанавливаем дату, если она есть
+                    if (goal.due_date) {
+                        document.getElementById('goalDueDate')._flatpickr.setDate(goal.due_date);
+                    } else {
+                        document.getElementById('goalDueDate')._flatpickr.clear();
+                    }
+                    
+                    // Выбираем курс, если он указан
+                    if (goal.course) {
+                        document.getElementById('goalCourse').value = goal.course.id;
+                    } else {
+                        document.getElementById('goalCourse').value = '';
+                    }
+                    
+                    // Заполняем шаги
+                    const stepsContainer = document.getElementById('stepsContainer');
+                    stepsContainer.innerHTML = '';
+                    
+                    if (goal.steps && goal.steps.length > 0) {
+                        goal.steps.forEach(step => {
+                            const stepElement = document.createElement('div');
+                            stepElement.className = 'step-item flex items-start border border-gray-200 dark:border-gray-700 rounded-lg p-3';
+                            stepElement.innerHTML = `
+                                <div class="flex-grow">
+                                    <input type="text" placeholder="Название шага" class="step-title w-full border-0 bg-transparent p-0 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-0" value="${step.title}">
+                                    <input type="text" placeholder="Описание (необязательно)" class="step-description w-full border-0 bg-transparent p-0 mt-1 text-sm text-gray-500 dark:text-gray-400 focus:outline-none focus:ring-0" value="${step.description || ''}">
+                                </div>
+                                <button type="button" class="remove-step-btn text-red-500 hover:text-red-700 ml-2 focus:outline-none">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            `;
+                            stepsContainer.appendChild(stepElement);
+                        });
+                    } else {
+                        // Если нет шагов, добавляем пустой шаг
+                        stepsContainer.innerHTML = `
+                            <div class="step-item flex items-start border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                                <div class="flex-grow">
+                                    <input type="text" placeholder="Название шага" class="step-title w-full border-0 bg-transparent p-0 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-0">
+                                    <input type="text" placeholder="Описание (необязательно)" class="step-description w-full border-0 bg-transparent p-0 mt-1 text-sm text-gray-500 dark:text-gray-400 focus:outline-none focus:ring-0">
+                                </div>
+                                <button type="button" class="remove-step-btn text-red-500 hover:text-red-700 ml-2 focus:outline-none">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+                    
+                    // Инициализируем обработчики для шагов
+                    initializeStepHandlers();
+                    
+                    // Обновляем заголовок модального окна
+                    document.getElementById('modalTitle').textContent = 'Редактирование цели';
+                    
+                    // Показываем модальное окно
+                    document.getElementById('goalModal').classList.remove('hidden');
+                } else {
+                    showNotification(
+                        `Ошибка: ${data.error || 'Не удалось загрузить данные цели для редактирования'}`,
+                        'error'
+                    );
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки данных цели для редактирования:', error);
+                showNotification(
+                    'Произошла ошибка при загрузке данных цели',
+                    'error'
+                );
+            });
+    }
+    
+    // Функция удаления цели
+    function deleteGoal(goalId) {
+        fetch(`/dashboard/api/student-goals/${goalId}/delete/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Закрываем модальное окно деталей и обновляем список целей
+                closeDetailsModal();
+                loadGoals();
+                
+                // Показываем уведомление об успехе
+                showNotification('Цель удалена', 'success');
+            } else {
+                // Показываем уведомление об ошибке
+                showNotification(`Ошибка: ${data.error || 'Не удалось удалить цель'}`, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка удаления цели:', error);
+            showNotification('Произошла ошибка при удалении цели', 'error');
+        });
+    }
+    
+    // Вспомогательная функция для получения CSRF-токена из cookie
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Функция для отображения уведомлений
+    function showNotification(message, type = 'info') {
+        // Создаем элемент уведомления
+        const notification = document.createElement('div');
+        notification.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-y-full opacity-0 ${
+            type === 'success' ? 'bg-green-500 text-white' :
+            type === 'error' ? 'bg-red-500 text-white' :
+            'bg-blue-500 text-white'
+        }`;
+        notification.textContent = message;
+        
+        // Добавляем на страницу
+        document.body.appendChild(notification);
+        
+        // Показываем с анимацией
+        setTimeout(() => {
+            notification.classList.remove('translate-y-full', 'opacity-0');
+        }, 10);
+        
+        // Скрываем через 3 секунды
+        setTimeout(() => {
+            notification.classList.add('translate-y-full', 'opacity-0');
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }
+    
+    // Функция для задержки выполнения (debounce)
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this;
+            const args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                func.apply(context, args);
+            }, wait);
+        };
+    }
+</script>
+{% endblock %}
