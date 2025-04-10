@@ -14,15 +14,15 @@
                 </div>
                 <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-shadow">Учитесь эффективно с нашей образовательной платформой</h1>
                 <p class="text-base sm:text-lg md:text-xl mb-6 text-blue-100">Получайте знания, выполняйте практические задания и развивайтесь в выбранной вами области.</p>
-                <div class="flex flex-col sm:flex-row flex-wrap gap-4 max-w-xl">
-                    <a href="{% url 'course_list' %}" class="btn bg-gradient-to-r from-white to-blue-100 text-blue-700 hover:to-blue-200 shadow-xl shadow-blue-700/20 hover:shadow-blue-700/30 font-semibold hover-lift w-full sm:w-auto text-center flex items-center justify-center">
+                <div class="flex flex-col sm:flex-row flex-wrap gap-4 max-w-2xl">
+                    <a href="{% url 'course_list' %}" class="btn bg-gradient-to-r from-white to-blue-100 text-blue-700 hover:to-blue-200 shadow-xl shadow-blue-700/20 hover:shadow-blue-700/30 font-semibold hover-lift w-full sm:w-[280px] md:w-[300px] text-center flex items-center justify-center">
                         <i class="fas fa-graduation-cap mr-3 text-lg"></i>Начать обучение
                     </a>
                     {% if not user.is_authenticated %}
-                    <a href="{% url 'register' %}" class="btn btn-glass border-2 border-white/50 font-semibold hover-lift w-full sm:w-auto text-center flex items-center justify-center">
+                    <a href="{% url 'register' %}" class="btn btn-glass border-2 border-white/50 font-semibold hover-lift w-full sm:w-[280px] md:w-[300px] text-center flex items-center justify-center">
                         <i class="fas fa-user-plus mr-3 text-lg"></i>Зарегистрироваться
                     </a>
-                    <a href="{% url 'login' %}" class="btn bg-white/10 backdrop-blur-sm border border-white/30 text-white font-semibold hover:bg-white/20 hover-lift w-full sm:w-auto text-center flex items-center justify-center">
+                    <a href="{% url 'login' %}" class="btn bg-white/10 backdrop-blur-sm border border-white/30 text-white font-semibold hover:bg-white/20 hover-lift w-full sm:w-[280px] md:w-[300px] text-center flex items-center justify-center">
                         <i class="fas fa-sign-in-alt mr-3 text-lg"></i>Войти
                     </a>
                     {% endif %}

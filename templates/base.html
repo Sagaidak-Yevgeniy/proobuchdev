@@ -261,8 +261,8 @@
                         {% include "components/notification_dropdown.html" %}
                     </div>
 
-                    <!-- Выпадающее меню пользователя (только на desktop) -->
-                    <div class="relative hidden lg:block">
+                    <!-- Выпадающее меню пользователя (на всех устройствах) -->
+                    <div class="relative">
                         <button id="desktopUserMenuButton" class="flex items-center text-white hover:bg-blue-600 hover:shadow-md transition-all duration-300 rounded-full py-1 pl-1 pr-2 md:pr-3">
                             <div class="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center border-2 border-blue-300 shadow-inner">
                                 <span class="text-sm font-bold">{{ user.username|first|upper }}</span>
@@ -344,49 +344,12 @@
                 {% endif %}
                 
                 <div class="pt-4 border-t border-blue-500 mt-3">
-                    
-                    <div class="flex flex-col lg:flex-row lg:items-center lg:space-x-4">
-                        {% if user.is_authenticated %}
-                            <div class="relative py-2 lg:py-0">
-                                <button id="mobileUserMenuButton" class="flex items-center hover:text-blue-200 hover:bg-blue-700/30 w-full lg:w-auto rounded-full py-2 px-3 transition-all duration-300">
-                                    <div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center mr-2 border-2 border-blue-300 shadow-inner">
-                                        <span class="text-xs font-bold">{{ user.username|first|upper }}</span>
-                                    </div>
-                                    <span class="truncate max-w-[120px]">{{ user.username }}</span> 
-                                    <span class="text-xs ml-1 bg-blue-700/70 px-1.5 py-0.5 rounded-full">({{ user.profile.get_role_display }})</span> 
-                                    <i class="fas fa-chevron-down ml-1 text-xs opacity-75"></i>
-                                </button>
-                                <div id="mobileUserDropdown" class="absolute left-0 sm:right-0 sm:left-auto hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-xl rounded-xl mt-2 py-2 w-full sm:w-48 z-20 max-w-[calc(100vw-2rem)] border border-gray-100 dark:border-gray-600">
-                                    <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
-                                        <i class="fas fa-user mr-2 text-blue-600 dark:text-blue-400"></i>Мой профиль
-                                    </a>
-                                    <a href="{% url 'achievement_list' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
-                                        <i class="fas fa-trophy mr-2 text-yellow-500 dark:text-yellow-400"></i>Достижения
-                                    </a>
-                                    <a href="{% url 'my_certificates' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
-                                        <i class="fas fa-certificate mr-2 text-green-600 dark:text-green-400"></i>Мои сертификаты
-                                    </a>
-                                    <a href="{% url 'leaderboard' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
-                                        <i class="fas fa-list-ol mr-2 text-purple-600 dark:text-purple-400"></i>Рейтинг
-                                    </a>
-                                    <a href="{% url 'interface_settings' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
-                                        <i class="fas fa-sliders-h mr-2 text-gray-600 dark:text-gray-400"></i>Настройки интерфейса
-                                    </a>
-                                    {% if user.is_staff or user.profile.is_admin %}
-                                    <a href="{% url 'admin:index' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                        <i class="fas fa-cog mr-2"></i>Админ-панель
-                                    </a>
-                                    {% endif %}
-                                    <a href="{% url 'logout' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 text-red-600 dark:text-red-400">
-                                        <i class="fas fa-sign-out-alt mr-2"></i>Выйти
-                                    </a>
-                                </div>
-                            </div>
-                        {% else %}
-                            <a href="{% url 'login' %}" class="py-2 px-2 lg:py-0 text-base font-medium hover:text-blue-200 transition-colors">Войти</a>
-                            <a href="{% url 'register' %}" class="mt-2 lg:mt-0 bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-100 transition-colors text-center">Регистрация</a>
-                        {% endif %}
+                    {% if not user.is_authenticated %}
+                    <div class="flex flex-col items-center space-y-3">
+                        <a href="{% url 'login' %}" class="w-full bg-blue-500/30 hover:bg-blue-500/50 text-white px-6 py-2 rounded-lg font-medium transition-colors text-center">Войти</a>
+                        <a href="{% url 'register' %}" class="w-full bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-blue-100 transition-colors text-center shadow-md">Регистрация</a>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -480,20 +443,14 @@
             }
         }
         
-        // Инициализация обоих меню пользователя
+        // Инициализация меню пользователя
         initDropdown('desktopUserMenuButton', 'desktopUserDropdown');
-        initDropdown('mobileUserMenuButton', 'mobileUserDropdown');
         
         // Обновление позиции при изменении размера окна
         window.addEventListener('resize', function() {
             const desktopUserDropdown = document.getElementById('desktopUserDropdown');
             if (desktopUserDropdown && !desktopUserDropdown.classList.contains('hidden')) {
                 checkDropdownPosition(desktopUserDropdown);
-            }
-            
-            const mobileUserDropdown = document.getElementById('mobileUserDropdown');
-            if (mobileUserDropdown && !mobileUserDropdown.classList.contains('hidden')) {
-                checkDropdownPosition(mobileUserDropdown);
             }
         });
     });
