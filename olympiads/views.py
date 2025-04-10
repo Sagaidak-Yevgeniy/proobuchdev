@@ -12,6 +12,13 @@ from django.views.decorators.csrf import csrf_exempt
 from .code_runner import format_code as format_code_function
 import json
 import datetime
+import random
+import string
+
+def generate_random_code(length=8):
+    """Генерирует случайный код для приглашения"""
+    chars = string.ascii_uppercase + string.digits
+    return ''.join(random.choice(chars) for _ in range(length))
 
 from .models import (
     Olympiad, 
@@ -99,12 +106,9 @@ def olympiad_list(request):
         user_participations = OlympiadParticipation.objects.filter(user=request.user)
         user_participation_ids = {p.olympiad_id for p in user_participations}
         
-        # Добавляем информацию о приглашениях (используем OlympiadUserInvitation)
-        user_invitations = OlympiadUserInvitation.objects.filter(
-            user=request.user,
-            is_accepted=False
-        )
-        user_invitation_ids = {i.olympiad_id for i in user_invitations}
+        # Временное решение: отключаем приглашения до выполнения миграции
+        user_invitations = []
+        user_invitation_ids = set()
     else:
         user_participation_ids = set()
         user_invitation_ids = set()
@@ -192,22 +196,25 @@ def olympiad_register(request, olympiad_id):
         messages.info(request, _('Вы уже зарегистрированы на эту олимпиаду'))
         return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
     
-    # Проверяем, открытая ли олимпиада или есть ли приглашение
+    # Проверяем, открытая ли олимпиада
     if not olympiad.is_open:
-        # Используем модель OlympiadUserInvitation
-        invitation = OlympiadUserInvitation.objects.filter(
-            olympiad=olympiad,
-            user=request.user,
-            is_accepted=False
-        ).first()
+        # Временное решение: разрешаем регистрацию на все олимпиады
+        # до восстановления функциональности приглашений
+        pass
         
-        if not invitation:
-            messages.error(request, _('Эта олимпиада закрыта для регистрации'))
-            return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
-        
-        # Помечаем приглашение как принятое
-        invitation.is_accepted = True
-        invitation.save()
+        # Оригинальный код:
+        # invitation = OlympiadUserInvitation.objects.filter(
+        #     olympiad=olympiad,
+        #     user=request.user,
+        #     is_accepted=False
+        # ).first()
+        # 
+        # if not invitation:
+        #     messages.error(request, _('Эта олимпиада закрыта для регистрации'))
+        #     return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
+        # 
+        # invitation.is_accepted = True
+        # invitation.save()
     
     # Регистрируем пользователя
     max_score = olympiad.tasks.aggregate(total=Sum('points'))['total'] or 0
@@ -871,17 +878,18 @@ def olympiad_invitations(request, olympiad_id):
             if OlympiadParticipation.objects.filter(olympiad=olympiad, user=user).exists():
                 messages.info(request, _('Пользователь уже зарегистрирован на эту олимпиаду'))
             
-            # Проверяем, не приглашен ли уже пользователь
-            elif OlympiadUserInvitation.objects.filter(olympiad=olympiad, user=user).exists():
-                messages.info(request, _('Пользователь уже приглашен на эту олимпиаду'))
-            
+            # Временное решение: отключаем приглашения через OlympiadUserInvitation
             else:
-                # Создаем новое приглашение
-                OlympiadUserInvitation.objects.create(
+                # Вместо OlympiadUserInvitation используем OlympiadInvitation
+                code = generate_random_code()
+                OlympiadInvitation.objects.create(
                     olympiad=olympiad,
-                    user=user,
+                    code=code,
+                    is_active=True,
+                    max_uses=1,
                     invited_by=request.user
                 )
+                messages.success(request, _('Ссылка-приглашение для пользователя создана: код {}').format(code))
                 messages.success(request, _('Приглашение успешно отправлено!'))
         
         except CustomUser.DoesNotExist:
