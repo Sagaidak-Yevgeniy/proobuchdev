@@ -138,11 +138,11 @@ def get_recent_activity(request):
     
     for achievement in recent_achievements:
         # Проверяем, нет ли уже уведомления об этом достижении
-        if not any(a['type'] == 'achievement_earned' and achievement.achievement.title in a['message'] for a in activities):
+        if not any(a['type'] == 'achievement_earned' and achievement.achievement.name in a['message'] for a in activities):
             activities.append({
                 'id': f"achievement_{achievement.id}",
                 'type': 'achievement_earned',
-                'message': f'Получено достижение "{achievement.achievement.title}"',
+                'message': f'Получено достижение "{achievement.achievement.name}"',
                 'date': format_date(achievement.earned_at),
                 'is_read': True
             })
@@ -178,9 +178,7 @@ def get_achievements(request):
     """API-эндпоинт для получения достижений пользователя"""
     user = request.user
     
-    user_achievements = UserAchievement.objects.filter(
-        user=user
-    ).order_by('-earned_at')
+    user_achievements = user.achievements.all().order_by('-earned_at')
     
     achievements_data = []
     
@@ -188,9 +186,9 @@ def get_achievements(request):
         achievement = user_achievement.achievement
         achievements_data.append({
             'id': achievement.id,
-            'title': achievement.title,
+            'title': achievement.name,
             'description': achievement.description,
-            'icon': achievement.icon or 'fas fa-medal',  # Иконка по умолчанию, если нет
+            'icon': achievement.icon.url if achievement.icon else 'fas fa-medal',  # Иконка по умолчанию, если нет
             'earned_at': format_date(user_achievement.earned_at),
             'points': achievement.points
         })
@@ -266,7 +264,7 @@ def get_leaderboard(request):
     """API-эндпоинт для получения рейтинга пользователей"""
     # Подсчитываем общее количество очков для каждого пользователя на основе достижений
     top_users = CustomUser.objects.annotate(
-        points=Sum('user_achievements__achievement__points')
+        points=Sum('achievements__achievement__points')
     ).filter(
         points__isnull=False
     ).order_by('-points')[:10]
@@ -293,7 +291,7 @@ def get_leaderboard(request):
         
         # Подсчитываем его ранг
         higher_users_count = CustomUser.objects.annotate(
-            points=Sum('user_achievements__achievement__points')
+            points=Sum('achievements__achievement__points')
         ).filter(
             points__gt=current_user_points
         ).count()
