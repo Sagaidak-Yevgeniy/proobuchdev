@@ -16,6 +16,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1', 'dd7133e5-0784-467d-88f8-1237e43ae485-00-2c1y8rxcc28wd.worf.replit.dev', '.replit.dev', '.repl.co']
 
+# Base URL для генерации абсолютных ссылок
+BASE_URL = 'https://dd7133e5-0784-467d-88f8-1237e43ae485-00-2c1y8rxcc28wd.worf.replit.dev'
+
 # CSRF protection settings
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
