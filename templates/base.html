@@ -131,12 +131,12 @@
 
                     <!-- Выпадающее меню пользователя (только на desktop) -->
                     <div class="relative hidden lg:block">
-                        <button id="desktopUserMenuButton" class="flex items-center space-x-2 text-white hover:bg-blue-700 transition-colors rounded-md px-3 py-2">
-                            <div class="w-8 h-8 rounded-full bg-blue-800 flex items-center justify-center">
+                        <button id="desktopUserMenuButton" class="flex items-center text-white hover:bg-blue-700 transition-colors rounded-full py-1 pl-1 pr-2 md:pr-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-800 flex items-center justify-center border-2 border-blue-400">
                                 <span class="text-sm font-bold">{{ user.username|first|upper }}</span>
                             </div>
-                            <span class="text-sm font-medium max-w-[120px] truncate">{{ user.username }}</span>
-                            <i class="fas fa-chevron-down text-xs"></i>
+                            <span class="text-sm font-medium max-w-[120px] truncate hidden md:inline ml-2">{{ user.username }}</span>
+                            <i class="fas fa-chevron-down text-xs ml-1"></i>
                         </button>
                         <div id="desktopUserDropdown" class="absolute right-0 hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-lg rounded-lg mt-2 py-2 w-56 max-w-[calc(100vw-2rem)] z-20" style="right: 0; left: auto;">
                             <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-600">
@@ -216,8 +216,13 @@
                     <div class="flex flex-col lg:flex-row lg:items-center lg:space-x-4">
                         {% if user.is_authenticated %}
                             <div class="relative py-2 lg:py-0">
-                                <button id="mobileUserMenuButton" class="flex items-center hover:text-blue-200 w-full lg:w-auto">
-                                    <span class="truncate max-w-[150px]">{{ user.username }}</span> <span class="text-xs">({{ user.profile.get_role_display }})</span> <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                                <button id="mobileUserMenuButton" class="flex items-center hover:text-blue-200 w-full lg:w-auto rounded-full py-1">
+                                    <div class="w-6 h-6 rounded-full bg-blue-700 flex items-center justify-center mr-2 border border-blue-400">
+                                        <span class="text-xs font-bold">{{ user.username|first|upper }}</span>
+                                    </div>
+                                    <span class="truncate max-w-[120px]">{{ user.username }}</span> 
+                                    <span class="text-xs ml-1">({{ user.profile.get_role_display }})</span> 
+                                    <i class="fas fa-chevron-down ml-1 text-xs"></i>
                                 </button>
                                 <div id="mobileUserDropdown" class="absolute left-0 sm:right-0 sm:left-auto hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-lg rounded-lg mt-2 py-2 w-full sm:w-48 z-20 max-w-[calc(100vw-2rem)]">
                                     <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
