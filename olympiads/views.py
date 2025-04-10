@@ -99,12 +99,10 @@ def olympiad_list(request):
         user_participations = OlympiadParticipation.objects.filter(user=request.user)
         user_participation_ids = {p.olympiad_id for p in user_participations}
         
-        # Добавляем информацию о приглашениях (используем существующую модель OlympiadInvitation)
-        user_invitations = OlympiadInvitation.objects.filter(
+        # Добавляем информацию о приглашениях (используем OlympiadUserInvitation)
+        user_invitations = OlympiadUserInvitation.objects.filter(
             user=request.user,
-            is_active=True  # используем поле is_active вместо is_accepted
-        ).filter(
-            Q(expires_at__isnull=True) | Q(expires_at__gt=now)
+            is_accepted=False
         )
         user_invitation_ids = {i.olympiad_id for i in user_invitations}
     else:
@@ -196,20 +194,19 @@ def olympiad_register(request, olympiad_id):
     
     # Проверяем, открытая ли олимпиада или есть ли приглашение
     if not olympiad.is_open:
-        # Используем существующую модель OlympiadInvitation вместо OlympiadUserInvitation
-        invitation = OlympiadInvitation.objects.filter(
+        # Используем модель OlympiadUserInvitation
+        invitation = OlympiadUserInvitation.objects.filter(
             olympiad=olympiad,
             user=request.user,
-            is_active=True
+            is_accepted=False
         ).first()
         
         if not invitation:
             messages.error(request, _('Эта олимпиада закрыта для регистрации'))
             return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
         
-        # Помечаем приглашение как использованное
-        invitation.is_active = False
-        invitation.used_count += 1
+        # Помечаем приглашение как принятое
+        invitation.is_accepted = True
         invitation.save()
     
     # Регистрируем пользователя
@@ -875,12 +872,12 @@ def olympiad_invitations(request, olympiad_id):
                 messages.info(request, _('Пользователь уже зарегистрирован на эту олимпиаду'))
             
             # Проверяем, не приглашен ли уже пользователь
-            elif OlympiadInvitation.objects.filter(olympiad=olympiad, user=user).exists():
+            elif OlympiadUserInvitation.objects.filter(olympiad=olympiad, user=user).exists():
                 messages.info(request, _('Пользователь уже приглашен на эту олимпиаду'))
             
             else:
                 # Создаем новое приглашение
-                OlympiadInvitation.objects.create(
+                OlympiadUserInvitation.objects.create(
                     olympiad=olympiad,
                     user=user,
                     invited_by=request.user
