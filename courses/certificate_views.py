@@ -1,10 +1,10 @@
 import os
-import io
 import uuid
 import json
 from datetime import datetime
+
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse, JsonResponse, FileResponse
+from django.http import HttpResponse, JsonResponse
 from django.template.loader import get_template
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
@@ -15,9 +15,6 @@ from django.conf import settings
 
 from xhtml2pdf import pisa
 
-from .models import CourseCompletion
-# TODO: Раскомментировать эту строку, как только будет создана соответствующая модель в модуле olympiads
-# from olympiads.models import OlympiadParticipation
 from .models_certificates import Certificate, CertificateTemplate
 from .certificates import generate_course_certificate, generate_olympiad_certificate
 
@@ -27,32 +24,33 @@ def my_certificates(request):
     """Просмотр всех сертификатов пользователя"""
     certificates = Certificate.objects.filter(user=request.user).order_by('-issued_date')
     
-    # Группируем сертификаты по типам
-    course_certificates = certificates.filter(certificate_type='course')
-    olympiad_certificates = certificates.filter(certificate_type='olympiad')
-    achievement_certificates = certificates.filter(certificate_type='achievement')
-    
     context = {
         'certificates': certificates,
-        'course_certificates': course_certificates,
-        'olympiad_certificates': olympiad_certificates,
-        'achievement_certificates': achievement_certificates,
     }
     
     return render(request, 'certificates/my_certificates.html', context)
 
 
+@login_required
 def view_certificate(request, certificate_id):
     """Просмотр конкретного сертификата"""
     certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
     
-    # Определяем, принадлежит ли сертификат текущему пользователю
-    is_owner = request.user.is_authenticated and certificate.user == request.user
+    # Проверяем доступ пользователя к сертификату
+    if certificate.user != request.user and not request.user.is_staff:
+        return render(request, 'certificates/error.html', {
+            'error': 'У вас нет доступа к этому сертификату.',
+            'title': 'Ошибка доступа'
+        })
+    
+    # Формируем URL для проверки подлинности
+    verification_url = request.build_absolute_uri(
+        reverse('verify_certificate', args=[certificate.certificate_id])
+    )
     
     context = {
         'certificate': certificate,
-        'is_owner': is_owner,
-        'verification_url': certificate.get_verification_url(),
+        'verification_url': verification_url,
     }
     
     return render(request, 'certificates/view_certificate.html', context)
@@ -63,25 +61,27 @@ def download_certificate_pdf(request, certificate_id):
     """Скачивание PDF-файла сертификата"""
     certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
     
-    # Проверяем, принадлежит ли сертификат пользователю
+    # Проверяем доступ пользователя к сертификату
     if certificate.user != request.user and not request.user.is_staff:
-        return HttpResponse('Доступ запрещен', status=403)
+        return render(request, 'certificates/error.html', {
+            'error': 'У вас нет доступа к скачиванию этого сертификата.',
+            'title': 'Ошибка доступа'
+        })
     
-    # Если PDF еще не сгенерирован, создаем его
+    # Проверяем наличие PDF
     if not certificate.pdf_file:
-        from .certificates import generate_certificate_pdf
-        generate_certificate_pdf(certificate)
+        return render(request, 'certificates/error.html', {
+            'error': 'PDF-файл для этого сертификата не сгенерирован.',
+            'title': 'Файл не найден'
+        })
     
-    # Если файл не существует, возвращаем ошибку
-    if not certificate.pdf_file or not os.path.exists(certificate.pdf_file.path):
-        return HttpResponse('Файл не найден', status=404)
+    # Формируем имя файла
+    filename = f'certificate-{certificate.certificate_id}.pdf'
     
-    # Определяем имя файла для скачивания
-    filename = f'certificate_{certificate.certificate_id}.pdf'
-    
-    # Возвращаем файл для скачивания
-    response = FileResponse(open(certificate.pdf_file.path, 'rb'))
+    # Отправляем файл
+    response = HttpResponse(certificate.pdf_file, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
     return response
 
 
@@ -89,96 +89,122 @@ def view_certificate_pdf(request, certificate_id):
     """Просмотр PDF-файла сертификата в браузере"""
     certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
     
-    # Если PDF еще не сгенерирован, создаем его
+    # Если это предпросмотр для карточки, то доступ есть только у владельца
+    # В остальных случаях PDF можно просматривать публично (например, по ссылке верификации)
+    if 'preview' in request.GET and certificate.user != request.user and not request.user.is_staff:
+        return HttpResponse('Доступ запрещен', status=403)
+    
+    # Проверяем наличие PDF
     if not certificate.pdf_file:
-        from .certificates import generate_certificate_pdf
-        generate_certificate_pdf(certificate)
+        return HttpResponse('PDF-файл не найден', status=404)
     
-    # Если файл не существует, возвращаем ошибку
-    if not certificate.pdf_file or not os.path.exists(certificate.pdf_file.path):
-        return HttpResponse('Файл не найден', status=404)
+    # Отправляем файл для просмотра в браузере
+    response = HttpResponse(certificate.pdf_file, content_type='application/pdf')
     
-    # Возвращаем файл для просмотра в браузере
-    response = FileResponse(open(certificate.pdf_file.path, 'rb'), content_type='application/pdf')
-    response['Content-Disposition'] = 'inline; filename="certificate.pdf"'
+    # Если это предпросмотр, то просто отправляем первую страницу как изображение
+    if 'preview' in request.GET:
+        response['Content-Disposition'] = 'inline; filename="preview.pdf"'
+    else:
+        response['Content-Disposition'] = 'inline; filename="certificate.pdf"'
+    
     return response
 
 
 def verify_certificate(request, certificate_id=None):
     """Проверка подлинности сертификата"""
-    certificate = None
-    error = None
-    success = False
+    # Если это POST-запрос формы
+    if request.method == 'POST' and not certificate_id:
+        try:
+            certificate_id = request.POST.get('certificate_id')
+            return redirect('verify_certificate', certificate_id=certificate_id)
+        except (ValueError, TypeError):
+            return render(request, 'certificates/verify.html', {
+                'error': 'Неверный формат ID сертификата. Пожалуйста, проверьте и попробуйте снова.'
+            })
     
+    # Если это GET-запрос с ID сертификата
     if certificate_id:
         try:
             certificate = Certificate.objects.get(certificate_id=certificate_id)
-            success = True
+            
+            # Формируем URL для проверки подлинности
+            verification_url = request.build_absolute_uri(
+                reverse('verify_certificate', args=[certificate.certificate_id])
+            )
+            
+            return render(request, 'certificates/verify.html', {
+                'certificate': certificate,
+                'certificate_id': certificate_id,
+                'success': True,
+                'verification_url': verification_url,
+            })
         except Certificate.DoesNotExist:
-            error = "Сертификат с указанным ID не найден."
+            return render(request, 'certificates/verify.html', {
+                'error': 'Сертификат с указанным ID не найден. Пожалуйста, проверьте правильность ID и попробуйте снова.',
+                'certificate_id': certificate_id,
+            })
     
-    elif request.method == 'POST':
-        certificate_id = request.POST.get('certificate_id', '')
-        if certificate_id:
-            try:
-                certificate = Certificate.objects.get(certificate_id=certificate_id)
-                success = True
-            except Certificate.DoesNotExist:
-                error = "Сертификат с указанным ID не найден."
-        else:
-            error = "Введите ID сертификата."
-    
-    context = {
-        'certificate': certificate,
-        'certificate_id': certificate_id,
-        'error': error,
-        'success': success,
-    }
-    
-    return render(request, 'certificates/verify.html', context)
+    # Если это просто открытие страницы верификации
+    return render(request, 'certificates/verify.html')
 
 
 @csrf_exempt
 def api_verify_certificate(request):
     """API для проверки подлинности сертификата"""
-    if request.method == 'POST':
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Метод не поддерживается'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        certificate_id = data.get('certificate_id')
+        
+        if not certificate_id:
+            return JsonResponse({'error': 'ID сертификата не указан'}, status=400)
+        
         try:
-            data = json.loads(request.body)
-            certificate_id = data.get('certificate_id')
+            certificate = Certificate.objects.get(certificate_id=certificate_id)
             
-            if not certificate_id:
-                return JsonResponse({'success': False, 'error': 'Не указан ID сертификата'})
+            # Формируем данные о сертификате
+            certificate_data = {
+                'id': str(certificate.certificate_id),
+                'title': certificate.title,
+                'type': certificate.get_certificate_type_display(),
+                'issued_to': certificate.user.get_full_name() or certificate.user.username,
+                'issued_date': certificate.issued_date.strftime('%Y-%m-%d'),
+                'status': certificate.status,
+                'status_display': dict(Certificate.STATUS_CHOICES).get(certificate.status),
+                'verification_url': request.build_absolute_uri(
+                    reverse('verify_certificate', args=[certificate.certificate_id])
+                ),
+            }
             
-            try:
-                certificate = Certificate.objects.get(certificate_id=certificate_id)
-                
-                # Формируем данные о сертификате
-                certificate_data = {
-                    'certificate_id': str(certificate.certificate_id),
-                    'user': certificate.user.get_full_name() or certificate.user.username,
-                    'title': certificate.title,
-                    'type': certificate.get_certificate_type_display(),
-                    'entity_name': certificate.get_entity_name(),
-                    'issued_date': certificate.issued_date.strftime('%d.%m.%Y'),
-                    'expiry_date': certificate.expiry_date.strftime('%d.%m.%Y') if certificate.expiry_date else None,
-                    'status': certificate.get_status_display(),
-                    'earned_points': certificate.earned_points,
-                    'max_points': certificate.max_points,
-                    'completion_percentage': certificate.completion_percentage,
-                }
-                
-                return JsonResponse({
-                    'success': True,
-                    'certificate': certificate_data
+            # Добавляем данные в зависимости от типа сертификата
+            if certificate.certificate_type == 'course' and certificate.course:
+                certificate_data.update({
+                    'course_title': certificate.course.title,
+                    'course_author': certificate.course.author.get_full_name() or certificate.course.author.username,
+                })
+            elif certificate.certificate_type == 'olympiad' and certificate.olympiad:
+                certificate_data.update({
+                    'olympiad_title': certificate.olympiad.title,
+                    'olympiad_organizer': certificate.olympiad.organizer.get_full_name() or certificate.olympiad.organizer.username,
                 })
             
-            except Certificate.DoesNotExist:
-                return JsonResponse({'success': False, 'error': 'Сертификат с указанным ID не найден'})
+            return JsonResponse({
+                'success': True,
+                'certificate': certificate_data
+            })
         
-        except json.JSONDecodeError:
-            return JsonResponse({'success': False, 'error': 'Неверный формат JSON'})
+        except Certificate.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Сертификат не найден'
+            }, status=404)
     
-    return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Неверный формат JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @login_required
@@ -191,7 +217,8 @@ def generate_course_certificate_view(request, course_id):
     # Проверяем, может ли пользователь получить сертификат
     if not course.can_generate_certificate(request.user):
         return render(request, 'certificates/error.html', {
-            'error': 'Вы не можете получить сертификат для этого курса. Убедитесь, что курс завершен и набрано достаточное количество баллов.'
+            'error': 'Вы не можете получить сертификат, так как не завершили курс или не выполнили все необходимые требования.',
+            'title': 'Сертификат недоступен'
         })
     
     # Проверяем, есть ли уже сертификат
@@ -211,7 +238,8 @@ def generate_course_certificate_view(request, course_id):
         return redirect('view_certificate', certificate_id=certificate.certificate_id)
     else:
         return render(request, 'certificates/error.html', {
-            'error': 'Не удалось сгенерировать сертификат. Пожалуйста, обратитесь к администратору.'
+            'error': 'Не удалось сгенерировать сертификат. Пожалуйста, обратитесь к администратору.',
+            'title': 'Ошибка генерации'
         })
 
 
@@ -235,7 +263,8 @@ def generate_olympiad_certificate_view(request, olympiad_id):
     
     if not participation:
         return render(request, 'certificates/error.html', {
-            'error': 'Вы не можете получить сертификат, поскольку не завершили участие в этой олимпиаде.'
+            'error': 'Вы не можете получить сертификат, поскольку не завершили участие в этой олимпиаде.',
+            'title': 'Сертификат недоступен'
         })
     
     # Проверяем, есть ли уже сертификат
@@ -255,5 +284,6 @@ def generate_olympiad_certificate_view(request, olympiad_id):
         return redirect('view_certificate', certificate_id=certificate.certificate_id)
     else:
         return render(request, 'certificates/error.html', {
-            'error': 'Не удалось сгенерировать сертификат. Пожалуйста, обратитесь к администратору.'
+            'error': 'Не удалось сгенерировать сертификат. Пожалуйста, обратитесь к администратору.',
+            'title': 'Ошибка генерации'
         })
