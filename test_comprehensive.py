@@ -21,6 +21,8 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 from django.urls import reverse
+from django.utils.text import slugify
+from django.db import models
 
 from users.models import Profile, UserInterface
 from courses.models import Category, Course, Enrollment, CourseCompletion
@@ -112,22 +114,48 @@ class SystemTester:
     
     def create_test_categories(self):
         """Создание тестовых категорий"""
-        category_names = [
-            'Программирование на Python', 
-            'Веб-разработка', 
-            'Алгоритмы и структуры данных'
+        category_data = [
+            {
+                'name': 'Программирование на Python',
+                'slug': 'python',
+                'description': 'Описание категории Программирование на Python'
+            },
+            {
+                'name': 'Веб-разработка',
+                'slug': 'web-razrabotka',
+                'description': 'Описание категории Веб-разработка'
+            },
+            {
+                'name': 'Алгоритмы и структуры данных',
+                'slug': 'algoritmy-i-struktury-dannyh',
+                'description': 'Описание категории Алгоритмы и структуры данных'
+            }
         ]
         
-        for name in category_names:
-            try:
-                category = Category.objects.get(name=name)
-            except Category.DoesNotExist:
-                slug = slugify(name)
+        for data in category_data:
+            # Проверяем, существует ли категория с таким именем или slug
+            category = Category.objects.filter(
+                models.Q(name=data['name']) | models.Q(slug=data['slug'])
+            ).first()
+            
+            if not category:
+                # Создаем новую категорию
                 category = Category.objects.create(
-                    name=name,
-                    slug=slug,
-                    description=f'Описание категории {name}'
+                    name=data['name'],
+                    slug=data['slug'],
+                    description=data['description']
                 )
+                print(f"✓ Создана категория: {data['name']}")
+            else:
+                # Обновляем существующую категорию
+                if category.slug != data['slug'] or category.description != data['description']:
+                    category.slug = data['slug']
+                    category.description = data['description']
+                    category.save()
+                    print(f"✓ Обновлена категория: {data['name']}")
+                else:
+                    print(f"✓ Использована существующая категория: {data['name']}")
+                    
             self.test_categories.append(category)
     
     def create_test_courses(self):
@@ -135,6 +163,7 @@ class SystemTester:
         course_data = [
             {
                 'title': 'Основы Python для начинающих',
+                'slug': 'osnovy-python-dlya-nachinayushchih',
                 'description': 'Базовый курс для изучения Python с нуля',
                 'difficulty_level': 'beginner',
                 'duration_hours': 20,
@@ -142,6 +171,7 @@ class SystemTester:
             },
             {
                 'title': 'HTML и CSS: современная вёрстка',
+                'slug': 'html-i-css-sovremennaya-verstka',
                 'description': 'Курс по вёрстке и стилизации веб-страниц',
                 'difficulty_level': 'beginner',
                 'duration_hours': 15,
@@ -149,6 +179,7 @@ class SystemTester:
             },
             {
                 'title': 'Алгоритмы для подготовки к олимпиадам',
+                'slug': 'algoritmy-dlya-podgotovki-k-olimpiadam',
                 'description': 'Продвинутый курс по алгоритмам',
                 'difficulty_level': 'advanced',
                 'duration_hours': 30,
@@ -157,21 +188,38 @@ class SystemTester:
         ]
         
         for data in course_data:
-            course, created = Course.objects.get_or_create(
-                title=data['title'],
-                defaults={
-                    'description': data['description'],
-                    'author': self.test_users['teacher'],
-                    'category': self.test_categories[data['category_index']],
-                    'difficulty_level': data['difficulty_level'],
-                    'duration_hours': data['duration_hours'],
-                    'is_published': True
-                }
-            )
+            # Проверяем, существует ли курс с таким названием или slug
+            course = Course.objects.filter(
+                models.Q(title=data['title']) | models.Q(slug=data['slug'])
+            ).first()
             
-            if created:
+            if not course:
+                # Создаем новый курс
+                course = Course.objects.create(
+                    title=data['title'],
+                    slug=data['slug'],
+                    description=data['description'],
+                    author=self.test_users['teacher'],
+                    category=self.test_categories[data['category_index']],
+                    difficulty_level=data['difficulty_level'],
+                    duration_hours=data['duration_hours'],
+                    is_published=True
+                )
+                print(f"✓ Создан курс: {data['title']}")
+                
                 # Создаем уроки для курса
                 self.create_test_lessons(course)
+            else:
+                # Обновляем существующий курс
+                if course.description != data['description'] or course.category != self.test_categories[data['category_index']]:
+                    course.description = data['description']
+                    course.category = self.test_categories[data['category_index']]
+                    course.difficulty_level = data['difficulty_level']
+                    course.duration_hours = data['duration_hours']
+                    course.save()
+                    print(f"✓ Обновлен курс: {data['title']}")
+                else:
+                    print(f"✓ Использован существующий курс: {data['title']}")
             
             self.test_courses.append(course)
     
@@ -241,18 +289,21 @@ class SystemTester:
         olympiad_data = [
             {
                 'title': 'Олимпиада по Python',
+                'slug': 'olimpiada-po-python',
                 'description': 'Соревнование по программированию на языке Python',
                 'course_index': 0,
                 'status': Olympiad.OlympiadStatus.ACTIVE
             },
             {
                 'title': 'Веб-разработка: HTML и CSS',
+                'slug': 'web-razrabotka-html-i-css',
                 'description': 'Олимпиада по вёрстке и стилизации',
                 'course_index': 1,
                 'status': Olympiad.OlympiadStatus.PUBLISHED
             },
             {
                 'title': 'Алгоритмическая олимпиада',
+                'slug': 'algoritmicheskaya-olimpiada',
                 'description': 'Соревнование по алгоритмам и структурам данных',
                 'course_index': 2,
                 'status': Olympiad.OlympiadStatus.DRAFT
@@ -261,25 +312,46 @@ class SystemTester:
         
         for data in olympiad_data:
             now = timezone.now()
-            olympiad, created = Olympiad.objects.get_or_create(
-                title=data['title'],
-                defaults={
-                    'description': data['description'],
-                    'short_description': data['description'][:100],
-                    'start_datetime': now - datetime.timedelta(days=1),
-                    'end_datetime': now + datetime.timedelta(days=7),
-                    'is_open': True,
-                    'time_limit_minutes': 120,
-                    'min_passing_score': 70,
-                    'status': data['status'],
-                    'created_by': self.test_users['teacher'],
-                    'related_course': self.test_courses[data['course_index']]
-                }
-            )
             
-            if created:
+            # Проверяем, существует ли олимпиада с таким названием или slug
+            olympiad = Olympiad.objects.filter(
+                models.Q(title=data['title']) | models.Q(slug=data['slug'])
+            ).first()
+            
+            if not olympiad:
+                # Создаем новую олимпиаду
+                olympiad = Olympiad.objects.create(
+                    title=data['title'],
+                    slug=data['slug'],
+                    description=data['description'],
+                    short_description=data['description'][:100],
+                    start_datetime=now - datetime.timedelta(days=1),
+                    end_datetime=now + datetime.timedelta(days=7),
+                    is_open=True,
+                    time_limit_minutes=120,
+                    min_passing_score=70,
+                    status=data['status'],
+                    created_by=self.test_users['teacher'],
+                    related_course=self.test_courses[data['course_index']]
+                )
+                print(f"✓ Создана олимпиада: {data['title']}")
+                
                 # Создаем задания для олимпиады
                 self.create_test_olympiad_tasks(olympiad)
+            else:
+                # Обновляем существующую олимпиаду
+                if (olympiad.description != data['description'] or 
+                    olympiad.status != data['status'] or
+                    olympiad.related_course != self.test_courses[data['course_index']]):
+                    
+                    olympiad.description = data['description']
+                    olympiad.short_description = data['description'][:100]
+                    olympiad.status = data['status']
+                    olympiad.related_course = self.test_courses[data['course_index']]
+                    olympiad.save()
+                    print(f"✓ Обновлена олимпиада: {data['title']}")
+                else:
+                    print(f"✓ Использована существующая олимпиада: {data['title']}")
             
             self.test_olympiads.append(olympiad)
     
