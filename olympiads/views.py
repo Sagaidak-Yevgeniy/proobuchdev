@@ -57,8 +57,8 @@ def olympiad_list(request):
     if filter_status == 'upcoming':
         # Только предстоящие
         olympiads = olympiads_query.filter(
-            status=Olympiad.OlympiadStatus.PUBLISHED, 
-            start_datetime__gt=now
+            Q(status=Olympiad.OlympiadStatus.PUBLISHED) & 
+            Q(start_datetime__gt=now)
         ).order_by('start_datetime')
         
         upcoming_olympiads = olympiads
@@ -66,8 +66,11 @@ def olympiad_list(request):
         completed_olympiads = []
     elif filter_status == 'active':
         # Только активные
+        # Олимпиада активна если:
+        # 1. Статус ACTIVE и время проведения не истекло
+        # 2. Или статус PUBLISHED, начало уже наступило, а конец еще не наступил
         olympiads = olympiads_query.filter(
-            Q(status=Olympiad.OlympiadStatus.ACTIVE) |
+            Q(status=Olympiad.OlympiadStatus.ACTIVE, end_datetime__gte=now) |
             Q(status=Olympiad.OlympiadStatus.PUBLISHED, start_datetime__lte=now, end_datetime__gte=now)
         ).order_by('end_datetime')
         
@@ -76,9 +79,14 @@ def olympiad_list(request):
         completed_olympiads = []
     elif filter_status == 'completed':
         # Только завершенные
+        # Олимпиада завершена если:
+        # 1. Статус COMPLETED
+        # 2. Или статус ACTIVE и время окончания уже наступило
+        # 3. Или статус PUBLISHED и время окончания уже наступило
         olympiads = olympiads_query.filter(
             Q(status=Olympiad.OlympiadStatus.COMPLETED) | 
-            Q(status=Olympiad.OlympiadStatus.ACTIVE, end_datetime__lt=now)
+            Q(status=Olympiad.OlympiadStatus.ACTIVE, end_datetime__lt=now) |
+            Q(status=Olympiad.OlympiadStatus.PUBLISHED, end_datetime__lt=now)
         ).order_by('-end_datetime')
         
         upcoming_olympiads = []
@@ -86,19 +94,23 @@ def olympiad_list(request):
         completed_olympiads = olympiads
     else:
         # Без фильтра показываем все категории
+        # Предстоящие олимпиады
         upcoming_olympiads = olympiads_query.filter(
-            status=Olympiad.OlympiadStatus.PUBLISHED, 
-            start_datetime__gt=now
+            Q(status=Olympiad.OlympiadStatus.PUBLISHED) & 
+            Q(start_datetime__gt=now)
         ).order_by('start_datetime')
         
+        # Активные олимпиады
         active_olympiads = olympiads_query.filter(
-            Q(status=Olympiad.OlympiadStatus.ACTIVE) |
+            Q(status=Olympiad.OlympiadStatus.ACTIVE, end_datetime__gte=now) |
             Q(status=Olympiad.OlympiadStatus.PUBLISHED, start_datetime__lte=now, end_datetime__gte=now)
         ).order_by('end_datetime')
         
+        # Завершенные олимпиады
         completed_olympiads = olympiads_query.filter(
             Q(status=Olympiad.OlympiadStatus.COMPLETED) | 
-            Q(status=Olympiad.OlympiadStatus.ACTIVE, end_datetime__lt=now)
+            Q(status=Olympiad.OlympiadStatus.ACTIVE, end_datetime__lt=now) |
+            Q(status=Olympiad.OlympiadStatus.PUBLISHED, end_datetime__lt=now)
         ).order_by('-end_datetime')[:10]
     
     # Если пользователь авторизован, добавляем информацию об участии

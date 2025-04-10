@@ -51,8 +51,44 @@
             digits: 'timer-digits-{{ olympiad.id }}'
         };
         
+        /**
+         * Локальная функция для создания и возвращения таймера олимпиады
+         */
+        function createLocalOlympiadTimer(startDateStr, endDateStr, elementIds, onTimeUpdate, onComplete) {
+            // Преобразуем строки дат в объекты Date
+            const startDate = new Date(startDateStr.replace(/-/g, '/'));
+            const endDate = new Date(endDateStr.replace(/-/g, '/'));
+            
+            // Получаем DOM-элементы таймера
+            const elements = {
+                container: document.getElementById(elementIds.container || 'olympiad-timer-container'),
+                status: document.getElementById(elementIds.status || 'olympiad-status'),
+                timerLabel: document.getElementById(elementIds.timerLabel || 'timer-label'),
+                days: document.getElementById(elementIds.days || 'days'),
+                hours: document.getElementById(elementIds.hours || 'hours'),
+                minutes: document.getElementById(elementIds.minutes || 'minutes'),
+                seconds: document.getElementById(elementIds.seconds || 'seconds'),
+                progressBar: document.getElementById(elementIds.progressBar || 'timer-progress-bar'),
+                digits: document.getElementById(elementIds.digits || 'timer-digits')
+            };
+            
+            // Создаем и возвращаем новый экземпляр таймера
+            const timer = new OlympiadTimer(
+                startDate,
+                endDate,
+                elements,
+                onTimeUpdate,
+                onComplete
+            );
+            
+            return timer;
+        }
+        
+        // Проверяем доступность глобальной или используем локальную функцию
+        const timerCreator = window.createOlympiadTimer || createLocalOlympiadTimer;
+        
         // Создаем и запускаем таймер
-        const timer = createOlympiadTimer(
+        const timer = timerCreator(
             '{{ olympiad.start_datetime|date:"Y/m/d H:i:s" }}',
             '{{ olympiad.end_datetime|date:"Y/m/d H:i:s" }}',
             elementIds,
