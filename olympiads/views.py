@@ -21,6 +21,7 @@ from .models import (
     OlympiadParticipation, 
     OlympiadTaskSubmission,
     OlympiadInvitation,
+    OlympiadUserInvitation,
     OlympiadCertificate
 )
 
@@ -51,7 +52,7 @@ def olympiad_list(request):
         user_participation_ids = {p.olympiad_id for p in user_participations}
         
         # Добавляем информацию о приглашениях
-        user_invitations = OlympiadInvitation.objects.filter(
+        user_invitations = OlympiadUserInvitation.objects.filter(
             user=request.user, 
             is_accepted=False,
             olympiad__start_datetime__gt=now
@@ -87,7 +88,7 @@ def olympiad_detail(request, olympiad_id):
             user=request.user
         ).first()
         
-        user_invitation = OlympiadInvitation.objects.filter(
+        user_invitation = OlympiadUserInvitation.objects.filter(
             olympiad=olympiad,
             user=request.user,
             is_accepted=False
