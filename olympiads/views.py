@@ -51,13 +51,14 @@ def olympiad_list(request):
         user_participations = OlympiadParticipation.objects.filter(user=request.user)
         user_participation_ids = {p.olympiad_id for p in user_participations}
         
-        # Добавляем информацию о приглашениях
-        user_invitations = OlympiadUserInvitation.objects.filter(
-            user=request.user, 
-            is_accepted=False,
-            olympiad__start_datetime__gt=now
-        )
-        user_invitation_ids = {i.olympiad_id for i in user_invitations}
+        # Добавляем информацию о приглашениях (временно отключено)
+        # user_invitations = OlympiadUserInvitation.objects.filter(
+        #    user=request.user, 
+        #    is_accepted=False,
+        #    olympiad__start_datetime__gt=now
+        # )
+        # user_invitation_ids = {i.olympiad_id for i in user_invitations}
+        user_invitation_ids = set()
     else:
         user_participation_ids = set()
         user_invitation_ids = set()
@@ -88,11 +89,13 @@ def olympiad_detail(request, olympiad_id):
             user=request.user
         ).first()
         
-        user_invitation = OlympiadUserInvitation.objects.filter(
-            olympiad=olympiad,
-            user=request.user,
-            is_accepted=False
-        ).first()
+        # Временно отключено из-за проблем с моделью
+        # user_invitation = OlympiadUserInvitation.objects.filter(
+        #    olympiad=olympiad,
+        #    user=request.user,
+        #    is_accepted=False
+        # ).first()
+        user_invitation = None
         
         # Пользователь может зарегистрироваться, если:
         # 1. Олимпиада еще не началась
@@ -143,6 +146,7 @@ def olympiad_register(request, olympiad_id):
     
     # Проверяем, открытая ли олимпиада или есть ли приглашение
     if not olympiad.is_open:
+        # Используем существующую модель OlympiadInvitation вместо OlympiadUserInvitation
         invitation = OlympiadInvitation.objects.filter(
             olympiad=olympiad,
             user=request.user,
