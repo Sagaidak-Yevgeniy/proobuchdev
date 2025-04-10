@@ -9,6 +9,7 @@ urlpatterns = [
     path('', views.olympiad_list, name='olympiad_list'),
     path('<int:olympiad_id>/', views.olympiad_detail, name='olympiad_detail'),
     path('<int:olympiad_id>/register/', views.olympiad_register, name='olympiad_register'),
+    path('invitation/<str:code>/', views.olympiad_join_by_invitation, name='olympiad_join_by_invitation'),
     
     # Маршруты для участников олимпиад
     path('<int:olympiad_id>/tasks/', views.olympiad_tasks, name='olympiad_tasks'),

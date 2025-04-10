@@ -20,19 +20,27 @@
                     </button>
                 </form>
             {% elif olympiad.status == olympiad.OlympiadStatus.PUBLISHED %}
-                <form action="{% url 'olympiads:olympiad_publish' olympiad_id=olympiad.id %}" method="post">
+                <form action="{% url 'olympiads:olympiad_activate' olympiad_id=olympiad.id %}" method="post">
                     {% csrf_token %}
                     <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-700 dark:hover:bg-blue-600">
                         {% trans 'Активировать' %}
                     </button>
                 </form>
             {% elif olympiad.status == olympiad.OlympiadStatus.ACTIVE %}
-                <form action="{% url 'olympiads:olympiad_publish' olympiad_id=olympiad.id %}" method="post">
-                    {% csrf_token %}
-                    <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-700 dark:hover:bg-red-600">
-                        {% trans 'Завершить' %}
-                    </button>
-                </form>
+                <div class="flex space-x-2">
+                    <form action="{% url 'olympiads:olympiad_deactivate' olympiad_id=olympiad.id %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 dark:bg-yellow-700 dark:hover:bg-yellow-600">
+                            {% trans 'Деактивировать' %}
+                        </button>
+                    </form>
+                    <form action="{% url 'olympiads:olympiad_complete' olympiad_id=olympiad.id %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-700 dark:hover:bg-red-600">
+                            {% trans 'Завершить' %}
+                        </button>
+                    </form>
+                </div>
             {% endif %}
             
             <a href="{% url 'olympiads:olympiad_task_create' olympiad_id=olympiad.id %}" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-700 dark:hover:bg-blue-600">

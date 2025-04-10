@@ -1450,3 +1450,49 @@ def test_code(request, olympiad_id, task_id):
         })
     
     return render(request, 'olympiads/manage/statistics.html', context)
+
+
+# Регистрация на олимпиаду по коду приглашения
+@login_required
+def olympiad_join_by_invitation(request, code):
+    # Ищем приглашение по коду
+    invitation = get_object_or_404(OlympiadInvitation, code=code)
+    olympiad = invitation.olympiad
+    
+    # Проверяем действительность приглашения
+    if not invitation.is_valid():
+        if invitation.expires_at and timezone.now() > invitation.expires_at:
+            messages.error(request, _('Срок действия приглашения истек'))
+        elif invitation.max_uses > 0 and invitation.used_count >= invitation.max_uses:
+            messages.error(request, _('Превышено максимальное количество использований приглашения'))
+        else:
+            messages.error(request, _('Приглашение недействительно'))
+        return redirect('olympiads:olympiad_list')
+    
+    # Проверяем статус олимпиады
+    if olympiad.status != Olympiad.OlympiadStatus.PUBLISHED and olympiad.status != Olympiad.OlympiadStatus.ACTIVE:
+        messages.error(request, _('Регистрация на эту олимпиаду недоступна'))
+        return redirect('olympiads:olympiad_list')
+    
+    # Проверяем, не зарегистрирован ли пользователь уже
+    if OlympiadParticipation.objects.filter(olympiad=olympiad, user=request.user).exists():
+        messages.info(request, _('Вы уже зарегистрированы на эту олимпиаду'))
+    else:
+        # Регистрируем пользователя
+        max_score = olympiad.tasks.aggregate(total=Sum('points'))['total'] or 0
+        
+        OlympiadParticipation.objects.create(
+            olympiad=olympiad,
+            user=request.user,
+            max_score=max_score
+        )
+        
+        # Увеличиваем счетчик использований приглашения
+        invitation.use()
+        messages.success(request, _('Вы успешно зарегистрировались на олимпиаду по приглашению!'))
+    
+    # Если олимпиада активна, перенаправляем на страницу с заданиями
+    if olympiad.status == Olympiad.OlympiadStatus.ACTIVE:
+        return redirect('olympiads:olympiad_tasks', olympiad_id=olympiad.id)
+    
+    return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)

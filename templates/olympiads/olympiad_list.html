@@ -2,6 +2,10 @@
 {% load static %}
 {% load i18n %}
 
+{% block extra_head %}
+<script src="{% static 'js/olympiad_timer.js' %}"></script>
+{% endblock %}
+
 {% block title %}{% trans 'Олимпиады' %}{% endblock %}
 
 {% block content %}
@@ -41,6 +45,8 @@
                             {% endif %}
                         </div>
                     </div>
+                    
+                    {% include 'olympiads/components/olympiad_timer.html' with olympiad=olympiad %}
                     <div class="flex items-center justify-between">
                         {% if olympiad.id in user_invitation_ids %}
                         <span class="text-sm text-purple-600 dark:text-purple-400">
@@ -92,6 +98,8 @@
                         </div>
                         {% endif %}
                     </div>
+                    
+                    {% include 'olympiads/components/olympiad_timer.html' with olympiad=olympiad %}
                     <div class="flex items-center justify-between">
                         {% if olympiad.id in user_participation_ids %}
                         <a href="{% url 'olympiads:olympiad_tasks' olympiad_id=olympiad.id %}" 

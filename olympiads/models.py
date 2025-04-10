@@ -259,11 +259,11 @@ class OlympiadTaskSubmission(models.Model):
         return f"{self.participation.user.username} - {self.task.title}"
 
 
-class OlympiadInvitation(models.Model):
-    """Модель приглашения на участие в закрытой олимпиаде"""
+class OlympiadUserInvitation(models.Model):
+    """Модель приглашения на участие в закрытой олимпиаде для конкретного пользователя"""
     
     olympiad = models.ForeignKey(Olympiad, on_delete=models.CASCADE,
-                               related_name='invitations', verbose_name=_('Олимпиада'))
+                               related_name='user_invitations', verbose_name=_('Олимпиада'))
     user = models.ForeignKey(User, on_delete=models.CASCADE,
                            related_name='olympiad_invitations', verbose_name=_('Пользователь'))
     
@@ -276,12 +276,60 @@ class OlympiadInvitation(models.Model):
     updated_at = models.DateTimeField(_('Обновлено'), auto_now=True)
     
     class Meta:
-        verbose_name = _('Приглашение на олимпиаду')
-        verbose_name_plural = _('Приглашения на олимпиады')
+        verbose_name = _('Приглашение пользователю')
+        verbose_name_plural = _('Приглашения пользователям')
         unique_together = ['olympiad', 'user']
     
     def __str__(self):
         return f"{self.olympiad.title} - {self.user.username}"
+
+
+class OlympiadInvitation(models.Model):
+    """Модель для ссылок-приглашений на олимпиаду"""
+    
+    olympiad = models.ForeignKey(Olympiad, on_delete=models.CASCADE,
+                               related_name='invitations', verbose_name=_('Олимпиада'))
+    
+    code = models.CharField(_('Код приглашения'), max_length=32, unique=True)
+    description = models.CharField(_('Описание'), max_length=255, blank=True)
+    
+    is_active = models.BooleanField(_('Активно'), default=True)
+    max_uses = models.PositiveIntegerField(_('Максимальное количество использований'), default=0,
+                                          help_text=_('0 означает без ограничений'))
+    used_count = models.PositiveIntegerField(_('Использовано'), default=0)
+    
+    expires_at = models.DateTimeField(_('Срок действия до'), null=True, blank=True)
+    created_at = models.DateTimeField(_('Создано'), auto_now_add=True)
+    
+    class Meta:
+        verbose_name = _('Приглашение на олимпиаду')
+        verbose_name_plural = _('Приглашения на олимпиаду')
+    
+    def __str__(self):
+        return f"{self.olympiad.title} - {self.code}"
+    
+    def is_valid(self):
+        """Проверяет, действительно ли приглашение"""
+        if not self.is_active:
+            return False
+        
+        if self.expires_at and timezone.now() > self.expires_at:
+            return False
+        
+        if self.max_uses > 0 and self.used_count >= self.max_uses:
+            return False
+        
+        return True
+    
+    def get_absolute_url(self):
+        """Возвращает URL для приглашения"""
+        from django.urls import reverse
+        return reverse('olympiads:olympiad_join_by_invitation', kwargs={'code': self.code})
+    
+    def use(self):
+        """Увеличивает счетчик использований приглашения"""
+        self.used_count += 1
+        self.save(update_fields=['used_count'])
 
 
 class OlympiadCertificate(models.Model):

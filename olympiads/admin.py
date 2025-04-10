@@ -95,9 +95,9 @@ class OlympiadTaskSubmissionAdmin(admin.ModelAdmin):
 
 @admin.register(OlympiadInvitation)
 class OlympiadInvitationAdmin(admin.ModelAdmin):
-    list_display = ('olympiad', 'user', 'invited_by', 'is_accepted', 'created_at')
-    list_filter = ('is_accepted', 'created_at')
-    search_fields = ('olympiad__title', 'user__username', 'invited_by__username')
+    list_display = ('olympiad', 'code', 'description', 'is_active', 'used_count', 'created_at')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('olympiad__title', 'code', 'description')
 
 @admin.register(OlympiadCertificate)
 class OlympiadCertificateAdmin(admin.ModelAdmin):
