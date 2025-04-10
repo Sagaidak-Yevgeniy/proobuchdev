@@ -9,6 +9,7 @@ from django.core.paginator import Paginator
 import json
 import datetime
 from decimal import Decimal
+from django.utils import timezone
 
 from courses.models import Course, Enrollment
 from gamification.models import Achievement, UserAchievement
@@ -643,3 +644,31 @@ def get_notes_data(user):
     return {
         'notes': notes
     }
+
+
+# Представления для работы с мероприятиями и целями
+
+@login_required
+def events_list(request):
+    """Отображает страницу со списком мероприятий"""
+    user = request.user
+    
+    context = {
+        'user': user,
+        'page_title': 'Мероприятия'
+    }
+    
+    return render(request, 'dashboard/events.html', context)
+
+
+@login_required
+def goals_list(request):
+    """Отображает страницу со списком целей обучения"""
+    user = request.user
+    
+    context = {
+        'user': user,
+        'page_title': 'Цели обучения'
+    }
+    
+    return render(request, 'dashboard/goals.html', context)

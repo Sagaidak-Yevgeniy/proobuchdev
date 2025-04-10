@@ -22,6 +22,10 @@ urlpatterns = [
     path('widgets/<int:widget_id>/data/', views.get_widget_data, name='get_widget_data'),
     path('layout/save/', views.save_layout, name='save_layout'),
     
+    # Страницы мероприятий и целей
+    path('events/', views.events_list, name='events'),
+    path('goals/', views.goals_list, name='goals'),
+    
     # API для основного функционала дашборда
     path('api/statistics/', api.get_statistics, name='api_statistics'),
     path('api/courses-progress/', api.get_courses_progress, name='api_courses_progress'),
