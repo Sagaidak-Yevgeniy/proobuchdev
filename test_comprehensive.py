@@ -470,7 +470,7 @@ class SystemTester:
             print("✗ Ошибка входа в систему")
             
         # Проверка страницы профиля
-        response = self.client.get(reverse('profile', kwargs={'username': username}))
+        response = self.client.get(reverse('user_profile', kwargs={'username': username}))
         
         if response.status_code == 200:
             self.test_results['passed'].append('Доступ к профилю')
@@ -732,7 +732,7 @@ class SystemTester:
         self.client.login(username='student@example.com', password='student12345')
         
         # Проверка настроек интерфейса
-        response = self.client.get(reverse('profile', kwargs={'username': 'Тестовый Студент'}))
+        response = self.client.get(reverse('user_profile', kwargs={'username': 'Тестовый Студент'}))
         
         if response.status_code == 200:
             student = self.test_users['student']
