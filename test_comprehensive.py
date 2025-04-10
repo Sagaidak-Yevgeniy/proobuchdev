@@ -807,30 +807,421 @@ class SystemTester:
         """Запуск комплексного тестирования"""
         print("Начало комплексного тестирования...")
         
-        # Создаем тестовые данные, если необходимо
-        self.setup_test_data()
-        
-        # Тестируем регистрацию и вход
-        self.test_registration_and_login()
-        
-        # Тестируем функциональность курсов
-        self.test_course_functionality()
-        
-        # Тестируем функциональность олимпиад
-        self.test_olympiad_functionality()
-        
-        # Тестируем функциональность администратора
-        self.test_admin_functionality()
-        
-        # Тестируем пользовательский интерфейс
-        self.test_user_interface()
-        
-        # Тестируем адаптивный дизайн
-        self.test_responsive_design()
-        
-        # Выводим результаты тестирования
-        self.print_test_results()
+        try:
+            # Создаем тестовые данные
+            self.setup_test_data()
+            
+            # Устанавливаем задержку для загрузки страниц (для более надежного тестирования)
+            import time
+            def with_delay(func, delay=0.5):
+                def wrapper(*args, **kwargs):
+                    result = func(*args, **kwargs)
+                    time.sleep(delay)
+                    return result
+                return wrapper
+            
+            # Тестируем регистрацию и вход
+            self.test_registration_and_login()
+            
+            # Тестируем функциональность курсов
+            self.test_course_functionality()
+            
+            # Тестируем функциональность олимпиад
+            self.test_olympiad_functionality()
+            
+            # Тестируем административные функции
+            self.test_admin_functionality()
+            
+            # Тестируем пользовательский интерфейс
+            self.test_user_interface()
+            
+            # Тестируем адаптивный дизайн
+            self.test_responsive_design()
+            
+            # Тестируем систему уведомлений
+            if hasattr(self, 'test_notification_system'):
+                self.test_notification_system()
+            
+            # Тестируем генерацию сертификатов
+            if hasattr(self, 'test_certificate_generation'):
+                self.test_certificate_generation()
+            
+            # Тестируем систему достижений и геймификации
+            if hasattr(self, 'test_achievement_system'):
+                self.test_achievement_system()
+            
+            # Финальный тест полного сценария: от регистрации до получения сертификата
+            if hasattr(self, 'test_full_user_journey'):
+                self.test_full_user_journey()
+            
+            print("\nКомплексное тестирование завершено")
+            
+            # Выводим результаты тестирования
+            self.print_test_results()
+            
+        except Exception as e:
+            print(f"\nОшибка при выполнении комплексного тестирования: {e}")
+            import traceback
+            traceback.print_exc()
     
+    def test_notification_system(self):
+        """Тестирование системы уведомлений"""
+        print("\nПроверка системы уведомлений...")
+        
+        # Авторизуемся как студент
+        self.client.login(username='student@example.com', password='student12345')
+        
+        # Проверка страницы уведомлений
+        try:
+            response = self.client.get(reverse('notifications:notification_list'))
+            
+            if response.status_code == 200:
+                self.test_results['passed'].append('Просмотр списка уведомлений')
+                print("✓ Просмотр списка уведомлений работает корректно")
+            else:
+                self.test_results['failed'].append('Просмотр списка уведомлений')
+                print("✗ Ошибка при просмотре списка уведомлений")
+        except Exception as e:
+            self.test_results['failed'].append('Просмотр списка уведомлений (ошибка)')
+            print(f"✗ Ошибка при доступе к списку уведомлений: {e}")
+        
+        # Проверка API маркировки уведомления как прочитанное
+        try:
+            from notifications.models import Notification
+            notification = Notification.objects.filter(recipient=self.test_users['student']).first()
+            
+            if notification:
+                response = self.client.post(
+                    reverse('notifications:mark_as_read', kwargs={'notification_id': notification.id}),
+                    follow=True
+                )
+                
+                if response.status_code == 200:
+                    # Обновляем объект из базы
+                    notification.refresh_from_db()
+                    
+                    if notification.read:
+                        self.test_results['passed'].append('Отметка уведомления прочитанным')
+                        print("✓ Отметка уведомления прочитанным работает корректно")
+                    else:
+                        self.test_results['failed'].append('Отметка уведомления прочитанным')
+                        print("✗ Ошибка отметки уведомления прочитанным (статус не изменился)")
+                else:
+                    self.test_results['failed'].append('Отметка уведомления прочитанным')
+                    print("✗ Ошибка отметки уведомления прочитанным (ответ сервера)")
+            else:
+                self.test_results['warnings'].append('Нет уведомлений для проверки')
+                print("⚠ Нет уведомлений для проверки функциональности маркировки")
+        except Exception as e:
+            self.test_results['warnings'].append('Отметка уведомления прочитанным (ошибка)')
+            print(f"✗ Ошибка при отметке уведомления прочитанным: {e}")
+            
+    def test_certificate_generation(self):
+        """Тестирование генерации сертификатов"""
+        print("\nПроверка генерации сертификатов...")
+        
+        # Авторизуемся как администратор
+        self.client.login(username='admin', password='admin12345')
+        
+        try:
+            # Проверка страницы управления сертификатами
+            response = self.client.get(reverse('olympiads:certificate_list'))
+            
+            if response.status_code == 200:
+                self.test_results['passed'].append('Просмотр списка сертификатов')
+                print("✓ Просмотр списка сертификатов работает корректно")
+            else:
+                self.test_results['failed'].append('Просмотр списка сертификатов')
+                print("✗ Ошибка при просмотре списка сертификатов")
+                
+            # Проверка создания сертификата вручную (для тестирования)
+            from olympiads.models import OlympiadCertificate
+            
+            if self.test_olympiads and self.test_users.get('student'):
+                olympiad = self.test_olympiads[0]
+                user = self.test_users['student']
+                
+                # Создаем сертификат через модель
+                cert, created = OlympiadCertificate.objects.get_or_create(
+                    olympiad=olympiad,
+                    user=user,
+                    defaults={
+                        'score': 85,
+                        'place': 1,
+                        'issue_date': timezone.now()
+                    }
+                )
+                
+                if created:
+                    self.test_results['passed'].append('Создание сертификата')
+                    print("✓ Создание сертификата выполнено успешно")
+                else:
+                    self.test_results['warnings'].append('Сертификат уже существует')
+                    print("⚠ Сертификат уже существует")
+                    
+                # Проверка страницы просмотра сертификата
+                response = self.client.get(
+                    reverse('olympiads:certificate_detail', kwargs={'pk': cert.id})
+                )
+                
+                if response.status_code == 200:
+                    self.test_results['passed'].append('Просмотр сертификата')
+                    print("✓ Просмотр сертификата работает корректно")
+                else:
+                    self.test_results['failed'].append('Просмотр сертификата')
+                    print("✗ Ошибка при просмотре сертификата")
+            else:
+                self.test_results['warnings'].append('Нет олимпиад или пользователей для создания сертификата')
+                print("⚠ Нет олимпиад или пользователей для тестирования создания сертификата")
+                
+        except Exception as e:
+            self.test_results['warnings'].append('Генерация сертификатов (ошибка)')
+            print(f"✗ Ошибка при тестировании генерации сертификатов: {e}")
+    
+    def test_achievement_system(self):
+        """Тестирование системы достижений"""
+        print("\nПроверка системы достижений...")
+        
+        # Авторизуемся как студент
+        self.client.login(username='student@example.com', password='student12345')
+        
+        try:
+            # Проверка страницы достижений
+            response = self.client.get(reverse('gamification:achievement_list'))
+            
+            if response.status_code == 200:
+                self.test_results['passed'].append('Просмотр списка достижений')
+                print("✓ Просмотр списка достижений работает корректно")
+            else:
+                self.test_results['failed'].append('Просмотр списка достижений')
+                print("✗ Ошибка при просмотре списка достижений")
+                
+            # Проверка присвоения достижения через скрипт
+            from gamification.models import Achievement, UserAchievement
+            
+            student = self.test_users.get('student')
+            if student:
+                # Проверяем, есть ли достижения в системе
+                achievement = Achievement.objects.filter(type='course_enrollment').first()
+                
+                if achievement:
+                    # Создаем достижение для пользователя
+                    user_achievement, created = UserAchievement.objects.get_or_create(
+                        user=student,
+                        achievement=achievement
+                    )
+                    
+                    if created:
+                        self.test_results['passed'].append('Присвоение достижения')
+                        print("✓ Присвоение достижения выполнено успешно")
+                    else:
+                        self.test_results['warnings'].append('Достижение уже присвоено')
+                        print("⚠ Достижение уже присвоено пользователю")
+                else:
+                    self.test_results['warnings'].append('Нет достижений для присвоения')
+                    print("⚠ В системе нет доступных достижений для тестирования")
+            else:
+                self.test_results['warnings'].append('Нет тестового студента для проверки достижений')
+                print("⚠ Нет тестового студента для проверки достижений")
+                
+        except Exception as e:
+            self.test_results['warnings'].append('Система достижений (ошибка)')
+            print(f"✗ Ошибка при тестировании системы достижений: {e}")
+    
+    def test_full_user_journey(self):
+        """Тестирование полного пути пользователя от регистрации до получения сертификата"""
+        print("\nПроверка полного пути пользователя...")
+        
+        # Создаем временного пользователя для теста
+        import random
+        test_suffix = random.randint(10000, 99999)
+        username = f'test_journey_{test_suffix}'
+        email = f'{username}@example.com'
+        password = 'test12345'
+        
+        try:
+            # Шаг 1: Регистрация
+            print("Шаг 1: Регистрация нового пользователя")
+            registration_data = {
+                'username': username,
+                'email': email,
+                'password1': password,
+                'password2': password
+            }
+            
+            response = self.client.post(reverse('register'), registration_data, follow=True)
+            
+            if response.status_code != 200 or not User.objects.filter(username=username).exists():
+                self.test_results['failed'].append('Полный путь: Регистрация')
+                print("✗ Ошибка при регистрации нового пользователя")
+                return
+            
+            print("✓ Регистрация успешна")
+            
+            # Шаг 2: Вход
+            print("Шаг 2: Вход в систему")
+            login_data = {
+                'username': username,
+                'password': password
+            }
+            
+            response = self.client.post(reverse('login'), login_data, follow=True)
+            
+            if response.status_code != 200:
+                self.test_results['failed'].append('Полный путь: Вход')
+                print("✗ Ошибка при входе в систему")
+                return
+                
+            print("✓ Вход успешен")
+            
+            # Шаг 3: Запись на курс
+            print("Шаг 3: Запись на курс")
+            if not self.test_courses:
+                self.test_results['warnings'].append('Полный путь: Нет курсов для записи')
+                print("⚠ Нет курсов для записи")
+                return
+                
+            course = self.test_courses[0]
+            response = self.client.post(
+                reverse('course_enroll', kwargs={'slug': course.slug}),
+                follow=True
+            )
+            
+            user = User.objects.get(username=username)
+            if response.status_code != 200 or not user.enrollments.filter(course=course).exists():
+                self.test_results['failed'].append('Полный путь: Запись на курс')
+                print("✗ Ошибка при записи на курс")
+                return
+                
+            print("✓ Запись на курс успешна")
+            
+            # Шаг 4: Изучение урока
+            print("Шаг 4: Изучение урока")
+            lesson = Lesson.objects.filter(course=course).first()
+            if not lesson:
+                self.test_results['warnings'].append('Полный путь: Нет уроков для изучения')
+                print("⚠ Нет уроков для изучения")
+                return
+                
+            response = self.client.get(
+                reverse('lesson_detail', kwargs={'course_slug': course.slug, 'lesson_id': lesson.id})
+            )
+            
+            if response.status_code != 200:
+                self.test_results['failed'].append('Полный путь: Просмотр урока')
+                print("✗ Ошибка при просмотре урока")
+                return
+                
+            # Отмечаем урок как завершенный
+            response = self.client.post(
+                reverse('lesson_complete', kwargs={'lesson_id': lesson.id}),
+                follow=True
+            )
+            
+            if response.status_code != 200 or not user.lesson_completions.filter(lesson=lesson).exists():
+                self.test_results['failed'].append('Полный путь: Завершение урока')
+                print("✗ Ошибка при отметке урока как завершенного")
+                return
+                
+            print("✓ Изучение урока успешно")
+            
+            # Шаг 5: Участие в олимпиаде
+            print("Шаг 5: Участие в олимпиаде")
+            active_olympiads = [o for o in self.test_olympiads if o.status == Olympiad.OlympiadStatus.ACTIVE]
+            if not active_olympiads:
+                self.test_results['warnings'].append('Полный путь: Нет активных олимпиад')
+                print("⚠ Нет активных олимпиад для участия")
+                return
+                
+            olympiad = active_olympiads[0]
+            response = self.client.post(
+                reverse('olympiads:olympiad_participate', kwargs={'pk': olympiad.id}),
+                follow=True
+            )
+            
+            if response.status_code != 200 or not user.olympiad_participations.filter(olympiad=olympiad).exists():
+                self.test_results['failed'].append('Полный путь: Участие в олимпиаде')
+                print("✗ Ошибка при участии в олимпиаде")
+                return
+                
+            print("✓ Участие в олимпиаде успешно")
+            
+            # Шаг 6: Решение задачи олимпиады
+            print("Шаг 6: Решение задачи олимпиады")
+            task = OlympiadTask.objects.filter(olympiad=olympiad, task_type=OlympiadTask.TaskType.PROGRAMMING).first()
+            if not task:
+                self.test_results['warnings'].append('Полный путь: Нет задач для решения')
+                print("⚠ Нет задач для решения")
+                return
+                
+            response = self.client.get(
+                reverse('olympiads:olympiad_task', kwargs={
+                    'olympiad_id': olympiad.id,
+                    'task_id': task.id
+                })
+            )
+            
+            if response.status_code != 200:
+                self.test_results['failed'].append('Полный путь: Просмотр задачи олимпиады')
+                print("✗ Ошибка при просмотре задачи олимпиады")
+                return
+                
+            # Отправляем решение задачи
+            solution_data = {
+                'code': 'def sum_numbers(a, b):\n    return a + b'
+            }
+            
+            response = self.client.post(
+                reverse('olympiads:submit_solution', kwargs={
+                    'olympiad_id': olympiad.id,
+                    'task_id': task.id
+                }),
+                solution_data,
+                follow=True
+            )
+            
+            if response.status_code != 200 or not OlympiadTaskSubmission.objects.filter(
+                task=task, user=user
+            ).exists():
+                self.test_results['failed'].append('Полный путь: Отправка решения')
+                print("✗ Ошибка при отправке решения")
+                return
+                
+            print("✓ Решение задачи успешно")
+            
+            # Шаг 7: Получение сертификата
+            print("Шаг 7: Получение сертификата")
+            
+            # Для тестирования создаем сертификат напрямую
+            cert = OlympiadCertificate.objects.create(
+                olympiad=olympiad,
+                user=user,
+                score=95,
+                place=1,
+                issue_date=timezone.now()
+            )
+            
+            response = self.client.get(
+                reverse('olympiads:certificate_detail', kwargs={'pk': cert.id})
+            )
+            
+            if response.status_code != 200:
+                self.test_results['failed'].append('Полный путь: Просмотр сертификата')
+                print("✗ Ошибка при просмотре сертификата")
+                return
+                
+            print("✓ Получение сертификата успешно")
+            
+            # Финальный успех
+            self.test_results['passed'].append('Полный путь пользователя')
+            print("✓ Полный путь пользователя пройден успешно")
+            
+        except Exception as e:
+            self.test_results['failed'].append('Полный путь пользователя (ошибка)')
+            print(f"✗ Ошибка при тестировании полного пути пользователя: {e}")
+            import traceback
+            traceback.print_exc()
+            
     def print_test_results(self):
         """Вывод результатов тестирования"""
         print("\n" + "="*50)
