@@ -10,23 +10,79 @@ class OlympiadForm(forms.ModelForm):
     
     class Meta:
         model = Olympiad
-        fields = ['title', 'description', 'start_time', 'end_time', 'is_published']
+        fields = [
+            'title', 
+            'short_description', 
+            'description', 
+            'image', 
+            'start_datetime', 
+            'end_datetime', 
+            'time_limit_minutes',
+            'is_open',
+            'min_passing_score',
+            'is_rated',
+            'related_course',
+            'status'
+        ]
         widgets = {
-            'title': forms.TextInput(attrs={'class': 'form-input'}),
-            'description': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 5}),
-            'start_time': forms.DateTimeInput(attrs={'class': 'form-input', 'type': 'datetime-local'}),
-            'end_time': forms.DateTimeInput(attrs={'class': 'form-input', 'type': 'datetime-local'}),
-            'is_published': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'title': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white',
+                'placeholder': 'Введите название олимпиады...'
+            }),
+            'short_description': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white',
+                'placeholder': 'Краткое описание (будет отображаться в списке олимпиад)...'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white', 
+                'rows': 8,
+                'placeholder': 'Подробное описание олимпиады, правила, рекомендации...'
+            }),
+            'image': forms.FileInput(attrs={
+                'class': 'block w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm cursor-pointer focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white',
+                'accept': 'image/*',
+                'id': 'olympiad-image'
+            }),
+            'start_datetime': forms.DateTimeInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white',
+                'type': 'datetime-local'
+            }),
+            'end_datetime': forms.DateTimeInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white',
+                'type': 'datetime-local'
+            }),
+            'time_limit_minutes': forms.NumberInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white',
+                'min': '0',
+                'placeholder': '0'
+            }),
+            'is_open': forms.CheckboxInput(attrs={
+                'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600'
+            }),
+            'min_passing_score': forms.NumberInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white',
+                'min': '0',
+                'placeholder': '0'
+            }),
+            'is_rated': forms.CheckboxInput(attrs={
+                'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600'
+            }),
+            'related_course': forms.Select(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white'
+            }),
+            'status': forms.Select(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white'
+            }),
         }
     
     def clean(self):
         cleaned_data = super().clean()
-        start_time = cleaned_data.get('start_time')
-        end_time = cleaned_data.get('end_time')
+        start_datetime = cleaned_data.get('start_datetime')
+        end_datetime = cleaned_data.get('end_datetime')
         
         # Проверяем, что дата окончания позже даты начала
-        if start_time and end_time and end_time <= start_time:
-            self.add_error('end_time', 'Дата окончания должна быть позже даты начала.')
+        if start_datetime and end_datetime and end_datetime <= start_datetime:
+            self.add_error('end_datetime', 'Дата окончания должна быть позже даты начала.')
         
         return cleaned_data
 
