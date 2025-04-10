@@ -1,0 +1,70 @@
+{% load i18n %}
+
+<div id="olympiad-timer-{{ olympiad.id }}" class="w-full mt-2 mb-4 bg-gray-100 dark:bg-gray-700 rounded-lg p-2 shadow-sm">
+    <div class="flex items-center justify-between mb-1">
+        <span id="timer-label-{{ olympiad.id }}" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {% trans 'До начала' %}:
+        </span>
+        <span id="olympiad-status-{{ olympiad.id }}" class="text-xs font-bold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+            {% trans 'Ожидание' %}
+        </span>
+    </div>
+    
+    <div id="timer-digits-{{ olympiad.id }}" class="flex items-center justify-center space-x-2 text-blue-600 dark:text-blue-400 font-mono">
+        <div class="text-center">
+            <span id="days-{{ olympiad.id }}" class="text-xl font-bold">00</span>
+            <span class="text-xs block">{% trans 'Дни' %}</span>
+        </div>
+        <span class="text-xl">:</span>
+        <div class="text-center">
+            <span id="hours-{{ olympiad.id }}" class="text-xl font-bold">00</span>
+            <span class="text-xs block">{% trans 'Часы' %}</span>
+        </div>
+        <span class="text-xl">:</span>
+        <div class="text-center">
+            <span id="minutes-{{ olympiad.id }}" class="text-xl font-bold">00</span>
+            <span class="text-xs block">{% trans 'Мин' %}</span>
+        </div>
+        <span class="text-xl">:</span>
+        <div class="text-center">
+            <span id="seconds-{{ olympiad.id }}" class="text-xl font-bold">00</span>
+            <span class="text-xs block">{% trans 'Сек' %}</span>
+        </div>
+    </div>
+    
+    <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5 mt-2">
+        <div id="timer-progress-bar-{{ olympiad.id }}" class="bg-blue-600 dark:bg-blue-500 h-1.5 rounded-full" style="width: 0%"></div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const elementIds = {
+            container: 'olympiad-timer-{{ olympiad.id }}',
+            status: 'olympiad-status-{{ olympiad.id }}',
+            timerLabel: 'timer-label-{{ olympiad.id }}',
+            days: 'days-{{ olympiad.id }}',
+            hours: 'hours-{{ olympiad.id }}',
+            minutes: 'minutes-{{ olympiad.id }}',
+            seconds: 'seconds-{{ olympiad.id }}',
+            progressBar: 'timer-progress-bar-{{ olympiad.id }}',
+            digits: 'timer-digits-{{ olympiad.id }}'
+        };
+        
+        // Создаем и запускаем таймер
+        const timer = createOlympiadTimer(
+            '{{ olympiad.start_datetime|date:"Y/m/d H:i:s" }}',
+            '{{ olympiad.end_datetime|date:"Y/m/d H:i:s" }}',
+            elementIds,
+            null,
+            function() {
+                // Обновляем страницу при завершении олимпиады
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }
+        );
+        
+        timer.start();
+    });
+</script>

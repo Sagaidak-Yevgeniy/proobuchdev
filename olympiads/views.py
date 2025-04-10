@@ -976,6 +976,40 @@ def olympiad_update_progress(request, olympiad_id):
         return JsonResponse({'status': 'error', 'message': str(e)})
 
 # Завершение олимпиады организатором
+# Активирует олимпиаду (изменяет статус на ACTIVE)
+@login_required
+def olympiad_activate(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    
+    # Проверяем права доступа
+    if not (request.user.is_staff or request.user == olympiad.created_by):
+        messages.error(request, _('У вас нет прав для активации этой олимпиады'))
+        return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
+    
+    # Активируем олимпиаду
+    olympiad.status = Olympiad.OlympiadStatus.ACTIVE
+    olympiad.save()
+    
+    messages.success(request, _('Олимпиада успешно активирована!'))
+    return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
+
+# Деактивирует олимпиаду (изменяет статус на PUBLISHED)
+@login_required
+def olympiad_deactivate(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    
+    # Проверяем права доступа
+    if not (request.user.is_staff or request.user == olympiad.created_by):
+        messages.error(request, _('У вас нет прав для деактивации этой олимпиады'))
+        return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
+    
+    # Деактивируем олимпиаду
+    olympiad.status = Olympiad.OlympiadStatus.PUBLISHED
+    olympiad.save()
+    
+    messages.success(request, _('Олимпиада успешно деактивирована!'))
+    return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
+
 @login_required
 def olympiad_complete(request, olympiad_id):
     olympiad = get_object_or_404(Olympiad, id=olympiad_id)
