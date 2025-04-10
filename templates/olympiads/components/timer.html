@@ -1,57 +1,173 @@
-{% load i18n %}
+{% load static %}
 
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">{% trans 'Таймер' %}</h2>
-    
-    <div id="olympiad-timer" class="flex flex-col items-center">
-        <div class="countdown-display w-full bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
-            <div class="flex justify-between items-center">
-                <div class="flex flex-col items-center">
-                    <span id="hours" class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">00</span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">{% trans 'Часов' %}</span>
-                </div>
-                <div class="text-2xl font-bold text-gray-700 dark:text-gray-300">:</div>
-                <div class="flex flex-col items-center">
-                    <span id="minutes" class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">00</span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">{% trans 'Минут' %}</span>
-                </div>
-                <div class="text-2xl font-bold text-gray-700 dark:text-gray-300">:</div>
-                <div class="flex flex-col items-center">
-                    <span id="seconds" class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">00</span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">{% trans 'Секунд' %}</span>
-                </div>
+<div class="olympiad-timer-container bg-gray-100 dark:bg-gray-800 p-3 rounded-lg shadow mb-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Информация о времени -->
+        <div class="flex flex-col space-y-2">
+            <div class="flex items-center space-x-2">
+                <span class="text-gray-600 dark:text-gray-400 font-medium">Статус:</span>
+                <span id="olympiad-status" class="font-bold text-green-600 dark:text-green-400">Активна</span>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <span class="text-gray-600 dark:text-gray-400 font-medium">Начало:</span>
+                <span id="olympiad-start" class="font-bold">{{ olympiad.start_datetime|date:"d.m.Y H:i" }}</span>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <span class="text-gray-600 dark:text-gray-400 font-medium">Окончание:</span>
+                <span id="olympiad-end" class="font-bold">{{ olympiad.end_datetime|date:"d.m.Y H:i" }}</span>
             </div>
         </div>
         
-        <div class="mt-4 text-center">
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-                {% if olympiad.time_limit_minutes > 0 %}
-                    {% trans 'Осталось времени из вашего индивидуального лимита' %}
-                {% else %}
-                    {% trans 'Осталось времени до окончания олимпиады' %}
-                {% endif %}
-            </p>
-            <input type="hidden" id="remaining-minutes" value="{{ time_left_minutes }}">
-            <input type="hidden" id="olympiad-id" value="{{ olympiad.id }}">
-        </div>
-        
-        <!-- Индикатор прогресса -->
-        <div class="w-full mt-4">
-            <div class="flex justify-between items-center mb-1">
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{% trans 'Прогресс времени' %}</span>
-                <span id="progress-percentage" class="text-xs font-medium text-gray-700 dark:text-gray-300">0%</span>
+        <!-- Таймер -->
+        <div class="flex flex-col items-center justify-center bg-white dark:bg-gray-900 rounded-lg p-3 shadow-inner">
+            <div class="text-center">
+                <span class="text-gray-700 dark:text-gray-300 font-medium text-sm" id="timer-label">До окончания олимпиады:</span>
             </div>
-            <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-500 ease-in-out" style="width: 0%"></div>
+            
+            <div class="timer-digits flex items-center justify-center mt-1">
+                <div class="time-segment">
+                    <div class="digit-box">
+                        <span id="days" class="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">00</span>
+                    </div>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">дни</span>
+                </div>
+                
+                <div class="time-separator px-1">
+                    <span class="text-xl md:text-2xl font-bold text-gray-400">:</span>
+                </div>
+                
+                <div class="time-segment">
+                    <div class="digit-box">
+                        <span id="hours" class="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">00</span>
+                    </div>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">часы</span>
+                </div>
+                
+                <div class="time-separator px-1">
+                    <span class="text-xl md:text-2xl font-bold text-gray-400">:</span>
+                </div>
+                
+                <div class="time-segment">
+                    <div class="digit-box">
+                        <span id="minutes" class="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">00</span>
+                    </div>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">минуты</span>
+                </div>
+                
+                <div class="time-separator px-1">
+                    <span class="text-xl md:text-2xl font-bold text-gray-400">:</span>
+                </div>
+                
+                <div class="time-segment">
+                    <div class="digit-box">
+                        <span id="seconds" class="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">00</span>
+                    </div>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">секунды</span>
+                </div>
             </div>
-        </div>
-    </div>
-    
-    <!-- Предупреждение о времени -->
-    <div id="time-warning" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 dark:bg-red-900/40 dark:border-red-800 dark:text-red-400 rounded-lg hidden">
-        <div class="flex items-center">
-            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
-            <span id="warning-text">{% trans 'Осталось меньше 5 минут до окончания!' %}</span>
+            
+            <div class="timer-progress mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div id="timer-progress-bar" class="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all duration-200" style="width: 0%"></div>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Получаем даты начала и окончания олимпиады
+        const startDateString = "{{ olympiad.start_datetime|date:'Y-m-d H:i:s' }}";
+        const endDateString = "{{ olympiad.end_datetime|date:'Y-m-d H:i:s' }}";
+        
+        // Преобразуем строки в объекты Date
+        const startDate = new Date(startDateString.replace(/-/g, '/'));
+        const endDate = new Date(endDateString.replace(/-/g, '/'));
+        
+        // Получаем текущую дату и время
+        const now = new Date();
+        
+        // Получаем общую продолжительность олимпиады в миллисекундах
+        const totalDuration = endDate - startDate;
+        
+        // Функция для обновления таймера
+        function updateTimer() {
+            // Получаем текущее время
+            const currentTime = new Date();
+            
+            // Вычисляем оставшееся время
+            let timeRemaining, timerLabel, statusText, statusClass;
+            
+            if (currentTime < startDate) {
+                // Олимпиада еще не началась
+                timeRemaining = startDate - currentTime;
+                timerLabel = "До начала олимпиады:";
+                statusText = "Ожидание начала";
+                statusClass = "text-yellow-600 dark:text-yellow-400";
+            } else if (currentTime < endDate) {
+                // Олимпиада идет
+                timeRemaining = endDate - currentTime;
+                timerLabel = "До окончания олимпиады:";
+                statusText = "Активна";
+                statusClass = "text-green-600 dark:text-green-400";
+            } else {
+                // Олимпиада завершена
+                timeRemaining = 0;
+                timerLabel = "Олимпиада завершена";
+                statusText = "Завершена";
+                statusClass = "text-red-600 dark:text-red-400";
+            }
+            
+            // Обновляем статус
+            const statusElement = document.getElementById('olympiad-status');
+            statusElement.textContent = statusText;
+            statusElement.className = '';
+            statusElement.classList.add('font-bold', ...statusClass.split(' '));
+            
+            // Обновляем текст таймера
+            document.getElementById('timer-label').textContent = timerLabel;
+            
+            // Вычисляем дни, часы, минуты и секунды
+            let days, hours, minutes, seconds;
+            
+            if (timeRemaining > 0) {
+                days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
+                hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+            } else {
+                days = 0;
+                hours = 0;
+                minutes = 0;
+                seconds = 0;
+            }
+            
+            // Обновляем значения на странице
+            document.getElementById('days').textContent = days.toString().padStart(2, '0');
+            document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+            document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+            document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+            
+            // Обновляем прогресс-бар
+            if (currentTime < startDate) {
+                // До начала олимпиады
+                document.getElementById('timer-progress-bar').style.width = '0%';
+            } else if (currentTime >= endDate) {
+                // После окончания олимпиады
+                document.getElementById('timer-progress-bar').style.width = '100%';
+            } else {
+                // Во время олимпиады
+                const elapsed = currentTime - startDate;
+                const progressPercent = (elapsed / totalDuration) * 100;
+                document.getElementById('timer-progress-bar').style.width = progressPercent + '%';
+            }
+            
+            // Обновляем каждую секунду
+            setTimeout(updateTimer, 1000);
+        }
+        
+        // Запускаем таймер
+        updateTimer();
+    });
+</script>
