@@ -693,7 +693,7 @@ class SystemTester:
             print("✗ Ошибка доступа к админ-панели Django")
         
         # Проверка страницы управления олимпиадами
-        response = self.client.get(reverse('olympiads:manage_olympiads'))
+        response = self.client.get(reverse('olympiads:olympiad_manage_list'))
         
         if response.status_code == 200:
             self.test_results['passed'].append('Доступ к странице управления олимпиадами')
@@ -715,7 +715,7 @@ class SystemTester:
             'status': Olympiad.OlympiadStatus.DRAFT
         }
         
-        response = self.client.post(reverse('olympiads:create_olympiad'), new_olympiad_data, follow=True)
+        response = self.client.post(reverse('olympiads:olympiad_create'), new_olympiad_data, follow=True)
         
         if response.status_code == 200 and Olympiad.objects.filter(title='Тестовая олимпиада').exists():
             self.test_results['passed'].append('Создание олимпиады')
@@ -920,7 +920,7 @@ class SystemTester:
         
         try:
             # Проверка страницы управления сертификатами
-            response = self.client.get(reverse('olympiads:certificate_list'))
+            response = self.client.get(reverse('olympiads:olympiad_certificate_list'))
             
             if response.status_code == 200:
                 self.test_results['passed'].append('Просмотр списка сертификатов')
