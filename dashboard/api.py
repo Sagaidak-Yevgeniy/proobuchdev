@@ -41,7 +41,7 @@ def get_statistics(request):
     earned_achievements = UserAchievement.objects.filter(user=user).count()
     
     # Количество записанных курсов
-    enrolled_courses = Enrollment.objects.filter(user=user, is_active=True).count()
+    enrolled_courses = Enrollment.objects.filter(user=user).count()
     
     # Общее количество очков (используем достижения как источник очков)
     total_points = UserAchievement.objects.filter(user=user).aggregate(
@@ -70,7 +70,7 @@ def get_courses_progress(request):
     """API-эндпоинт для получения прогресса по курсам пользователя"""
     user = request.user
     
-    enrollments = Enrollment.objects.filter(user=user, is_active=True)
+    enrollments = Enrollment.objects.filter(user=user)
     courses_data = []
     
     for enrollment in enrollments:
