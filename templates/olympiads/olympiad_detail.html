@@ -237,14 +237,16 @@
                                 </div>
                             {% endif %}
                         {% else %}
-                            <div class="mb-4">
-                                <div class="text-lg font-medium text-gray-800 dark:text-white">{% trans 'Необходима авторизация' %}</div>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">{% trans 'Войдите, чтобы принять участие в олимпиаде' %}</p>
+                            <div class="p-6 flex flex-col md:flex-row items-center justify-between bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                <div class="mb-4 md:mb-0 text-center md:text-left">
+                                    <div class="text-lg font-medium text-gray-800 dark:text-white">{% trans 'Необходима авторизация' %}</div>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">{% trans 'Войдите, чтобы принять участие в олимпиаде' %}</p>
+                                </div>
+                                <a href="{% url 'login' %}?next={{ request.path }}" class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 hover:shadow-lg transform hover:-translate-y-1">
+                                    <i class="fas fa-sign-in-alt mr-2"></i>
+                                    {% trans 'Войти в систему' %}
+                                </a>
                             </div>
-                            <a href="{% url 'login' %}?next={{ request.path }}" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors">
-                                {% trans 'Войти' %}
-                                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
-                            </a>
                         {% endif %}
                     </div>
                 </div>
@@ -254,14 +256,17 @@
     
     <!-- Топ участников -->
     {% if top_participants %}
-    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden mb-8">
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-xl font-semibold text-gray-800 dark:text-white">{% trans 'Лучшие результаты' %}</h2>
+    <div class="bg-white dark:bg-gray-800 shadow-md rounded-xl overflow-hidden mb-8 hover:shadow-lg transition-shadow duration-300">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white flex items-center">
+                <i class="fas fa-medal text-yellow-500 mr-2"></i>
+                {% trans 'Лучшие результаты' %}
+            </h2>
         </div>
         <div class="px-6 py-4">
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-900/50">
                         <tr>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 {% trans 'Место' %}
@@ -272,30 +277,76 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 {% trans 'Баллы' %}
                             </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 {% trans 'Статус' %}
                             </th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
                         {% for participation in top_participants %}
-                        <tr class="{% if participation.user == user %}bg-blue-50 dark:bg-blue-900/20{% endif %}">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                {{ forloop.counter }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                {{ participation.user.username }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                {{ participation.score }} / {{ participation.max_score }}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-150 {% if participation.user == user %}bg-blue-50 dark:bg-blue-900/20{% endif %}">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if forloop.counter == 1 %}
+                                <div class="flex items-center">
+                                    <span class="text-xl text-yellow-500 mr-2">
+                                        <i class="fas fa-trophy"></i>
+                                    </span>
+                                    <span class="font-bold text-lg text-gray-900 dark:text-white">1</span>
+                                </div>
+                                {% elif forloop.counter == 2 %}
+                                <div class="flex items-center">
+                                    <span class="text-lg text-gray-500 mr-2">
+                                        <i class="fas fa-medal"></i>
+                                    </span>
+                                    <span class="font-bold text-gray-700 dark:text-gray-300">2</span>
+                                </div>
+                                {% elif forloop.counter == 3 %}
+                                <div class="flex items-center">
+                                    <span class="text-lg text-amber-600 mr-2">
+                                        <i class="fas fa-medal"></i>
+                                    </span>
+                                    <span class="font-bold text-gray-700 dark:text-gray-300">3</span>
+                                </div>
+                                {% else %}
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-400">
+                                    {{ forloop.counter }}
+                                </span>
+                                {% endif %}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ participation.user.username|slice:":1"|upper }}</span>
+                                    </div>
+                                    <div class="ml-3">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                            {{ participation.user.username }}
+                                        </div>
+                                        {% if participation.user.profile.display_name %}
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                            {{ participation.user.profile.display_name }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900 dark:text-white font-medium">
+                                    {{ participation.score }} / {{ participation.max_score }}
+                                </div>
+                                <div class="w-24 bg-gray-200 rounded-full h-1.5 dark:bg-gray-700 mt-1">
+                                    <div class="{% if participation.passed %}bg-green-500{% else %}bg-yellow-500{% endif %} h-1.5 rounded-full" style="width: {{ participation.score_percentage }}%"></div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
                                 {% if participation.passed %}
-                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                <span class="px-3 py-1 inline-flex items-center text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border border-green-200 dark:border-green-800">
+                                    <i class="fas fa-check text-xs mr-1"></i>
                                     {% trans 'Сдал' %}
                                 </span>
                                 {% else %}
-                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                <span class="px-3 py-1 inline-flex items-center text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-200 dark:border-red-800">
+                                    <i class="fas fa-times text-xs mr-1"></i>
                                     {% trans 'Не сдал' %}
                                 </span>
                                 {% endif %}
@@ -305,79 +356,103 @@
                     </tbody>
                 </table>
             </div>
+            
+            {% if top_participants|length > 5 and olympiad.is_completed %}
+            <div class="mt-4 text-center">
+                <a href="{% url 'olympiads:olympiad_results' olympiad_id=olympiad.id %}" class="inline-flex items-center px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium transition-all duration-200 hover:shadow-lg transform hover:-translate-y-1">
+                    <i class="fas fa-list-ol mr-2"></i>
+                    {% trans 'Посмотреть полный рейтинг' %}
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
     {% endif %}
     
     <!-- Для преподавателей и администраторов -->
     {% if user.is_authenticated and user == olympiad.created_by or user.profile.is_admin %}
-    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-xl font-semibold text-gray-800 dark:text-white">{% trans 'Управление олимпиадой' %}</h2>
+    <div class="bg-white dark:bg-gray-800 shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300 mb-8">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white flex items-center">
+                <i class="fas fa-tools text-indigo-500 mr-2"></i>
+                {% trans 'Управление олимпиадой' %}
+            </h2>
         </div>
         <div class="px-6 py-4">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <a href="{% url 'olympiads:olympiad_edit' olympiad_id=olympiad.id %}" class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                <a href="{% url 'olympiads:olympiad_edit' olympiad_id=olympiad.id %}" 
+                   class="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-700 p-5 rounded-lg hover:shadow-md dark:hover:shadow-gray-800/30 transition-all duration-300 border border-gray-100 dark:border-gray-700">
                     <div class="flex items-center">
-                        <div class="p-2 rounded-md bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-200 mr-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 mr-4 shadow-sm">
+                            <i class="fas fa-edit"></i>
                         </div>
                         <div>
-                            <h3 class="font-medium text-gray-800 dark:text-white">{% trans 'Редактировать' %}</h3>
+                            <h3 class="font-medium text-gray-800 dark:text-white text-lg">{% trans 'Редактировать' %}</h3>
                             <p class="text-sm text-gray-600 dark:text-gray-400">{% trans 'Изменить настройки олимпиады' %}</p>
                         </div>
                     </div>
                 </a>
-                <a href="{% url 'olympiads:olympiad_task_create' olympiad_id=olympiad.id %}" class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                <a href="{% url 'olympiads:olympiad_task_create' olympiad_id=olympiad.id %}" 
+                   class="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-700 p-5 rounded-lg hover:shadow-md dark:hover:shadow-gray-800/30 transition-all duration-300 border border-gray-100 dark:border-gray-700">
                     <div class="flex items-center">
-                        <div class="p-2 rounded-md bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-200 mr-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        <div class="p-3 rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-300 mr-4 shadow-sm">
+                            <i class="fas fa-plus"></i>
                         </div>
                         <div>
-                            <h3 class="font-medium text-gray-800 dark:text-white">{% trans 'Добавить задание' %}</h3>
+                            <h3 class="font-medium text-gray-800 dark:text-white text-lg">{% trans 'Добавить задание' %}</h3>
                             <p class="text-sm text-gray-600 dark:text-gray-400">{% trans 'Создать новое задание' %}</p>
                         </div>
                     </div>
                 </a>
-                <a href="{% url 'olympiads:olympiad_participants' olympiad_id=olympiad.id %}" class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                <a href="{% url 'olympiads:olympiad_participants' olympiad_id=olympiad.id %}" 
+                   class="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-700 p-5 rounded-lg hover:shadow-md dark:hover:shadow-gray-800/30 transition-all duration-300 border border-gray-100 dark:border-gray-700">
                     <div class="flex items-center">
-                        <div class="p-2 rounded-md bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-200 mr-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 mr-4 shadow-sm">
+                            <i class="fas fa-users"></i>
                         </div>
                         <div>
-                            <h3 class="font-medium text-gray-800 dark:text-white">{% trans 'Участники' %}</h3>
+                            <h3 class="font-medium text-gray-800 dark:text-white text-lg">{% trans 'Участники' %}</h3>
                             <p class="text-sm text-gray-600 dark:text-gray-400">{% trans 'Просмотр списка участников' %}</p>
                         </div>
                     </div>
                 </a>
-                <a href="{% url 'olympiads:olympiad_invitations' olympiad_id=olympiad.id %}" class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                <a href="{% url 'olympiads:olympiad_invitations' olympiad_id=olympiad.id %}" 
+                   class="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-700 p-5 rounded-lg hover:shadow-md dark:hover:shadow-gray-800/30 transition-all duration-300 border border-gray-100 dark:border-gray-700">
                     <div class="flex items-center">
-                        <div class="p-2 rounded-md bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-200 mr-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        <div class="p-3 rounded-full bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-300 mr-4 shadow-sm">
+                            <i class="fas fa-envelope"></i>
                         </div>
                         <div>
-                            <h3 class="font-medium text-gray-800 dark:text-white">{% trans 'Приглашения' %}</h3>
+                            <h3 class="font-medium text-gray-800 dark:text-white text-lg">{% trans 'Приглашения' %}</h3>
                             <p class="text-sm text-gray-600 dark:text-gray-400">{% trans 'Управление приглашениями' %}</p>
                         </div>
                     </div>
                 </a>
-                <a href="{% url 'olympiads:olympiad_publish' olympiad_id=olympiad.id %}" class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                <a href="{% url 'olympiads:olympiad_publish' olympiad_id=olympiad.id %}" 
+                   class="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-700 p-5 rounded-lg hover:shadow-md dark:hover:shadow-gray-800/30 transition-all duration-300 border border-gray-100 dark:border-gray-700">
                     <div class="flex items-center">
-                        <div class="p-2 rounded-md {% if olympiad.status == 'draft' %}bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-200{% elif olympiad.status == 'published' %}bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-200{% elif olympiad.status == 'active' %}bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-200{% else %}bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-200{% endif %} mr-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                {% if olympiad.status == 'draft' %}
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                {% elif olympiad.status == 'published' %}
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                {% elif olympiad.status == 'active' %}
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                {% else %}
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                {% endif %}
-                            </svg>
+                        <div class="p-3 rounded-full 
+                            {% if olympiad.status == 'draft' %}
+                                bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300
+                            {% elif olympiad.status == 'published' %}
+                                bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-300
+                            {% elif olympiad.status == 'active' %}
+                                bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300
+                            {% else %}
+                                bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300
+                            {% endif %} mr-4 shadow-sm">
+                            {% if olympiad.status == 'draft' %}
+                                <i class="fas fa-check"></i>
+                            {% elif olympiad.status == 'published' %}
+                                <i class="fas fa-play"></i>
+                            {% elif olympiad.status == 'active' %}
+                                <i class="fas fa-stop"></i>
+                            {% else %}
+                                <i class="fas fa-flag"></i>
+                            {% endif %}
                         </div>
                         <div>
-                            <h3 class="font-medium text-gray-800 dark:text-white">
+                            <h3 class="font-medium text-gray-800 dark:text-white text-lg">
                                 {% if olympiad.status == 'draft' %}
                                 {% trans 'Опубликовать' %}
                                 {% elif olympiad.status == 'published' %}
@@ -402,6 +477,28 @@
                         </div>
                     </div>
                 </a>
+                
+                <!-- Статистика олимпиады -->
+                <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-gray-50 dark:bg-gray-900/30 rounded-lg p-4">
+                            <div class="text-sm text-gray-600 dark:text-gray-400">{% trans 'Зарегистрировано' %}</div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ registered_count }}</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-900/30 rounded-lg p-4">
+                            <div class="text-sm text-gray-600 dark:text-gray-400">{% trans 'Начало олимпиаду' %}</div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ started_count }}</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-900/30 rounded-lg p-4">
+                            <div class="text-sm text-gray-600 dark:text-gray-400">{% trans 'Завершили' %}</div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ completed_count }}</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-900/30 rounded-lg p-4">
+                            <div class="text-sm text-gray-600 dark:text-gray-400">{% trans 'Сдали' %}</div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ passed_count }}</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
