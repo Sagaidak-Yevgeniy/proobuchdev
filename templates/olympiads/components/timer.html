@@ -1,46 +1,57 @@
 {% load i18n %}
 
-<div id="olympiad-timer" 
-     class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 mb-6 sticky top-4 z-10 border border-blue-200 dark:border-blue-900"
-     data-olympiad-id="{{ olympiad.id }}"
-     data-end-time="{{ olympiad.end_datetime|date:'c' }}"
-     data-time-limit="{{ olympiad.time_limit_minutes }}"
-     data-start-time="{{ participation.started_at|date:'c' }}">
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">{% trans 'Таймер' %}</h2>
     
-    <div class="flex justify-between items-center mb-2">
-        <h3 class="text-lg font-bold text-gray-800 dark:text-white">{% trans 'Оставшееся время' %}</h3>
-        <div id="timer-display" class="text-xl font-mono text-blue-600 dark:text-blue-400 font-bold">
-            --:--:--
+    <div id="olympiad-timer" class="flex flex-col items-center">
+        <div class="countdown-display w-full bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+            <div class="flex justify-between items-center">
+                <div class="flex flex-col items-center">
+                    <span id="hours" class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">00</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{% trans 'Часов' %}</span>
+                </div>
+                <div class="text-2xl font-bold text-gray-700 dark:text-gray-300">:</div>
+                <div class="flex flex-col items-center">
+                    <span id="minutes" class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">00</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{% trans 'Минут' %}</span>
+                </div>
+                <div class="text-2xl font-bold text-gray-700 dark:text-gray-300">:</div>
+                <div class="flex flex-col items-center">
+                    <span id="seconds" class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">00</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{% trans 'Секунд' %}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4 text-center">
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                {% if olympiad.time_limit_minutes > 0 %}
+                    {% trans 'Осталось времени из вашего индивидуального лимита' %}
+                {% else %}
+                    {% trans 'Осталось времени до окончания олимпиады' %}
+                {% endif %}
+            </p>
+            <input type="hidden" id="remaining-minutes" value="{{ time_left_minutes }}">
+            <input type="hidden" id="olympiad-id" value="{{ olympiad.id }}">
+        </div>
+        
+        <!-- Индикатор прогресса -->
+        <div class="w-full mt-4">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{% trans 'Прогресс времени' %}</span>
+                <span id="progress-percentage" class="text-xs font-medium text-gray-700 dark:text-gray-300">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-500 ease-in-out" style="width: 0%"></div>
+            </div>
         </div>
     </div>
     
-    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mb-2">
-        <div id="timer-progress" class="bg-blue-600 h-2.5 rounded-full transition-all duration-1000 ease-linear" style="width: 100%"></div>
-    </div>
-    
-    <div id="timer-alert" class="hidden text-red-600 dark:text-red-400 text-sm font-medium">
-        <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-        {% trans 'Внимание: осталось мало времени!' %}
-    </div>
-    
-    <div class="flex justify-between mt-2 text-sm text-gray-600 dark:text-gray-400">
-        <div>
-            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
-            {% trans 'Начало' %}: {{ participation.started_at|date:"d.m.Y H:i" }}
-        </div>
-        <div>
-            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-            {% if olympiad.time_limit_minutes > 0 %}
-                {% trans 'Время на решение' %}: {{ olympiad.time_limit_minutes }} {% trans 'мин.' %}
-            {% else %}
-                {% trans 'Завершение' %}: {{ olympiad.end_datetime|date:"d.m.Y H:i" }}
-            {% endif %}
+    <!-- Предупреждение о времени -->
+    <div id="time-warning" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 dark:bg-red-900/40 dark:border-red-800 dark:text-red-400 rounded-lg hidden">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+            <span id="warning-text">{% trans 'Осталось меньше 5 минут до окончания!' %}</span>
         </div>
     </div>
 </div>
