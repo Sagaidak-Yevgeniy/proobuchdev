@@ -1,232 +1,276 @@
-import uuid
 import os
-from io import BytesIO
+import io
+import uuid
+from datetime import datetime, timedelta
 from django.conf import settings
 from django.template.loader import get_template
 from django.utils import timezone
 from xhtml2pdf import pisa
 from PIL import Image, ImageDraw, ImageFont
-from .models import Course, CourseEnrollment, CourseCompletion
-from olympiads.models import Olympiad, OlympiadParticipation
+from .models import CourseCompletion
+from olympiads.models import OlympiadParticipation
 
 
-def generate_certificate_id():
+def create_certificate_from_template(user, template, context_data, certificate_type='course'):
     """
-    Генерирует уникальный ID сертификата
+    Создает сертификат на основе шаблона
+    
+    Args:
+        user: Пользователь, получающий сертификат
+        template: Шаблон сертификата (CertificateTemplate)
+        context_data: Данные для отображения на сертификате
+        certificate_type: Тип сертификата ('course', 'olympiad', 'achievement')
+    
+    Returns:
+        Объект Certificate
     """
-    return str(uuid.uuid4()).upper()[:16]
+    from .models_certificates import Certificate
+    
+    # Создаем новый сертификат
+    certificate = Certificate(
+        user=user,
+        certificate_type=certificate_type,
+        template_used=template,
+        title=context_data.get('title', 'Сертификат'),
+        description=context_data.get('description', ''),
+        earned_points=context_data.get('earned_points', 0),
+        max_points=context_data.get('max_points', 100),
+        completion_percentage=context_data.get('completion_percentage', 0),
+    )
+    
+    # Устанавливаем связь с соответствующей сущностью
+    if certificate_type == 'course' and 'course' in context_data:
+        certificate.course = context_data['course']
+    elif certificate_type == 'olympiad' and 'olympiad' in context_data:
+        certificate.olympiad = context_data['olympiad']
+    elif certificate_type == 'achievement' and 'achievement' in context_data:
+        certificate.achievement = context_data['achievement']
+    
+    # Устанавливаем срок действия (если нужно)
+    if 'valid_days' in context_data and context_data['valid_days'] > 0:
+        certificate.expiry_date = timezone.now() + timedelta(days=context_data['valid_days'])
+    
+    # Сохраняем сертификат перед генерацией PDF
+    certificate.save()
+    
+    # Генерируем PDF
+    generate_certificate_pdf(certificate)
+    
+    return certificate
 
 
-def render_to_pdf(template_src, context_dict={}):
+def generate_certificate_pdf(certificate):
     """
-    Преобразует HTML-шаблон в PDF-файл
+    Генерирует PDF-файл сертификата
+    
+    Args:
+        certificate: Объект сертификата
     """
-    template = get_template(template_src)
-    html = template.render(context_dict)
-    result = BytesIO()
-    pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+    # Получаем HTML шаблон для сертификата
+    template = get_template('certificates/certificate.html')
+    
+    # Готовим контекст для шаблона
+    context = {
+        'certificate': certificate,
+        'user': certificate.user,
+        'date': certificate.issued_date.strftime('%d.%m.%Y'),
+        'certificate_id': certificate.certificate_id,
+        'verification_url': certificate.get_verification_url(),
+    }
+    
+    # Добавляем данные в зависимости от типа сертификата
+    if certificate.certificate_type == 'course' and certificate.course:
+        # Для курса
+        completion = CourseCompletion.objects.filter(
+            user=certificate.user, 
+            course=certificate.course
+        ).first()
+        
+        context.update({
+            'course': certificate.course,
+            'completion': completion,
+            'content_title': certificate.course.title,
+            'earned_points': certificate.earned_points,
+            'max_points': certificate.max_points,
+            'percentage': certificate.completion_percentage,
+        })
+    
+    elif certificate.certificate_type == 'olympiad' and certificate.olympiad:
+        # Для олимпиады
+        participation = OlympiadParticipation.objects.filter(
+            user=certificate.user, 
+            olympiad=certificate.olympiad
+        ).first()
+        
+        context.update({
+            'olympiad': certificate.olympiad,
+            'participation': participation,
+            'content_title': certificate.olympiad.title,
+            'earned_points': certificate.earned_points,
+            'max_points': certificate.max_points,
+            'percentage': certificate.completion_percentage,
+        })
+    
+    # Для шаблона также добавляем CSS и другие настройки
+    context.update({
+        'STATIC_URL': settings.STATIC_URL,
+        'MEDIA_URL': settings.MEDIA_URL,
+    })
+    
+    # Рендерим HTML
+    html = template.render(context)
+    
+    # Создаем PDF из HTML
+    result = io.BytesIO()
+    pdf = pisa.CreatePDF(
+        src=io.StringIO(html),
+        dest=result,
+        encoding='utf-8'
+    )
+    
     if not pdf.err:
-        return result.getvalue()
-    return None
+        # Сохраняем PDF в поле модели
+        filename = f'certificate-{certificate.certificate_id}.pdf'
+        from django.core.files.base import ContentFile
+        certificate.pdf_file.save(filename, ContentFile(result.getvalue()), save=True)
+    
+    result.close()
 
 
-def generate_certificate_image(user, course=None, olympiad=None, points=0, max_points=0, completion_date=None):
+def generate_course_certificate(user, course):
     """
-    Генерирует изображение сертификата с данными пользователя, курса/олимпиады и результатами
-    """
-    # Загружаем шаблон сертификата
-    template_path = os.path.join(settings.STATIC_ROOT, 'images', 'certificate_template.png')
-    if not os.path.exists(template_path):
-        template_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'certificate_template.png')
-    
-    try:
-        img = Image.open(template_path)
-    except FileNotFoundError:
-        # Если шаблон не найден, создаем базовое изображение
-        img = Image.new('RGB', (1200, 850), color=(255, 255, 255))
-        # Добавляем рамку
-        draw = ImageDraw.Draw(img)
-        draw.rectangle([(20, 20), (1180, 830)], outline=(0, 112, 192), width=5)
-    
-    draw = ImageDraw.Draw(img)
-    
-    # Определяем путь к шрифтам
-    font_path = os.path.join(settings.STATIC_ROOT, 'fonts', 'Roboto-Regular.ttf')
-    if not os.path.exists(font_path):
-        font_path = os.path.join(settings.BASE_DIR, 'static', 'fonts', 'Roboto-Regular.ttf')
-    
-    try:
-        # Пытаемся загрузить шрифт
-        title_font = ImageFont.truetype(font_path, 48)
-        header_font = ImageFont.truetype(font_path, 36)
-        normal_font = ImageFont.truetype(font_path, 24)
-    except (IOError, OSError):
-        # Если шрифт не найден, используем стандартный
-        title_font = ImageFont.load_default()
-        header_font = ImageFont.load_default()
-        normal_font = ImageFont.load_default()
-    
-    # Добавляем логотип
-    logo_path = os.path.join(settings.STATIC_ROOT, 'images', 'logo.png')
-    if not os.path.exists(logo_path):
-        logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'logo.png')
-    
-    try:
-        logo = Image.open(logo_path)
-        logo = logo.resize((150, 150))
-        img.paste(logo, (525, 50), logo if logo.mode == 'RGBA' else None)
-    except (FileNotFoundError, IOError):
-        # Если логотип не найден, пропускаем
-        pass
-    
-    # Заголовок сертификата
-    draw.text((600, 230), "СЕРТИФИКАТ", fill=(0, 0, 0), font=title_font, anchor="mm")
-    
-    # Номер сертификата
-    certificate_id = generate_certificate_id()
-    draw.text((600, 290), f"№ {certificate_id}", fill=(100, 100, 100), font=normal_font, anchor="mm")
-    
-    # Имя пользователя
-    full_name = user.get_full_name() or user.username
-    draw.text((600, 350), f"Настоящим удостоверяется, что", fill=(0, 0, 0), font=normal_font, anchor="mm")
-    draw.text((600, 400), full_name.upper(), fill=(0, 0, 0), font=header_font, anchor="mm")
-    
-    # Информация о курсе или олимпиаде
-    if course:
-        draw.text((600, 460), "успешно завершил(а) курс:", fill=(0, 0, 0), font=normal_font, anchor="mm")
-        draw.text((600, 510), course.title.upper(), fill=(0, 112, 192), font=header_font, anchor="mm")
-        entity_name = "курса"
-    elif olympiad:
-        draw.text((600, 460), "успешно участвовал(а) в олимпиаде:", fill=(0, 0, 0), font=normal_font, anchor="mm")
-        draw.text((600, 510), olympiad.title.upper(), fill=(0, 112, 192), font=header_font, anchor="mm")
-        entity_name = "олимпиады"
-    else:
-        draw.text((600, 460), "успешно выполнил(а) задания", fill=(0, 0, 0), font=normal_font, anchor="mm")
-        entity_name = "программы"
-    
-    # Результаты
-    percentage = int(points / max_points * 100) if max_points > 0 else 0
-    draw.text((600, 570), f"Результат: {points} из {max_points} баллов ({percentage}%)", fill=(0, 0, 0), font=normal_font, anchor="mm")
-    
-    # Дата завершения
-    completion_date = completion_date or timezone.now()
-    date_str = completion_date.strftime("%d.%m.%Y")
-    draw.text((600, 630), f"Дата завершения {entity_name}: {date_str}", fill=(0, 0, 0), font=normal_font, anchor="mm")
-    
-    # Подпись
-    draw.text((300, 730), "Подпись:", fill=(0, 0, 0), font=normal_font, anchor="mm")
-    # Линия для подписи
-    draw.line([(370, 730), (570, 730)], fill=(0, 0, 0), width=2)
-    
-    # QR-код или проверочная информация
-    draw.text((900, 730), f"Для проверки подлинности сертификата", fill=(100, 100, 100), font=ImageFont.truetype(font_path, 16) if font_path else ImageFont.load_default(), anchor="mm")
-    draw.text((900, 750), f"посетите сайт и введите номер: {certificate_id}", fill=(100, 100, 100), font=ImageFont.truetype(font_path, 16) if font_path else ImageFont.load_default(), anchor="mm")
-    
-    # Сохраняем изображение в буфер
-    img_buffer = BytesIO()
-    img.save(img_buffer, format='PNG')
-    img_buffer.seek(0)
-    
-    return img_buffer, certificate_id
-
-
-def create_course_certificate(user, course_enrollment):
-    """
-    Создает сертификат о завершении курса
+    Генерирует сертификат о прохождении курса
     
     Args:
-        user (CustomUser): Пользователь, которому выдается сертификат
-        course_enrollment (CourseEnrollment): Запись о зачислении на курс
+        user: Пользователь, получающий сертификат
+        course: Объект курса
     
     Returns:
-        tuple: (img_buffer, certificate_id) - буфер с изображением сертификата и его ID
+        Объект Certificate или None в случае ошибки
     """
-    course = course_enrollment.course
+    # Проверяем возможность выдачи сертификата
+    if not course.can_generate_certificate(user):
+        return None
     
-    # Получаем информацию о прогрессе и баллах
-    from courses.models import LessonCompletion, AssignmentSubmission
+    # Получаем данные о завершении курса
+    completion = CourseCompletion.objects.filter(user=user, course=course).first()
+    if not completion:
+        return None
     
-    # Сколько всего заданий в курсе
-    total_assignments = sum(lesson.assignments.count() for lesson in course.lessons.all())
+    # Получаем шаблон сертификата
+    template = course.certificate_template
+    if not template:
+        # Если у курса нет шаблона, берем дефолтный для курсов
+        from .models_certificates import CertificateTemplate
+        template = CertificateTemplate.objects.filter(
+            template_type='course', 
+            is_active=True
+        ).first()
     
-    # Какой максимальный балл за курс
-    max_points = sum(
-        assignment.max_points
-        for lesson in course.lessons.all()
-        for assignment in lesson.assignments.all()
-    )
+    if not template:
+        return None
     
-    # Сколько заданий выполнил пользователь
-    completed_assignments = AssignmentSubmission.objects.filter(
+    # Данные для отображения на сертификате
+    context_data = {
+        'course': course,
+        'title': f'Сертификат о прохождении курса "{course.title}"',
+        'description': course.description,
+        'earned_points': completion.earned_points,
+        'max_points': completion.max_points,
+        'completion_percentage': completion.percentage,
+        'valid_days': 365 * 5,  # Сертификат действителен 5 лет
+    }
+    
+    # Создаем сертификат
+    certificate = create_certificate_from_template(
         user=user,
-        assignment__lesson__course=course,
-        status='approved'
-    ).count()
-    
-    # Сколько баллов набрал пользователь
-    earned_points = sum(
-        submission.points
-        for submission in AssignmentSubmission.objects.filter(
-            user=user,
-            assignment__lesson__course=course,
-            status='approved'
-        )
+        template=template,
+        context_data=context_data,
+        certificate_type='course'
     )
     
-    # Дата завершения курса
-    completion_date = CourseCompletion.objects.filter(
-        user=user, course=course
-    ).first().completion_date if CourseCompletion.objects.filter(
-        user=user, course=course
-    ).exists() else timezone.now()
+    # Обновляем статус в записи о завершении курса
+    completion.certificate_generated = True
+    completion.save(update_fields=['certificate_generated'])
     
-    # Генерируем изображение сертификата
-    return generate_certificate_image(
-        user=user,
-        course=course,
-        points=earned_points,
-        max_points=max_points,
-        completion_date=completion_date
-    )
+    return certificate
 
 
-def create_olympiad_certificate(user, olympiad_participation):
+def generate_olympiad_certificate(user, olympiad):
     """
-    Создает сертификат участника олимпиады
+    Генерирует сертификат об участии в олимпиаде
     
     Args:
-        user (CustomUser): Пользователь, которому выдается сертификат
-        olympiad_participation (OlympiadParticipation): Запись об участии в олимпиаде
+        user: Пользователь, получающий сертификат
+        olympiad: Объект олимпиады
     
     Returns:
-        tuple: (img_buffer, certificate_id) - буфер с изображением сертификата и его ID
+        Объект Certificate или None в случае ошибки
     """
-    olympiad = olympiad_participation.olympiad
+    from olympiads.models import OlympiadParticipation, ProblemSubmission
     
-    # Получаем информацию о прогрессе и баллах
-    from olympiads.models import ProblemSubmission
-    
-    # Какой максимальный балл за олимпиаду
-    max_points = sum(problem.max_points for problem in olympiad.problems.all())
-    
-    # Сколько баллов набрал пользователь
-    earned_points = sum(
-        submission.points
-        for submission in ProblemSubmission.objects.filter(
-            user=user,
-            problem__olympiad=olympiad,
-            status='approved'
-        )
-    )
-    
-    # Дата завершения олимпиады
-    completion_date = olympiad_participation.last_submission_time or olympiad.end_date or timezone.now()
-    
-    # Генерируем изображение сертификата
-    return generate_certificate_image(
-        user=user,
+    # Проверяем участие в олимпиаде
+    participation = OlympiadParticipation.objects.filter(
+        user=user, 
         olympiad=olympiad,
-        points=earned_points,
-        max_points=max_points,
-        completion_date=completion_date
+        is_completed=True
+    ).first()
+    
+    if not participation:
+        return None
+    
+    # Получаем шаблон сертификата
+    template = olympiad.certificate_template
+    if not template:
+        # Если у олимпиады нет шаблона, берем дефолтный для олимпиад
+        from .models_certificates import CertificateTemplate
+        template = CertificateTemplate.objects.filter(
+            template_type='olympiad', 
+            is_active=True
+        ).first()
+    
+    if not template:
+        return None
+    
+    # Подсчет баллов
+    earned_points = ProblemSubmission.objects.filter(
+        user=user,
+        problem__olympiad=olympiad,
+        status='approved'
+    ).aggregate(models.Sum('points'))['points__sum'] or 0
+    
+    # Максимально возможные баллы
+    from olympiads.models import Problem
+    max_points = Problem.objects.filter(
+        olympiad=olympiad
+    ).aggregate(models.Sum('max_points'))['max_points__sum'] or 0
+    
+    if max_points > 0:
+        percentage = (earned_points / max_points) * 100
+    else:
+        percentage = 0
+    
+    # Данные для отображения на сертификате
+    context_data = {
+        'olympiad': olympiad,
+        'title': f'Сертификат участника олимпиады "{olympiad.title}"',
+        'description': olympiad.description,
+        'earned_points': earned_points,
+        'max_points': max_points,
+        'completion_percentage': percentage,
+        'valid_days': 365 * 5,  # Сертификат действителен 5 лет
+    }
+    
+    # Создаем сертификат
+    certificate = create_certificate_from_template(
+        user=user,
+        template=template,
+        context_data=context_data,
+        certificate_type='olympiad'
     )
+    
+    # Обновляем статус в записи об участии в олимпиаде
+    participation.certificate_generated = True
+    participation.save(update_fields=['certificate_generated'])
+    
+    return certificate
