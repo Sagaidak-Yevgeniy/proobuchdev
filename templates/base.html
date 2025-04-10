@@ -308,42 +308,31 @@
                         {% include "components/notification_dropdown.html" %}
                     </div>
 
-                    <!-- Выпадающее меню пользователя (на всех устройствах) -->
+                    <!-- Более компактное выпадающее меню пользователя (на всех устройствах) -->
                     <div class="relative">
-                        <button id="desktopUserMenuButton" class="flex items-center text-white hover:bg-blue-600 hover:shadow-md transition-all duration-300 rounded-full py-1 pl-1 pr-2 md:pr-3">
+                        <button id="desktopUserMenuButton" class="flex items-center text-white hover:bg-blue-600 hover:shadow-md transition-all duration-300 rounded-full py-1 pl-1 pr-2">
                             <div class="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center border-2 border-blue-300 shadow-inner">
                                 <span class="text-sm font-bold">{{ user.username|first|upper }}</span>
                             </div>
-                            <span class="text-sm font-medium max-w-[120px] truncate hidden md:inline ml-2">{{ user.username }}</span>
                             <i class="fas fa-chevron-down text-xs ml-1 opacity-75"></i>
                         </button>
                         <div id="desktopUserDropdown" class="absolute right-0 hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-xl rounded-xl mt-2 py-2 w-56 max-w-[calc(100vw-2rem)] z-20 border border-gray-100 dark:border-gray-600" style="right: 0; left: auto; transform-origin: top right; animation: dropdown-scale 0.2s ease-out;">
                             <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-600">
                                 <div class="font-medium">{{ user.get_full_name|default:user.username }}</div>
-                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</div>
-                                <div class="text-xs mt-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded-full px-2 py-0.5 inline-block">{{ user.profile.get_role_display }}</div>
+                                <div class="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded-full px-2 py-0.5 inline-block">{{ user.profile.get_role_display }}</div>
                             </div>
-                            <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
+                            {% if user.is_staff or user.profile.is_admin %}
+                            <a href="{% url 'admin:index' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                                <i class="fas fa-cog mr-2 text-gray-500"></i>Админ-панель
+                            </a>
+                            <div class="border-t border-gray-200 dark:border-gray-600 my-1"></div>
+                            {% endif %}
+                            <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                                 <i class="fas fa-user mr-2 text-blue-600 dark:text-blue-400"></i>Мой профиль
                             </a>
-                            <a href="{% url 'achievement_list' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
-                                <i class="fas fa-trophy mr-2 text-yellow-500 dark:text-yellow-400"></i>Достижения
+                            <a href="{% url 'interface_settings' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                                <i class="fas fa-sliders-h mr-2 text-gray-600 dark:text-gray-400"></i>Настройки
                             </a>
-                            <a href="{% url 'my_certificates' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
-                                <i class="fas fa-certificate mr-2 text-green-600 dark:text-green-400"></i>Мои сертификаты
-                            </a>
-                            <a href="{% url 'leaderboard' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
-                                <i class="fas fa-list-ol mr-2 text-purple-600 dark:text-purple-400"></i>Рейтинг
-                            </a>
-                            <a href="{% url 'interface_settings' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
-                                <i class="fas fa-sliders-h mr-2 text-gray-600 dark:text-gray-400"></i>Настройки интерфейса
-                            </a>
-                            {% if user.is_staff or user.profile.is_admin %}
-                            <div class="border-t border-gray-200 dark:border-gray-600 my-1"></div>
-                            <a href="{% url 'admin:index' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <i class="fas fa-cog mr-2"></i>Админ-панель
-                            </a>
-                            {% endif %}
                             <div class="border-t border-gray-200 dark:border-gray-600 my-1"></div>
                             <a href="{% url 'logout' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 text-red-600 dark:text-red-400">
                                 <i class="fas fa-sign-out-alt mr-2"></i>Выйти
@@ -448,25 +437,18 @@
                         </details>
                         {% endif %}
                         
-                        <!-- Группа Профиль -->
-                        <details class="group">
-                            <summary class="flex items-center px-3 py-1.5 rounded-md text-white font-medium cursor-pointer hover:bg-blue-700 transition-colors list-none">
-                                <i class="fas fa-user text-sm mr-2"></i>
-                                <span>Профиль</span>
-                                <i class="fas fa-chevron-down text-xs ml-auto transform group-open:rotate-180 transition-transform"></i>
-                            </summary>
-                            <div class="pl-3 mt-1 space-y-0.5">
-                                <a href="{% url 'profile' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
-                                    <i class="fas fa-user text-xs mr-2"></i>Мой профиль
-                                </a>
-                                <a href="{% url 'interface_settings' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
-                                    <i class="fas fa-sliders-h text-xs mr-2"></i>Настройки
-                                </a>
-                                <a href="{% url 'logout' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors text-red-300">
-                                    <i class="fas fa-sign-out-alt text-xs mr-2"></i>Выйти
-                                </a>
-                            </div>
-                        </details>
+                        <!-- Действия без группы -->
+                        <div class="space-y-1 mt-2 pt-2 border-t border-blue-700">
+                            <a href="{% url 'profile' %}" class="flex items-center px-3 py-1.5 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-user text-xs mr-2"></i>Мой профиль
+                            </a>
+                            <a href="{% url 'interface_settings' %}" class="flex items-center px-3 py-1.5 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-sliders-h text-xs mr-2"></i>Настройки
+                            </a>
+                            <a href="{% url 'logout' %}" class="flex items-center px-3 py-1.5 rounded-md text-white text-sm hover:bg-blue-700 transition-colors text-red-300">
+                                <i class="fas fa-sign-out-alt text-xs mr-2"></i>Выйти
+                            </a>
+                        </div>
                     </div>
                 {% else %}
                     <!-- Кнопки авторизации для неавторизованных пользователей -->

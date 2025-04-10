@@ -29,15 +29,15 @@ from users.models import CustomUser
 # Просмотр списка олимпиад
 def olympiad_list(request):
     now = timezone.now()
+    # Добавляем в предстоящие олимпиады также опубликованные олимпиады
     upcoming_olympiads = Olympiad.objects.filter(
-        status=Olympiad.OlympiadStatus.PUBLISHED, 
-        start_datetime__gt=now
+        Q(status=Olympiad.OlympiadStatus.PUBLISHED) | 
+        Q(status=Olympiad.OlympiadStatus.PUBLISHED, start_datetime__gt=now)
     ).order_by('start_datetime')
     
     active_olympiads = Olympiad.objects.filter(
-        status=Olympiad.OlympiadStatus.ACTIVE,
-        start_datetime__lte=now,
-        end_datetime__gte=now
+        Q(status=Olympiad.OlympiadStatus.ACTIVE) |
+        Q(status=Olympiad.OlympiadStatus.PUBLISHED, start_datetime__lte=now, end_datetime__gte=now),
     ).order_by('end_datetime')
     
     completed_olympiads = Olympiad.objects.filter(
