@@ -537,7 +537,7 @@ class SystemTester:
             lesson = Lesson.objects.filter(course=course).first()
             if lesson:
                 response = self.client.get(
-                    reverse('lesson_detail', kwargs={'course_slug': course.slug, 'lesson_id': lesson.id})
+                    reverse('lesson_detail', kwargs={'pk': lesson.id})
                 )
                 
                 if response.status_code == 200:
@@ -549,7 +549,7 @@ class SystemTester:
                 
                 # Проверка отметки урока как завершенного
                 response = self.client.post(
-                    reverse('lesson_complete', kwargs={'lesson_id': lesson.id}),
+                    reverse('lesson_complete', kwargs={'pk': lesson.id}),
                     follow=True
                 )
                 
@@ -587,7 +587,7 @@ class SystemTester:
             active_olympiads = [o for o in self.test_olympiads if o.status == Olympiad.OlympiadStatus.ACTIVE]
             if active_olympiads:
                 olympiad = active_olympiads[0]
-                response = self.client.get(reverse('olympiads:olympiad_detail', kwargs={'pk': olympiad.id}))
+                response = self.client.get(reverse('olympiads:olympiad_detail', kwargs={'olympiad_id': olympiad.id}))
                 
                 if response.status_code == 200:
                     self.test_results['passed'].append('Просмотр детальной страницы олимпиады')
