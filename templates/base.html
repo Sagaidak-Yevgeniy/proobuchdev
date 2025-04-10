@@ -362,47 +362,37 @@
                     </div>
                     {% endif %}
                     
-                    <!-- Современная кнопка-гамбургер для мобильного меню с креативной анимацией -->
-                    <button id="mobile-menu-button" class="lg:hidden relative flex-none w-12 h-12 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 text-white focus:outline-none shadow-lg hover:shadow-blue-500/30 transition-all duration-300 overflow-hidden group">
+                    <!-- Простая кнопка-гамбургер для мобильного меню -->
+                    <button id="mobile-menu-button" class="lg:hidden relative flex-none w-10 h-10 rounded-md bg-blue-600 text-white focus:outline-none transition-colors duration-200 hover:bg-blue-700">
                         <span class="sr-only">Открыть меню</span>
-                        <!-- Декоративный фоновый эффект -->
-                        <span class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></span>
-                        <!-- Креативные анимированные полоски бургера -->
+                        <!-- Анимированные полоски бургера -->
                         <div class="absolute inset-0 flex flex-col justify-center items-center w-full h-full">
-                            <span class="transform transition-all duration-300 menu-line menu-line-1 w-6 h-0.5 bg-white rounded-full origin-center"></span>
-                            <span class="transform transition-all duration-300 menu-line menu-line-2 w-4 h-0.5 bg-white rounded-full my-1.5 ml-2"></span>
-                            <span class="transform transition-all duration-300 menu-line menu-line-3 w-6 h-0.5 bg-white rounded-full origin-center"></span>
+                            <span class="transform transition-all duration-200 menu-line menu-line-1 w-5 h-0.5 bg-white rounded-full"></span>
+                            <span class="transform transition-all duration-200 menu-line menu-line-2 w-5 h-0.5 bg-white rounded-full my-1.5"></span>
+                            <span class="transform transition-all duration-200 menu-line menu-line-3 w-5 h-0.5 bg-white rounded-full"></span>
                         </div>
                     </button>
                 </div>
             </div>
             
-            <!-- Современное мобильное меню с эффектами (скрыто по умолчанию) -->
-            <div id="navigation-menu" class="hidden lg:hidden mt-3 pb-3 overflow-hidden animate-slideDown">
-                <!-- Основные разделы - модернизированный выбор -->
-                <div class="grid grid-cols-2 gap-2 border-b border-blue-500/30 pb-3 mb-3">
-                    <a href="{% url 'home' %}" class="flex items-center justify-center px-3 py-2.5 rounded-lg bg-blue-700/20 text-white font-medium hover:bg-blue-600 hover:scale-105 transition-all duration-300 transform shadow-inner shadow-white/5 backdrop-blur-sm">
-                        <div class="mr-2 flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center shadow-md">
-                            <i class="fas fa-home text-sm"></i>
-                        </div>
+            <!-- Мобильное меню (скрыто по умолчанию) -->
+            <div id="navigation-menu" class="hidden lg:hidden mt-2 pb-2 overflow-hidden">
+                <!-- Основные разделы - простой и равномерный дизайн -->
+                <div class="grid grid-cols-2 gap-1 border-b border-blue-500/30 pb-2 mb-2">
+                    <a href="{% url 'home' %}" class="flex items-center justify-start px-3 py-2 rounded-md bg-blue-600/30 text-white font-medium hover:bg-blue-600/50 transition-colors">
+                        <i class="fas fa-home text-sm mr-2"></i>
                         <span>Главная</span>
                     </a>
-                    <a href="{% url 'course_list' %}" class="flex items-center justify-center px-3 py-2.5 rounded-lg bg-blue-700/20 text-white font-medium hover:bg-blue-600 hover:scale-105 transition-all duration-300 transform shadow-inner shadow-white/5 backdrop-blur-sm">
-                        <div class="mr-2 flex-shrink-0 w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full flex items-center justify-center shadow-md">
-                            <i class="fas fa-book text-sm"></i>
-                        </div>
+                    <a href="{% url 'course_list' %}" class="flex items-center justify-start px-3 py-2 rounded-md bg-blue-600/30 text-white font-medium hover:bg-blue-600/50 transition-colors">
+                        <i class="fas fa-book text-sm mr-2"></i>
                         <span>Курсы</span>
                     </a>
-                    <a href="{% url 'olympiads:olympiad_list' %}" class="flex items-center justify-center px-3 py-2.5 rounded-lg bg-blue-700/20 text-white font-medium hover:bg-blue-600 hover:scale-105 transition-all duration-300 transform shadow-inner shadow-white/5 backdrop-blur-sm">
-                        <div class="mr-2 flex-shrink-0 w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center shadow-md">
-                            <i class="fas fa-medal text-sm"></i>
-                        </div>
+                    <a href="{% url 'olympiads:olympiad_list' %}" class="flex items-center justify-start px-3 py-2 rounded-md bg-blue-600/30 text-white font-medium hover:bg-blue-600/50 transition-colors">
+                        <i class="fas fa-medal text-sm mr-2"></i>
                         <span>Олимпиады</span>
                     </a>
-                    <a href="{% url 'leaderboard' %}" class="flex items-center justify-center px-3 py-2.5 rounded-lg bg-blue-700/20 text-white font-medium hover:bg-blue-600 hover:scale-105 transition-all duration-300 transform shadow-inner shadow-white/5 backdrop-blur-sm">
-                        <div class="mr-2 flex-shrink-0 w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-md">
-                            <i class="fas fa-list-ol text-sm"></i>
-                        </div>
+                    <a href="{% url 'leaderboard' %}" class="flex items-center justify-start px-3 py-2 rounded-md bg-blue-600/30 text-white font-medium hover:bg-blue-600/50 transition-colors">
+                        <i class="fas fa-list-ol text-sm mr-2"></i>
                         <span>Рейтинг</span>
                     </a>
                 </div>
@@ -410,47 +400,44 @@
                 {% if user.is_authenticated %}
                     <!-- Компактные группы в аккордеоне -->
                     <div class="space-y-1">
-                        <!-- Группа Обучение - Модернизированная -->
-                        <details class="group mb-2">
-                            <summary class="flex items-center px-4 py-2.5 rounded-lg bg-blue-600/50 text-white font-medium cursor-pointer hover:bg-blue-500 transition-all list-none shadow-md relative overflow-hidden">
-                                <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-blue-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                <div class="mr-2 flex-shrink-0 w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center shadow">
-                                    <i class="fas fa-graduation-cap text-sm"></i>
-                                </div>
-                                <span class="font-semibold">Обучение</span>
+                        <!-- Группа Обучение - Равномерная -->
+                        <details class="group mb-1">
+                            <summary class="flex items-center px-3 py-2 rounded-md bg-blue-600/30 text-white font-medium cursor-pointer hover:bg-blue-600/50 transition-colors list-none">
+                                <i class="fas fa-graduation-cap text-sm mr-2"></i>
+                                <span>Обучение</span>
                                 <i class="fas fa-chevron-down text-xs ml-auto transform group-open:rotate-180 transition-transform"></i>
                             </summary>
-                            <div class="mt-2 space-y-1 pl-4 pr-2 overflow-hidden transition-all">
-                                <a href="{% url 'my_courses' %}" class="flex items-center px-4 py-2 rounded-lg bg-blue-600/20 text-white text-sm hover:bg-blue-600/40 transition-all shadow-sm hover:translate-x-1 transform">
+                            <div class="mt-1 pl-5 space-y-1 overflow-hidden">
+                                <a href="{% url 'my_courses' %}" class="flex items-center px-3 py-1.5 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
                                     <i class="fas fa-user-graduate text-xs mr-2"></i>Мои курсы
                                 </a>
-                                <a href="{% url 'chat_history' %}" class="flex items-center px-4 py-2 rounded-lg bg-blue-600/20 text-white text-sm hover:bg-blue-600/40 transition-all shadow-sm hover:translate-x-1 transform">
+                                <a href="{% url 'chat_history' %}" class="flex items-center px-3 py-1.5 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
                                     <i class="fas fa-robot text-xs mr-2"></i>AI-ассистент
                                 </a>
-                                <a href="{% url 'achievement_list' %}" class="flex items-center px-4 py-2 rounded-lg bg-blue-600/20 text-white text-sm hover:bg-blue-600/40 transition-all shadow-sm hover:translate-x-1 transform">
+                                <a href="{% url 'achievement_list' %}" class="flex items-center px-3 py-1.5 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
                                     <i class="fas fa-trophy text-xs mr-2"></i>Достижения
                                 </a>
                             </div>
                         </details>
                         
                         <!-- Группа Дашборд -->
-                        <details class="group">
-                            <summary class="flex items-center px-3 py-1.5 rounded-md text-white font-medium cursor-pointer hover:bg-blue-700 transition-colors list-none">
+                        <details class="group mb-1">
+                            <summary class="flex items-center px-3 py-2 rounded-md bg-blue-600/30 text-white font-medium cursor-pointer hover:bg-blue-600/50 transition-colors list-none">
                                 <i class="fas fa-chart-line text-sm mr-2"></i>
                                 <span>Дашборд</span>
                                 <i class="fas fa-chevron-down text-xs ml-auto transform group-open:rotate-180 transition-transform"></i>
                             </summary>
-                            <div class="pl-3 mt-1 space-y-0.5">
-                                <a href="{% url 'dashboard:index' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                            <div class="mt-1 pl-5 space-y-1 overflow-hidden">
+                                <a href="{% url 'dashboard:index' %}" class="flex items-center px-3 py-1.5 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
                                     <i class="fas fa-chart-line text-xs mr-2"></i>Аналитика
                                 </a>
-                                <a href="{% url 'dashboard:events' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                <a href="{% url 'dashboard:events' %}" class="flex items-center px-3 py-1.5 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
                                     <i class="fas fa-calendar-alt text-xs mr-2"></i>Мероприятия
                                 </a>
-                                <a href="{% url 'dashboard:goals' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                <a href="{% url 'dashboard:goals' %}" class="flex items-center px-3 py-1.5 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
                                     <i class="fas fa-bullseye text-xs mr-2"></i>Цели
                                 </a>
-                                <a href="{% url 'my_certificates' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                <a href="{% url 'my_certificates' %}" class="flex items-center px-3 py-1.5 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
                                     <i class="fas fa-certificate text-xs mr-2"></i>Сертификаты
                                 </a>
                             </div>
@@ -458,17 +445,17 @@
                         
                         <!-- Группа Создать (для преподавателей) -->
                         {% if user.profile.is_teacher %}
-                        <details class="group">
-                            <summary class="flex items-center px-3 py-1.5 rounded-md text-white font-medium cursor-pointer hover:bg-blue-700 transition-colors list-none">
+                        <details class="group mb-1">
+                            <summary class="flex items-center px-3 py-2 rounded-md bg-blue-600/30 text-white font-medium cursor-pointer hover:bg-blue-600/50 transition-colors list-none">
                                 <i class="fas fa-plus-circle text-sm mr-2"></i>
                                 <span>Создать</span>
                                 <i class="fas fa-chevron-down text-xs ml-auto transform group-open:rotate-180 transition-transform"></i>
                             </summary>
-                            <div class="pl-3 mt-1 space-y-0.5">
-                                <a href="{% url 'course_create' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                            <div class="mt-1 pl-5 space-y-1 overflow-hidden">
+                                <a href="{% url 'course_create' %}" class="flex items-center px-3 py-1.5 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
                                     <i class="fas fa-book text-xs mr-2"></i>Новый курс
                                 </a>
-                                <a href="{% url 'olympiads:olympiad_create' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                <a href="{% url 'olympiads:olympiad_create' %}" class="flex items-center px-3 py-1.5 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
                                     <i class="fas fa-medal text-xs mr-2"></i>Новая олимпиада
                                 </a>
                             </div>
@@ -476,14 +463,14 @@
                         {% endif %}
                         
                         <!-- Действия без группы -->
-                        <div class="space-y-1 mt-2 pt-2 border-t border-blue-700">
-                            <a href="{% url 'profile' %}" class="flex items-center px-3 py-1.5 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                        <div class="space-y-1 mt-2 pt-2 border-t border-blue-700/30">
+                            <a href="{% url 'profile' %}" class="flex items-center px-3 py-2 rounded-md bg-blue-600/30 text-white text-sm hover:bg-blue-600/50 transition-colors">
                                 <i class="fas fa-user text-xs mr-2"></i>Мой профиль
                             </a>
-                            <a href="{% url 'interface_settings' %}" class="flex items-center px-3 py-1.5 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                            <a href="{% url 'interface_settings' %}" class="flex items-center px-3 py-2 rounded-md bg-blue-600/30 text-white text-sm hover:bg-blue-600/50 transition-colors">
                                 <i class="fas fa-sliders-h text-xs mr-2"></i>Настройки
                             </a>
-                            <a href="{% url 'logout' %}" class="flex items-center px-3 py-1.5 rounded-md text-white text-sm hover:bg-blue-700 transition-colors text-red-300">
+                            <a href="{% url 'logout' %}" class="flex items-center px-3 py-2 rounded-md bg-blue-600/30 text-white text-sm hover:bg-blue-600/50 transition-colors">
                                 <i class="fas fa-sign-out-alt text-xs mr-2"></i>Выйти
                             </a>
                         </div>
@@ -523,23 +510,15 @@
                 
                 if (line1 && line2 && line3) {
                     if (navigationMenu.classList.contains('hidden')) {
-                        // Возвращаем бургер с современной анимацией
+                        // Возвращаем бургер
                         line1.style.transform = 'translateY(0) rotate(0)';
-                        line1.style.width = '6px';
                         line2.style.opacity = '1';
-                        line2.style.width = '4px'; 
-                        line2.style.transform = 'translateX(0)';
                         line3.style.transform = 'translateY(0) rotate(0)';
-                        line3.style.width = '6px';
                     } else {
-                        // Превращаем в модный индикатор "меню открыто" (не классический крестик)
-                        line1.style.transform = 'translateY(4px) rotate(30deg)';
-                        line1.style.width = '8px';
-                        line2.style.opacity = '1';
-                        line2.style.width = '8px';
-                        line2.style.transform = 'translateX(-8px)';
-                        line3.style.transform = 'translateY(-4px) rotate(-30deg)';
-                        line3.style.width = '8px';
+                        // Простая анимация крестика
+                        line1.style.transform = 'translateY(6px) rotate(45deg)';
+                        line2.style.opacity = '0';
+                        line3.style.transform = 'translateY(-6px) rotate(-45deg)';
                     }
                 }
             });
