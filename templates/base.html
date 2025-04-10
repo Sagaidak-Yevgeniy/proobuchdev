@@ -347,9 +347,15 @@
                     </div>
                     {% endif %}
                     
-                    <!-- Гамбургер для мобильного меню -->
-                    <button id="mobile-menu-button" class="lg:hidden text-white focus:outline-none">
-                        <i class="fas fa-bars text-xl"></i>
+                    <!-- Современная кнопка-гамбургер для мобильного меню -->
+                    <button id="mobile-menu-button" class="lg:hidden relative flex-none w-10 h-10 rounded-full bg-blue-700/30 text-white focus:outline-none focus:ring focus:ring-blue-400/50 hover:bg-blue-700/50 transition-all duration-300 overflow-hidden group">
+                        <span class="sr-only">Открыть меню</span>
+                        <!-- Анимированные полоски бургера -->
+                        <div class="absolute inset-0 flex flex-col justify-center items-center w-full h-full">
+                            <span class="transform transition-all duration-300 menu-line menu-line-1 w-5 h-0.5 bg-white rounded-full group-hover:scale-110"></span>
+                            <span class="transform transition-all duration-300 menu-line menu-line-2 w-5 h-0.5 bg-white rounded-full my-1 group-hover:scale-110"></span>
+                            <span class="transform transition-all duration-300 menu-line menu-line-3 w-5 h-0.5 bg-white rounded-full group-hover:scale-110"></span>
+                        </div>
                     </button>
                 </div>
             </div>
@@ -477,6 +483,25 @@
         if (mobileMenuButton) {
             mobileMenuButton.addEventListener('click', function() {
                 navigationMenu.classList.toggle('hidden');
+                
+                // Анимация кнопки-бургера в крестик и обратно
+                const line1 = document.querySelector('.menu-line-1');
+                const line2 = document.querySelector('.menu-line-2');
+                const line3 = document.querySelector('.menu-line-3');
+                
+                if (line1 && line2 && line3) {
+                    if (navigationMenu.classList.contains('hidden')) {
+                        // Возвращаем бургер
+                        line1.style.transform = 'translateY(0) rotate(0)';
+                        line2.style.opacity = '1';
+                        line3.style.transform = 'translateY(0) rotate(0)';
+                    } else {
+                        // Превращаем в крестик
+                        line1.style.transform = 'translateY(8px) rotate(45deg)';
+                        line2.style.opacity = '0';
+                        line3.style.transform = 'translateY(-8px) rotate(-45deg)';
+                    }
+                }
             });
         }
         
