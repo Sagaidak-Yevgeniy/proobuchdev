@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Мои сертификаты{% endblock %}
+
+{% block styles %}
+<style>
+    .certificate-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .certificate-card {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        background-color: white;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .certificate-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    }
+    
+    .certificate-header {
+        background-color: #0070c0;
+        padding: 1rem;
+        color: white;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+    }
+    
+    .certificate-icon {
+        font-size: 1.5rem;
+        margin-right: 0.5rem;
+    }
+    
+    .certificate-title {
+        font-size: 0.9rem;
+        line-height: 1.2;
+    }
+    
+    .certificate-body {
+        padding: 1rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .certificate-id {
+        font-size: 0.8rem;
+        color: #666;
+        margin-bottom: 0.75rem;
+    }
+    
+    .certificate-entity {
+        font-weight: bold;
+        margin-bottom: 0.75rem;
+        font-size: 1.1rem;
+    }
+    
+    .certificate-info {
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .certificate-progress {
+        width: 100%;
+        height: 8px;
+        background-color: #f0f0f0;
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+    
+    .certificate-progress-bar {
+        height: 100%;
+        background-color: #0070c0;
+    }
+    
+    .certificate-date {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: auto;
+    }
+    
+    .certificate-footer {
+        border-top: 1px solid #eee;
+        padding: 0.75rem 1rem;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .certificate-btn {
+        padding: 0.5rem 0.75rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .btn-primary {
+        background-color: #0070c0;
+        color: white;
+    }
+    
+    .btn-secondary {
+        background-color: #f0f0f0;
+        color: #333;
+    }
+    
+    .certificate-btn i {
+        margin-right: 0.25rem;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        margin-left: auto;
+    }
+    
+    .status-active {
+        background-color: #e6f4ea;
+        color: #137333;
+    }
+    
+    .status-revoked {
+        background-color: #fce8e6;
+        color: #c5221f;
+    }
+    
+    .status-expired {
+        background-color: #fef7e0;
+        color: #b06000;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        margin: 2rem 0;
+    }
+    
+    .empty-state-icon {
+        font-size: 3rem;
+        color: #ccc;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state-text {
+        font-size: 1.25rem;
+        color: #666;
+        margin-bottom: 1.5rem;
+    }
+    
+    .empty-state-subtext {
+        font-size: 0.9rem;
+        color: #999;
+        margin-bottom: 2rem;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-2">Мои сертификаты</h1>
+    <p class="text-gray-600 mb-8">Здесь собраны все ваши сертификаты за пройденные курсы и участие в олимпиадах.</p>
+    
+    {% if certificates %}
+        <div class="certificate-grid">
+            {% for certificate in certificates %}
+                <div class="certificate-card">
+                    <div class="certificate-header">
+                        {% if certificate.certificate_type == 'course' %}
+                            <i class="fas fa-graduation-cap certificate-icon"></i>
+                        {% elif certificate.certificate_type == 'olympiad' %}
+                            <i class="fas fa-trophy certificate-icon"></i>
+                        {% else %}
+                            <i class="fas fa-medal certificate-icon"></i>
+                        {% endif %}
+                        <div class="certificate-title">{{ certificate.title }}</div>
+                        
+                        {% if certificate.status == 'active' %}
+                            <span class="status-badge status-active">Активен</span>
+                        {% elif certificate.status == 'revoked' %}
+                            <span class="status-badge status-revoked">Отозван</span>
+                        {% elif certificate.status == 'expired' %}
+                            <span class="status-badge status-expired">Истёк</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="certificate-body">
+                        <div class="certificate-id">№ {{ certificate.certificate_id }}</div>
+                        <div class="certificate-entity">{{ certificate.get_entity_name }}</div>
+                        
+                        <div class="certificate-info">
+                            <strong>Тип:</strong> {{ certificate.get_certificate_type_display }}
+                        </div>
+                        
+                        <div class="certificate-info">
+                            <strong>Результат:</strong> {{ certificate.earned_points }} из {{ certificate.max_points }} баллов ({{ certificate.completion_percentage }}%)
+                        </div>
+                        
+                        <div class="certificate-progress">
+                            <div class="certificate-progress-bar" style="width: {{ certificate.completion_percentage }}%"></div>
+                        </div>
+                        
+                        <div class="certificate-date">
+                            <i class="far fa-calendar-alt"></i> Выдан: {{ certificate.issued_date|date:"d.m.Y" }}
+                        </div>
+                    </div>
+                    
+                    <div class="certificate-footer">
+                        <a href="{% url 'view_certificate' certificate.certificate_id %}" class="certificate-btn btn-primary">
+                            <i class="far fa-eye"></i> Просмотр
+                        </a>
+                        <a href="{% url 'download_certificate_pdf' certificate.certificate_id %}" class="certificate-btn btn-secondary">
+                            <i class="fas fa-download"></i> Скачать PDF
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="far fa-file-certificate"></i>
+            </div>
+            <h2 class="empty-state-text">У вас пока нет сертификатов</h2>
+            <p class="empty-state-subtext">
+                Завершите курс или примите участие в олимпиаде, чтобы получить свой первый сертификат.
+            </p>
+            <a href="{% url 'courses_list' %}" class="btn btn-primary">
+                Перейти к курсам
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,419 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Проверка сертификата{% endblock %}
+
+{% block styles %}
+<style>
+    .verify-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+    
+    .verify-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .verify-title {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .verify-subtitle {
+        color: #6b7280;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .verify-form {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .input-group {
+        display: flex;
+        margin-bottom: 1rem;
+    }
+    
+    .input-field {
+        flex-grow: 1;
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 4px 0 0 4px;
+        font-size: 1rem;
+    }
+    
+    .input-field:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    }
+    
+    .submit-btn {
+        background-color: #3b82f6;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 0 4px 4px 0;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .submit-btn:hover {
+        background-color: #2563eb;
+    }
+    
+    .result-container {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 2rem;
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeIn 0.5s forwards;
+    }
+    
+    @keyframes fadeIn {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .result-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .result-icon {
+        font-size: 2rem;
+        margin-right: 1rem;
+    }
+    
+    .success-icon {
+        color: #10b981;
+    }
+    
+    .error-icon {
+        color: #ef4444;
+    }
+    
+    .result-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+    
+    .certificate-details {
+        border-top: 1px solid #e5e7eb;
+        padding-top: 1.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .detail-row {
+        display: flex;
+        margin-bottom: 1rem;
+    }
+    
+    .detail-label {
+        font-weight: 500;
+        width: 200px;
+        color: #4b5563;
+    }
+    
+    .detail-value {
+        flex-grow: 1;
+    }
+    
+    .certificate-status {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+    
+    .status-active {
+        background-color: #d1fae5;
+        color: #065f46;
+    }
+    
+    .status-revoked {
+        background-color: #fee2e2;
+        color: #b91c1c;
+    }
+    
+    .status-expired {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+    
+    .certificate-progress {
+        width: 100%;
+        height: 8px;
+        background-color: #e5e7eb;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+    
+    .certificate-progress-bar {
+        height: 100%;
+        background-color: #3b82f6;
+    }
+    
+    .scan-qr-section {
+        text-align: center;
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 1px dashed #d1d5db;
+    }
+    
+    .scan-qr-title {
+        font-size: 1.25rem;
+        font-weight: 500;
+        margin-bottom: 1rem;
+    }
+    
+    .scan-qr-text {
+        color: #6b7280;
+        margin-bottom: 1.5rem;
+    }
+    
+    .scanner-container {
+        width: 300px;
+        height: 300px;
+        margin: 0 auto;
+        position: relative;
+        background-color: #f3f4f6;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .scanner-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(255, 255, 255, 0.9);
+        z-index: 10;
+    }
+    
+    .scan-icon {
+        font-size: 3rem;
+        color: #9ca3af;
+        margin-bottom: 1rem;
+    }
+    
+    .scan-btn {
+        background-color: #3b82f6;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .scan-btn:hover {
+        background-color: #2563eb;
+    }
+    
+    .back-link {
+        display: block;
+        text-align: center;
+        margin-top: 1rem;
+        color: #4b5563;
+        text-decoration: none;
+    }
+    
+    .back-link:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="verify-container">
+    <div class="verify-header">
+        <h1 class="verify-title">Проверка подлинности сертификата</h1>
+        <p class="verify-subtitle">Убедитесь в подлинности сертификата, введя его уникальный номер или отсканировав QR-код.</p>
+    </div>
+    
+    <div class="verify-form">
+        <form method="post" action="{% url 'verify_certificate' %}">
+            {% csrf_token %}
+            <div class="input-group">
+                <input type="text" name="certificate_id" class="input-field" placeholder="Введите номер сертификата" value="{{ certificate_id }}" required>
+                <button type="submit" class="submit-btn">Проверить</button>
+            </div>
+        </form>
+    </div>
+    
+    {% if certificate or error %}
+        <div class="result-container">
+            {% if success %}
+                <div class="result-header">
+                    <div class="result-icon success-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h2 class="result-title">Сертификат подтверждён</h2>
+                </div>
+                <p>Сертификат с номером <strong>{{ certificate.certificate_id }}</strong> является подлинным.</p>
+                
+                <div class="certificate-details">
+                    <div class="detail-row">
+                        <div class="detail-label">Статус</div>
+                        <div class="detail-value">
+                            {% if certificate.status == 'active' %}
+                                <span class="certificate-status status-active">Действителен</span>
+                            {% elif certificate.status == 'revoked' %}
+                                <span class="certificate-status status-revoked">Отозван</span>
+                            {% elif certificate.status == 'expired' %}
+                                <span class="certificate-status status-expired">Истёк</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-label">Тип сертификата</div>
+                        <div class="detail-value">{{ certificate.get_certificate_type_display }}</div>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-label">Название</div>
+                        <div class="detail-value">{{ certificate.title }}</div>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-label">Выдан</div>
+                        <div class="detail-value">{{ certificate.user.get_full_name|default:certificate.user.username }}</div>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-label">Дата выдачи</div>
+                        <div class="detail-value">{{ certificate.issued_date|date:"d.m.Y" }}</div>
+                    </div>
+                    
+                    {% if certificate.expiry_date %}
+                    <div class="detail-row">
+                        <div class="detail-label">Действителен до</div>
+                        <div class="detail-value">{{ certificate.expiry_date|date:"d.m.Y" }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="detail-row">
+                        <div class="detail-label">
+                            {% if certificate.certificate_type == 'course' %}
+                                Курс
+                            {% elif certificate.certificate_type == 'olympiad' %}
+                                Олимпиада
+                            {% else %}
+                                Достижение
+                            {% endif %}
+                        </div>
+                        <div class="detail-value">{{ certificate.get_entity_name }}</div>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-label">Результат</div>
+                        <div class="detail-value">
+                            {{ certificate.earned_points }} из {{ certificate.max_points }} баллов ({{ certificate.completion_percentage }}%)
+                            <div class="certificate-progress">
+                                <div class="certificate-progress-bar" style="width: {{ certificate.completion_percentage }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="result-header">
+                    <div class="result-icon error-icon">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <h2 class="result-title">Сертификат не подтверждён</h2>
+                </div>
+                <p>{{ error }}</p>
+            {% endif %}
+            
+            <a href="{% url 'verify_certificate' %}" class="back-link">Проверить другой сертификат</a>
+        </div>
+    {% endif %}
+    
+    <div class="scan-qr-section">
+        <h2 class="scan-qr-title">Сканировать QR-код</h2>
+        <p class="scan-qr-text">Вы также можете отсканировать QR-код с сертификата для быстрой проверки его подлинности.</p>
+        
+        <div class="scanner-container">
+            <div class="scanner-overlay" id="scanner-overlay">
+                <div class="scan-icon">
+                    <i class="fas fa-qrcode"></i>
+                </div>
+                <button class="scan-btn" id="start-scan-btn">Начать сканирование</button>
+            </div>
+            <div id="scanner-placeholder"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Добавим JavaScript для сканирования QR-кода -->
+{% block scripts %}
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const scannerPlaceholder = document.getElementById('scanner-placeholder');
+        const scannerOverlay = document.getElementById('scanner-overlay');
+        const startScanBtn = document.getElementById('start-scan-btn');
+        
+        let html5QrCode;
+        
+        startScanBtn.addEventListener('click', function () {
+            html5QrCode = new Html5Qrcode("scanner-placeholder");
+            
+            const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+                // проверяем, содержит ли текст UUID сертификата или полный URL
+                const regex = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
+                const match = decodedText.match(regex);
+                
+                if (match) {
+                    const certificateId = match[1];
+                    window.location.href = `{% url 'verify_certificate' %}${certificateId}/`;
+                } else if (decodedText.includes('verify_certificate')) {
+                    window.location.href = decodedText;
+                } else {
+                    // Если QR-код не содержит ID сертификата
+                    alert("QR-код не содержит действительного ID сертификата.");
+                }
+                
+                html5QrCode.stop();
+                scannerOverlay.style.display = 'flex';
+            };
+            
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                qrCodeSuccessCallback
+            ).then(() => {
+                scannerOverlay.style.display = 'none';
+            }).catch((err) => {
+                alert("Ошибка при запуске сканера: " + err);
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

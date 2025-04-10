@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Сертификат {{ certificate.certificate_id }}{% endblock %}
+
+{% block styles %}
+<style>
+    .certificate-container {
+        background-color: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        margin: 2rem auto;
+        max-width: 1000px;
+    }
+    
+    .certificate-preview {
+        position: relative;
+        padding-top: 70.7%; /* Соотношение сторон A4 альбомной ориентации */
+        background-color: #f9f9f9;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .certificate-preview iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+    
+    .certificate-watermark {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 5rem;
+        color: rgba(0, 0, 0, 0.05);
+        font-weight: bold;
+        transform: rotate(-45deg);
+        pointer-events: none;
+        z-index: 10;
+    }
+    
+    .certificate-info {
+        padding: 2rem;
+    }
+    
+    .certificate-header {
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+    
+    .certificate-title {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.75rem;
+        font-weight: bold;
+    }
+    
+    .certificate-id {
+        font-size: 1rem;
+        color: #666;
+    }
+    
+    .certificate-status {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+    
+    .status-active {
+        background-color: #e6f4ea;
+        color: #137333;
+    }
+    
+    .status-revoked {
+        background-color: #fce8e6;
+        color: #c5221f;
+    }
+    
+    .status-expired {
+        background-color: #fef7e0;
+        color: #b06000;
+    }
+    
+    .certificate-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .detail-group {
+        margin-bottom: 1rem;
+    }
+    
+    .detail-label {
+        font-size: 0.875rem;
+        color: #666;
+        margin-bottom: 0.25rem;
+    }
+    
+    .detail-value {
+        font-size: 1rem;
+        font-weight: 500;
+    }
+    
+    .certificate-progress {
+        background-color: #f1f1f1;
+        height: 8px;
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 0.5rem 0 1.5rem;
+    }
+    
+    .certificate-progress-bar {
+        height: 100%;
+        background-color: #0070c0;
+    }
+    
+    .certificate-actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    
+    .btn-verify {
+        background-color: #3b82f6;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        transition: background-color 0.2s;
+    }
+    
+    .btn-verify:hover {
+        background-color: #2563eb;
+    }
+    
+    .btn-download {
+        background-color: #059669;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        transition: background-color 0.2s;
+    }
+    
+    .btn-download:hover {
+        background-color: #047857;
+    }
+    
+    .btn-back {
+        background-color: #6b7280;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        transition: background-color 0.2s;
+    }
+    
+    .btn-back:hover {
+        background-color: #4b5563;
+    }
+    
+    .btn-icon {
+        margin-right: 0.5rem;
+    }
+    
+    .verification-info {
+        text-align: center;
+        margin-top: 2rem;
+        padding: 1rem;
+        background-color: #f9fafb;
+        border-radius: 8px;
+    }
+    
+    .verification-info p {
+        margin-bottom: 0.5rem;
+        color: #4b5563;
+    }
+    
+    .verification-qr {
+        margin: 1rem auto;
+        max-width: 150px;
+    }
+    
+    .verification-code {
+        font-family: monospace;
+        background-color: #e5e7eb;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="certificate-container">
+        <div class="certificate-preview">
+            {% if certificate.status != 'active' %}
+                <div class="certificate-watermark">
+                    {% if certificate.status == 'revoked' %}
+                        ОТОЗВАН
+                    {% elif certificate.status == 'expired' %}
+                        ИСТЁК
+                    {% endif %}
+                </div>
+            {% endif %}
+            <iframe src="{% url 'view_certificate_pdf' certificate.certificate_id %}" frameborder="0"></iframe>
+        </div>
+        
+        <div class="certificate-info">
+            <div class="certificate-header">
+                <div>
+                    <h1 class="certificate-title">{{ certificate.title }}</h1>
+                    <div class="certificate-id">№ {{ certificate.certificate_id }}</div>
+                </div>
+                
+                {% if certificate.status == 'active' %}
+                    <div class="certificate-status status-active">
+                        <i class="fas fa-check-circle"></i> Действителен
+                    </div>
+                {% elif certificate.status == 'revoked' %}
+                    <div class="certificate-status status-revoked">
+                        <i class="fas fa-ban"></i> Отозван
+                    </div>
+                {% elif certificate.status == 'expired' %}
+                    <div class="certificate-status status-expired">
+                        <i class="fas fa-exclamation-circle"></i> Истёк
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="certificate-details">
+                <div>
+                    <div class="detail-group">
+                        <div class="detail-label">Тип</div>
+                        <div class="detail-value">{{ certificate.get_certificate_type_display }}</div>
+                    </div>
+                    
+                    <div class="detail-group">
+                        <div class="detail-label">
+                            {% if certificate.certificate_type == 'course' %}
+                                Курс
+                            {% elif certificate.certificate_type == 'olympiad' %}
+                                Олимпиада
+                            {% else %}
+                                Достижение
+                            {% endif %}
+                        </div>
+                        <div class="detail-value">{{ certificate.get_entity_name }}</div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="detail-group">
+                        <div class="detail-label">Выдан</div>
+                        <div class="detail-value">{{ certificate.issued_date|date:"d.m.Y" }}</div>
+                    </div>
+                    
+                    {% if certificate.expiry_date %}
+                        <div class="detail-group">
+                            <div class="detail-label">Действителен до</div>
+                            <div class="detail-value">{{ certificate.expiry_date|date:"d.m.Y" }}</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div>
+                <div class="detail-label">Результат: {{ certificate.earned_points }} из {{ certificate.max_points }} баллов ({{ certificate.completion_percentage }}%)</div>
+                <div class="certificate-progress">
+                    <div class="certificate-progress-bar" style="width: {{ certificate.completion_percentage }}%"></div>
+                </div>
+            </div>
+            
+            <div class="certificate-actions">
+                <a href="{% url 'my_certificates' %}" class="btn-back">
+                    <i class="fas fa-arrow-left btn-icon"></i> Назад к сертификатам
+                </a>
+                
+                <a href="{% url 'verify_certificate' certificate.certificate_id %}" class="btn-verify">
+                    <i class="fas fa-shield-check btn-icon"></i> Проверить
+                </a>
+                
+                <a href="{% url 'download_certificate_pdf' certificate.certificate_id %}" class="btn-download">
+                    <i class="fas fa-download btn-icon"></i> Скачать PDF
+                </a>
+            </div>
+            
+            <div class="verification-info">
+                <p>Для проверки подлинности этого сертификата:</p>
+                
+                {% if certificate.qr_code %}
+                    <div class="verification-qr">
+                        <img src="{{ certificate.qr_code.url }}" alt="QR код для проверки">
+                    </div>
+                {% endif %}
+                
+                <p>Перейдите по адресу <a href="{{ request.scheme }}://{{ request.get_host }}{% url 'verify_certificate' %}" target="_blank">{{ request.scheme }}://{{ request.get_host }}{% url 'verify_certificate' %}</a> и введите код: <span class="verification-code">{{ certificate.certificate_id }}</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
