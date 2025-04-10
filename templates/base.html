@@ -230,11 +230,14 @@
                 <!-- Десктопное меню - оптимизированное -->
                 <div class="hidden lg:flex space-x-1">
                     <!-- Основные разделы платформы - доступны всем -->
+                    <a href="{% url 'home' %}" class="px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors flex items-center">
+                        <i class="fas fa-home mr-1.5"></i>Главная
+                    </a>
                     <a href="{% url 'course_list' %}" class="px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors flex items-center">
-                        <i class="fas fa-book mr-1"></i>Курсы
+                        <i class="fas fa-book mr-1.5"></i>Курсы
                     </a>
                     <a href="{% url 'olympiads:olympiad_list' %}" class="px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors flex items-center">
-                        <i class="fas fa-medal mr-1"></i>Олимпиады
+                        <i class="fas fa-medal mr-1.5"></i>Олимпиады
                     </a>
                     
                     {% if user.is_authenticated %}
@@ -364,78 +367,108 @@
                 </div>
             </div>
             
-            <!-- Улучшенное мобильное меню (скрыто по умолчанию) -->
-            <div id="navigation-menu" class="hidden lg:hidden mt-3 space-y-1 pb-3">
+            <!-- Компактное мобильное меню (скрыто по умолчанию) -->
+            <div id="navigation-menu" class="hidden lg:hidden mt-2 pb-2">
                 <!-- Основные разделы -->
-                <div class="border-b border-blue-500 pb-2 mb-2">
-                    <a href="{% url 'course_list' %}" class="block px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
-                        <i class="fas fa-book mr-1"></i>Курсы
+                <div class="grid grid-cols-2 gap-1 border-b border-blue-500 pb-2 mb-2">
+                    <a href="{% url 'home' %}" class="flex items-center justify-center px-2 py-1.5 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-home text-sm mr-1.5"></i>Главная
                     </a>
-                    <a href="{% url 'olympiads:olympiad_list' %}" class="block px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
-                        <i class="fas fa-medal mr-1"></i>Олимпиады
+                    <a href="{% url 'course_list' %}" class="flex items-center justify-center px-2 py-1.5 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-book text-sm mr-1.5"></i>Курсы
+                    </a>
+                    <a href="{% url 'olympiads:olympiad_list' %}" class="flex items-center justify-center px-2 py-1.5 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-medal text-sm mr-1.5"></i>Олимпиады
+                    </a>
+                    <a href="{% url 'leaderboard' %}" class="flex items-center justify-center px-2 py-1.5 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-list-ol text-sm mr-1.5"></i>Рейтинг
                     </a>
                 </div>
                 
                 {% if user.is_authenticated %}
-                    <!-- Группа Обучение -->
-                    <div class="mb-3">
-                        <div class="px-3 py-1 text-sm text-blue-300">Обучение</div>
-                        <a href="{% url 'my_courses' %}" class="block px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-user-graduate mr-1"></i>Мои курсы
-                        </a>
-                        <a href="{% url 'chat_history' %}" class="block px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-robot mr-1"></i>AI-ассистент
-                        </a>
-                        <a href="{% url 'achievement_list' %}" class="block px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-trophy mr-1"></i>Достижения
-                        </a>
-                        <a href="{% url 'leaderboard' %}" class="block px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-list-ol mr-1"></i>Рейтинг
-                        </a>
-                    </div>
-                    
-                    <!-- Группа Дашборд -->
-                    <div class="mb-3">
-                        <div class="px-3 py-1 text-sm text-blue-300">Дашборд</div>
-                        <a href="{% url 'dashboard:index' %}" class="block px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-chart-line mr-1"></i>Аналитика
-                        </a>
-                        <a href="{% url 'dashboard:events' %}" class="block px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-calendar-alt mr-1"></i>Мероприятия
-                        </a>
-                        <a href="{% url 'dashboard:goals' %}" class="block px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-bullseye mr-1"></i>Цели
-                        </a>
-                        <a href="{% url 'my_certificates' %}" class="block px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-certificate mr-1"></i>Сертификаты
-                        </a>
-                    </div>
-                    
-                    <!-- Группа Создать (для преподавателей) -->
-                    {% if user.profile.is_teacher %}
-                    <div class="mb-3">
-                        <div class="px-3 py-1 text-sm text-blue-300">Создать</div>
-                        <a href="{% url 'course_create' %}" class="block px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-book mr-1"></i>Новый курс
-                        </a>
-                        <a href="{% url 'olympiads:olympiad_create' %}" class="block px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-medal mr-1"></i>Новая олимпиада
-                        </a>
-                    </div>
-                    {% endif %}
-                    
-                    <!-- Группа Профиль -->
-                    <div class="mb-3">
-                        <div class="px-3 py-1 text-sm text-blue-300">Профиль</div>
-                        <a href="{% url 'profile' %}" class="block px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-user mr-1"></i>Мой профиль
-                        </a>
-                        <a href="{% url 'interface_settings' %}" class="block px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-sliders-h mr-1"></i>Настройки интерфейса
-                        </a>
-                        <a href="{% url 'logout' %}" class="block px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors text-red-300">
-                            <i class="fas fa-sign-out-alt mr-1"></i>Выйти
-                        </a>
+                    <!-- Компактные группы в аккордеоне -->
+                    <div class="space-y-1">
+                        <!-- Группа Обучение -->
+                        <details class="group">
+                            <summary class="flex items-center px-3 py-1.5 rounded-md text-white font-medium cursor-pointer hover:bg-blue-700 transition-colors list-none">
+                                <i class="fas fa-graduation-cap text-sm mr-2"></i>
+                                <span>Обучение</span>
+                                <i class="fas fa-chevron-down text-xs ml-auto transform group-open:rotate-180 transition-transform"></i>
+                            </summary>
+                            <div class="pl-3 mt-1 space-y-0.5">
+                                <a href="{% url 'my_courses' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-user-graduate text-xs mr-2"></i>Мои курсы
+                                </a>
+                                <a href="{% url 'chat_history' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-robot text-xs mr-2"></i>AI-ассистент
+                                </a>
+                                <a href="{% url 'achievement_list' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-trophy text-xs mr-2"></i>Достижения
+                                </a>
+                            </div>
+                        </details>
+                        
+                        <!-- Группа Дашборд -->
+                        <details class="group">
+                            <summary class="flex items-center px-3 py-1.5 rounded-md text-white font-medium cursor-pointer hover:bg-blue-700 transition-colors list-none">
+                                <i class="fas fa-chart-line text-sm mr-2"></i>
+                                <span>Дашборд</span>
+                                <i class="fas fa-chevron-down text-xs ml-auto transform group-open:rotate-180 transition-transform"></i>
+                            </summary>
+                            <div class="pl-3 mt-1 space-y-0.5">
+                                <a href="{% url 'dashboard:index' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-chart-line text-xs mr-2"></i>Аналитика
+                                </a>
+                                <a href="{% url 'dashboard:events' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-calendar-alt text-xs mr-2"></i>Мероприятия
+                                </a>
+                                <a href="{% url 'dashboard:goals' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-bullseye text-xs mr-2"></i>Цели
+                                </a>
+                                <a href="{% url 'my_certificates' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-certificate text-xs mr-2"></i>Сертификаты
+                                </a>
+                            </div>
+                        </details>
+                        
+                        <!-- Группа Создать (для преподавателей) -->
+                        {% if user.profile.is_teacher %}
+                        <details class="group">
+                            <summary class="flex items-center px-3 py-1.5 rounded-md text-white font-medium cursor-pointer hover:bg-blue-700 transition-colors list-none">
+                                <i class="fas fa-plus-circle text-sm mr-2"></i>
+                                <span>Создать</span>
+                                <i class="fas fa-chevron-down text-xs ml-auto transform group-open:rotate-180 transition-transform"></i>
+                            </summary>
+                            <div class="pl-3 mt-1 space-y-0.5">
+                                <a href="{% url 'course_create' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-book text-xs mr-2"></i>Новый курс
+                                </a>
+                                <a href="{% url 'olympiads:olympiad_create' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-medal text-xs mr-2"></i>Новая олимпиада
+                                </a>
+                            </div>
+                        </details>
+                        {% endif %}
+                        
+                        <!-- Группа Профиль -->
+                        <details class="group">
+                            <summary class="flex items-center px-3 py-1.5 rounded-md text-white font-medium cursor-pointer hover:bg-blue-700 transition-colors list-none">
+                                <i class="fas fa-user text-sm mr-2"></i>
+                                <span>Профиль</span>
+                                <i class="fas fa-chevron-down text-xs ml-auto transform group-open:rotate-180 transition-transform"></i>
+                            </summary>
+                            <div class="pl-3 mt-1 space-y-0.5">
+                                <a href="{% url 'profile' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-user text-xs mr-2"></i>Мой профиль
+                                </a>
+                                <a href="{% url 'interface_settings' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-sliders-h text-xs mr-2"></i>Настройки
+                                </a>
+                                <a href="{% url 'logout' %}" class="flex items-center px-3 py-1 rounded-md text-white text-sm hover:bg-blue-700 transition-colors text-red-300">
+                                    <i class="fas fa-sign-out-alt text-xs mr-2"></i>Выйти
+                                </a>
+                            </div>
+                        </details>
                     </div>
                 {% else %}
                     <!-- Кнопки авторизации для неавторизованных пользователей -->
