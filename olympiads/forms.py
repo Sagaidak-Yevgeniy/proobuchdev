@@ -1,6 +1,6 @@
 from django import forms
 from django.utils import timezone
-from .models import Olympiad, Problem, TestCase, Submission
+from .models import Olympiad, OlympiadTask, OlympiadTestCase, OlympiadTaskSubmission
 
 import datetime
 
@@ -91,13 +91,11 @@ class ProblemForm(forms.ModelForm):
     """Форма для создания и редактирования задачи олимпиады"""
     
     class Meta:
-        model = Problem
-        fields = ['title', 'description', 'time_limit', 'memory_limit', 'points', 'order']
+        model = OlympiadTask
+        fields = ['title', 'description', 'points', 'order']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-input'}),
             'description': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 10}),
-            'time_limit': forms.NumberInput(attrs={'class': 'form-input'}),
-            'memory_limit': forms.NumberInput(attrs={'class': 'form-input'}),
             'points': forms.NumberInput(attrs={'class': 'form-input'}),
             'order': forms.NumberInput(attrs={'class': 'form-input'}),
         }
@@ -107,13 +105,14 @@ class TestCaseForm(forms.ModelForm):
     """Форма для создания и редактирования тестового случая"""
     
     class Meta:
-        model = TestCase
-        fields = ['input_data', 'expected_output', 'is_example', 'weight', 'order']
+        model = OlympiadTestCase
+        fields = ['input_data', 'expected_output', 'is_hidden', 'explanation', 'points', 'order']
         widgets = {
             'input_data': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 5}),
             'expected_output': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 5}),
-            'is_example': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
-            'weight': forms.NumberInput(attrs={'class': 'form-input', 'min': '1'}),
+            'is_hidden': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'explanation': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 3}),
+            'points': forms.NumberInput(attrs={'class': 'form-input', 'min': '1'}),
             'order': forms.NumberInput(attrs={'class': 'form-input'}),
         }
 
@@ -122,7 +121,7 @@ class SubmissionForm(forms.ModelForm):
     """Форма для отправки решения задачи"""
     
     class Meta:
-        model = Submission
+        model = OlympiadTaskSubmission
         fields = ['code']
         widgets = {
             'code': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 15}),

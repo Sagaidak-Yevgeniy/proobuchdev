@@ -10,6 +10,14 @@ from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import csrf_exempt
 
 from .code_runner import format_code as format_code_function
+from .forms import OlympiadForm, ProblemForm, TestCaseForm, SubmissionForm
+from .models import (
+    Olympiad, OlympiadTask, OlympiadParticipation, OlympiadTaskSubmission,
+    OlympiadInvitation, OlympiadUserInvitation, OlympiadMultipleChoiceOption,
+    OlympiadTestCase, OlympiadCertificate
+)
+from users.models import CustomUser
+
 import json
 import datetime
 import random
@@ -19,20 +27,6 @@ def generate_random_code(length=8):
     """Генерирует случайный код для приглашения"""
     chars = string.ascii_uppercase + string.digits
     return ''.join(random.choice(chars) for _ in range(length))
-
-from .models import (
-    Olympiad, 
-    OlympiadTask, 
-    OlympiadTestCase, 
-    OlympiadMultipleChoiceOption,
-    OlympiadParticipation, 
-    OlympiadTaskSubmission,
-    OlympiadInvitation,
-    OlympiadUserInvitation,
-    OlympiadCertificate
-)
-
-from users.models import CustomUser
 
 # Просмотр списка олимпиад
 def olympiad_list(request):
@@ -612,53 +606,50 @@ def olympiad_create(request):
         return redirect('olympiads:olympiad_list')
     
     if request.method == 'POST':
-        # Обрабатываем данные формы
-        title = request.POST.get('title')
-        description = request.POST.get('description')
-        short_description = request.POST.get('short_description', '')
-        start_datetime_str = request.POST.get('start_datetime')
-        end_datetime_str = request.POST.get('end_datetime')
-        time_limit_minutes = int(request.POST.get('time_limit_minutes', '0') or '0')
-        is_open = request.POST.get('is_open') == 'on'
-        min_passing_score = int(request.POST.get('min_passing_score', '0') or '0')
+        # Используем ModelForm для обработки данных
+        form = OlympiadForm(request.POST, request.FILES)
         
-        # Преобразуем строки дат в объекты datetime
-        from datetime import datetime
-        
-        if not start_datetime_str:
-            messages.error(request, _('Необходимо указать дату и время начала олимпиады'))
-            return redirect('olympiads:olympiad_create')
+        if form.is_valid():
+            # Создаем объект олимпиады, но не сохраняем его в базу
+            olympiad = form.save(commit=False)
+            # Добавляем автора олимпиады
+            olympiad.created_by = request.user
+            # Если статус не указан, устанавливаем черновик
+            if not olympiad.status:
+                olympiad.status = Olympiad.OlympiadStatus.DRAFT
+            # Сохраняем олимпиаду в базу
+            olympiad.save()
             
-        if not end_datetime_str:
-            messages.error(request, _('Необходимо указать дату и время окончания олимпиады'))
-            return redirect('olympiads:olympiad_create')
+            messages.success(request, _('Олимпиада успешно создана!'))
+            return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
+        else:
+            # Если форма не валидна, отображаем её с ошибками
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
             
-        try:
-            start_datetime = datetime.fromisoformat(start_datetime_str.replace('T', ' '))
-            end_datetime = datetime.fromisoformat(end_datetime_str.replace('T', ' '))
-        except ValueError:
-            messages.error(request, _('Некорректный формат даты и времени'))
-            return redirect('olympiads:olympiad_create')
-        
-        # Создаем новую олимпиаду
-        olympiad = Olympiad.objects.create(
-            title=title,
-            description=description,
-            short_description=short_description,
-            start_datetime=start_datetime,
-            end_datetime=end_datetime,
-            time_limit_minutes=time_limit_minutes,
-            is_open=is_open,
-            min_passing_score=min_passing_score,
-            created_by=request.user,
-            status=Olympiad.OlympiadStatus.DRAFT
-        )
-        
-        messages.success(request, _('Олимпиада успешно создана!'))
-        return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
+            context = {
+                'title': _('Создание олимпиады'),
+                'form': form
+            }
+            return render(request, 'olympiads/olympiad_form.html', context)
+    else:
+        # Создаем пустую форму с начальными значениями
+        form = OlympiadForm(initial={
+            'status': Olympiad.OlympiadStatus.DRAFT,
+            'is_open': True,
+            'is_rated': True,
+            'time_limit_minutes': 0,
+            'min_passing_score': 0
+        })
     
-    context = {}
-    return render(request, 'olympiads/manage/olympiad_create.html', context)
+    # Отображаем форму создания
+    context = {
+        'title': _('Создание олимпиады'),
+        'form': form
+    }
+    
+    return render(request, 'olympiads/olympiad_form.html', context)
 
 # Редактирование олимпиады
 @login_required
@@ -671,51 +662,36 @@ def olympiad_edit(request, olympiad_id):
         return redirect('olympiads:olympiad_list')
     
     if request.method == 'POST':
-        # Обрабатываем данные формы
-        olympiad.title = request.POST.get('title')
-        olympiad.description = request.POST.get('description')
-        olympiad.short_description = request.POST.get('short_description', '')
+        # Используем ModelForm для обработки данных
+        form = OlympiadForm(request.POST, request.FILES, instance=olympiad)
         
-        start_datetime_str = request.POST.get('start_datetime')
-        end_datetime_str = request.POST.get('end_datetime')
-        
-        # Преобразуем строки дат в объекты datetime
-        from datetime import datetime
-        
-        if not start_datetime_str:
-            messages.error(request, _('Необходимо указать дату и время начала олимпиады'))
-            return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
+        if form.is_valid():
+            # Сохраняем изменения
+            form.save()
+            messages.success(request, _('Олимпиада успешно обновлена!'))
             
-        if not end_datetime_str:
-            messages.error(request, _('Необходимо указать дату и время окончания олимпиады'))
+            # Перенаправляем на страницу редактирования с обновленной формой
             return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
-            
-        try:
-            olympiad.start_datetime = datetime.fromisoformat(start_datetime_str.replace('T', ' '))
-            olympiad.end_datetime = datetime.fromisoformat(end_datetime_str.replace('T', ' '))
-        except ValueError:
-            messages.error(request, _('Некорректный формат даты и времени'))
-            return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
-        
-        olympiad.time_limit_minutes = int(request.POST.get('time_limit_minutes', '0') or '0')
-        olympiad.is_open = request.POST.get('is_open') == 'on'
-        olympiad.min_passing_score = int(request.POST.get('min_passing_score', '0') or '0')
-        
-        # Сохраняем изменения
-        olympiad.save()
-        
-        messages.success(request, _('Олимпиада успешно обновлена!'))
-        return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
+        else:
+            # Если форма не валидна, отображаем её с ошибками
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
+    else:
+        # Создаем форму с данными олимпиады
+        form = OlympiadForm(instance=olympiad)
     
     # Получаем все задания олимпиады
     tasks = olympiad.tasks.all().order_by('order')
     
     context = {
+        'title': _('Редактирование олимпиады'),
         'olympiad': olympiad,
+        'form': form,
         'tasks': tasks
     }
     
-    return render(request, 'olympiads/manage/olympiad_edit.html', context)
+    return render(request, 'olympiads/olympiad_form.html', context)
 
 # Публикация олимпиады
 @login_required
