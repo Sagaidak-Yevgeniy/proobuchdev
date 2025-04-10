@@ -138,7 +138,7 @@
                             <span class="text-sm font-medium max-w-[120px] truncate">{{ user.username }}</span>
                             <i class="fas fa-chevron-down text-xs"></i>
                         </button>
-                        <div id="desktopUserDropdown" class="absolute right-0 hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-lg rounded-lg mt-2 py-2 w-60 z-20">
+                        <div id="desktopUserDropdown" class="absolute right-0 hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-lg rounded-lg mt-2 py-2 w-56 max-w-[calc(100vw-2rem)] z-20">
                             <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-600">
                                 <div class="font-medium">{{ user.get_full_name|default:user.username }}</div>
                                 <div class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</div>
@@ -359,7 +359,7 @@
     <!-- Скрипты -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     {% if user.is_authenticated %}
-    <script src="{% static 'js/notifications.js' %}"></script>
+    <script src="{% static 'js/notifications_new.js' %}"></script>
     {% endif %}
     {% block extra_js %}{% endblock %}
 </body>
