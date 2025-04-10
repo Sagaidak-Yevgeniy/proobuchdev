@@ -285,30 +285,93 @@ def olympiad_tasks(request, olympiad_id):
         # Сколько времени осталось до конца олимпиады
         time_left = (olympiad.end_datetime - now).total_seconds() / 60
     
-    # Получаем все задания олимпиады
-    tasks = olympiad.tasks.all().order_by('order')
+    # Получаем все задания олимпиады в порядке их выполнения
+    all_tasks = olympiad.tasks.all().order_by('order')
     
-    # Для каждого задания получаем информацию о сдаче
+    # Определяем, какие задания доступны участнику
+    available_tasks = []
+    current_task = None
+    next_task_locked = False
+    
+    # Подсчитываем статистику выполнения заданий
+    completed_tasks = 0
+    total_score = 0
+    
+    # Для каждого задания получаем информацию о сдаче и доступности
     task_statuses = {}
-    for task in tasks:
+    
+    for task in all_tasks:
+        # Получаем последнюю отправку для задания
         submission = OlympiadTaskSubmission.objects.filter(
             participation=participation,
             task=task
         ).order_by('-submitted_at').first()
         
+        is_correct = submission.is_correct if submission else False
+        has_submission = submission is not None
+        score = submission.score if submission else 0
+        
+        if is_correct:
+            completed_tasks += 1
+            total_score += score
+        
+        # Первое задание всегда доступно
+        if len(available_tasks) == 0:
+            available = True
+        # Последующие задания доступны только если предыдущее выполнено правильно
+        elif next_task_locked:
+            available = False
+        else:
+            # Если предыдущее задание решено правильно, открываем следующее
+            prev_task = available_tasks[-1]
+            prev_submission = OlympiadTaskSubmission.objects.filter(
+                participation=participation,
+                task=prev_task
+            ).order_by('-submitted_at').first()
+            
+            if prev_submission and prev_submission.is_correct:
+                available = True
+            else:
+                available = False
+                next_task_locked = True
+        
+        # Добавляем информацию о доступности задания
         task_statuses[task.id] = {
-            'submitted': submission is not None,
-            'is_correct': submission.is_correct if submission else False,
-            'score': submission.score if submission else 0,
-            'submission_id': submission.id if submission else None
+            'submitted': has_submission,
+            'is_correct': is_correct,
+            'score': score,
+            'submission_id': submission.id if submission else None,
+            'available': available
         }
+        
+        # Если задание доступно, добавляем его в список
+        if available:
+            available_tasks.append(task)
+            # Если ещё нет выбранного текущего задания или предыдущее задание
+            # ещё не решено правильно, устанавливаем его как текущее
+            if current_task is None or not is_correct:
+                current_task = task
+    
+    # Если нет текущего задания, выбираем первое доступное
+    if current_task is None and available_tasks:
+        current_task = available_tasks[0]
+    
+    # Вычисляем прогресс выполнения олимпиады
+    progress = {
+        'completed': completed_tasks,
+        'total': all_tasks.count(),
+        'percent': int(completed_tasks / max(1, all_tasks.count()) * 100)
+    }
     
     context = {
         'olympiad': olympiad,
         'participation': participation,
-        'tasks': tasks,
+        'tasks': all_tasks,
+        'available_tasks': available_tasks,
         'task_statuses': task_statuses,
-        'time_left_minutes': int(time_left)
+        'current_task': current_task,
+        'time_left_minutes': int(time_left),
+        'progress': progress
     }
     
     return render(request, 'olympiads/olympiad_tasks.html', context)
@@ -342,6 +405,39 @@ def olympiad_task_detail(request, olympiad_id, task_id):
         messages.info(request, _('Время олимпиады истекло'))
         return redirect('olympiads:olympiad_results', olympiad_id=olympiad.id)
     
+    # Проверяем, доступно ли это задание пользователю
+    # Получаем все задания олимпиады
+    tasks = olympiad.tasks.all().order_by('order')
+    
+    # Определяем, какие задания доступны участнику
+    task_available = False
+    
+    if tasks.first().id == task.id:
+        # Первое задание всегда доступно
+        task_available = True
+    else:
+        # Находим предыдущее задание
+        prev_task = None
+        for t in tasks:
+            if t.id == task.id:
+                break
+            prev_task = t
+        
+        # Проверяем, решено ли предыдущее задание
+        if prev_task:
+            prev_submission = OlympiadTaskSubmission.objects.filter(
+                participation=participation,
+                task=prev_task,
+                is_correct=True
+            ).first()
+            
+            task_available = prev_submission is not None
+    
+    # Если задание недоступно, перенаправляем на страницу со списком заданий
+    if not task_available:
+        messages.error(request, _('Это задание будет доступно после выполнения предыдущего задания'))
+        return redirect('olympiads:olympiad_tasks', olympiad_id=olympiad.id)
+    
     # Получаем последнюю отправку для этого задания
     submission = OlympiadTaskSubmission.objects.filter(
         participation=participation,
@@ -356,16 +452,80 @@ def olympiad_task_detail(request, olympiad_id, task_id):
     if task.task_type == OlympiadTask.TaskType.MULTIPLE_CHOICE:
         options = task.options.all().order_by('order')
     
+    # Получаем предыдущее и следующее задание для навигации
+    prev_task = None
+    next_task = None
+    found_current = False
+    
+    for t in tasks:
+        if found_current:
+            next_task = t
+            break
+        elif t.id == task.id:
+            found_current = True
+        else:
+            prev_task = t
+    
+    # Проверяем, доступно ли следующее задание
+    next_task_available = False
+    if next_task and submission and submission.is_correct:
+        next_task_available = True
+    
+    # Получаем информацию о прогрессе
+    completed_tasks = OlympiadTaskSubmission.objects.filter(
+        participation=participation,
+        is_correct=True
+    ).values('task').distinct().count()
+    
+    progress = {
+        'completed': completed_tasks,
+        'total': tasks.count(),
+        'percent': int(completed_tasks / max(1, tasks.count()) * 100)
+    }
+    
+    # Получаем информацию о времени
+    if olympiad.time_limit_minutes > 0:
+        time_passed = (now - participation.started_at).total_seconds() / 60
+        time_left = max(0, olympiad.time_limit_minutes - time_passed)
+    else:
+        time_left = (olympiad.end_datetime - now).total_seconds() / 60
+    
+    # Для задания типа "программирование" подготавливаем редактор кода
+    initial_code = ""
+    language = "python"
+    
+    if task.task_type == OlympiadTask.TaskType.PROGRAMMING:
+        if submission:
+            initial_code = submission.code
+        
+        # Настройка URL для редактора кода
+        urls = {
+            'execute': reverse('olympiads:olympiad_task_execute', args=[olympiad.id, task.id]),
+            'save': reverse('olympiads:olympiad_task_save', args=[olympiad.id, task.id]),
+            'test': reverse('olympiads:olympiad_task_test', args=[olympiad.id, task.id]),
+        }
+    else:
+        urls = {}
+    
     context = {
         'olympiad': olympiad,
         'participation': participation,
         'task': task,
         'submission': submission,
         'test_cases': test_cases,
-        'options': options
+        'options': options,
+        'prev_task': prev_task,
+        'next_task': next_task,
+        'next_task_available': next_task_available,
+        'progress': progress,
+        'time_left_minutes': int(time_left),
+        'initial_code': initial_code,
+        'language': language,
+        'urls': urls
     }
     
-    return render(request, 'olympiads/olympiad_task_detail.html', context)
+    # Используем шаблон olympiad_task.html для отображения задания
+    return render(request, 'olympiads/olympiad_task.html', context)
 
 # Отправка решения задания
 @login_required

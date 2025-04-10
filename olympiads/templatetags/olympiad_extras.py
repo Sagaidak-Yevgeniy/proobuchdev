@@ -1,188 +1,71 @@
 from django import template
-from django.template.defaultfilters import stringfilter
+from django.utils.safestring import mark_safe
+from olympiads.models import OlympiadTaskSubmission
 
 register = template.Library()
 
 @register.filter
 def is_correct(task, participation):
-    """
-    Проверяет, правильно ли решено задание пользователем
-    
-    Args:
-        task: объект задания OlympiadTask
-        participation: объект участия OlympiadParticipation
-    
-    Returns:
-        bool: True, если задание решено правильно, иначе False
-    """
-    if not task or not participation:
-        return False
-    
-    submission = task.submissions.filter(
-        participation=participation,
+    """Проверяет, правильно ли выполнено задание"""
+    submission = OlympiadTaskSubmission.objects.filter(
+        participation=participation, 
+        task=task, 
         is_correct=True
     ).first()
-    
     return submission is not None
 
 @register.filter
 def is_attempted(task, participation):
-    """
-    Проверяет, была ли попытка решить задание пользователем
-    
-    Args:
-        task: объект задания OlympiadTask
-        participation: объект участия OlympiadParticipation
-    
-    Returns:
-        bool: True, если была попытка решить задание, иначе False
-    """
-    if not task or not participation:
-        return False
-    
-    submission = task.submissions.filter(
-        participation=participation
-    ).exists()
-    
-    return submission
+    """Проверяет, была ли попытка выполнить задание"""
+    submission = OlympiadTaskSubmission.objects.filter(
+        participation=participation, 
+        task=task
+    ).first()
+    return submission is not None
 
 @register.filter
-def attempts_count(task, participation):
-    """
-    Возвращает количество попыток решения задания пользователем
-    
-    Args:
-        task: объект задания OlympiadTask
-        participation: объект участия OlympiadParticipation
-    
-    Returns:
-        int: количество попыток
-    """
-    if not task or not participation:
-        return 0
-    
-    return task.submissions.filter(
-        participation=participation
-    ).count()
+def get_item(dictionary, key):
+    """Получает значение из словаря по ключу"""
+    return dictionary.get(key, {})
 
 @register.filter
-def max_score(task, participation):
-    """
-    Возвращает максимальный балл за задание
+def task_status_badge(task, participation):
+    """Возвращает HTML-бейдж со статусом задания"""
+    submission = OlympiadTaskSubmission.objects.filter(
+        participation=participation, 
+        task=task
+    ).order_by('-submitted_at').first()
     
-    Args:
-        task: объект задания OlympiadTask
-        participation: объект участия OlympiadParticipation
+    if not submission:
+        return mark_safe('<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">Не начато</span>')
     
-    Returns:
-        int: максимальный балл
-    """
-    if not task:
-        return 0
+    if submission.is_correct:
+        return mark_safe('<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200"><svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>Выполнено</span>')
     
-    return task.points
+    return mark_safe('<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200"><svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>В процессе</span>')
 
 @register.filter
-def get_score(task, participation):
-    """
-    Возвращает набранные баллы за задание
+def task_score(task, participation):
+    """Возвращает баллы за задание"""
+    submission = OlympiadTaskSubmission.objects.filter(
+        participation=participation, 
+        task=task
+    ).order_by('-submitted_at').first()
     
-    Args:
-        task: объект задания OlympiadTask
-        participation: объект участия OlympiadParticipation
+    if not submission:
+        return f"0/{task.points}"
     
-    Returns:
-        int: набранные баллы
-    """
-    if not task or not participation:
-        return 0
-    
-    submission = task.submissions.filter(
-        participation=participation,
-    ).order_by('-score').first()
-    
-    return submission.score if submission else 0
+    return f"{submission.score}/{task.points}"
 
 @register.filter
-def format_time_remaining(milliseconds):
-    """
-    Форматирует оставшееся время в удобный для чтения формат
+def task_availability_icon(task, task_statuses):
+    """Возвращает иконку доступности задания"""
+    task_status = task_statuses.get(task.id, {})
     
-    Args:
-        milliseconds: оставшееся время в миллисекундах
+    if task_status.get('is_correct', False):
+        return mark_safe('<i class="fas fa-check-circle text-green-500"></i>')
     
-    Returns:
-        str: отформатированная строка времени
-    """
-    if milliseconds <= 0:
-        return "00:00:00"
+    if task_status.get('available', False):
+        return mark_safe('<i class="fas fa-unlock text-blue-500"></i>')
     
-    # Переводим в секунды
-    seconds = milliseconds // 1000
-    
-    # Рассчитываем часы, минуты и секунды
-    hours = seconds // 3600
-    seconds %= 3600
-    minutes = seconds // 60
-    seconds %= 60
-    
-    # Если больше 24 часов, показываем в днях
-    if hours >= 24:
-        days = hours // 24
-        hours %= 24
-        return f"{days}д {hours:02d}:{minutes:02d}:{seconds:02d}"
-    
-    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-
-@register.filter
-def get_best_submission(task, participation):
-    """
-    Возвращает лучшую отправку для задания
-    
-    Args:
-        task: объект задания OlympiadTask
-        participation: объект участия OlympiadParticipation
-    
-    Returns:
-        OlympiadTaskSubmission: лучшая отправка или None
-    """
-    if not task or not participation:
-        return None
-    
-    return task.submissions.filter(
-        participation=participation
-    ).order_by('-score', '-submitted_at').first()
-
-@register.filter
-def format_time(seconds):
-    """
-    Форматирует время выполнения в удобный для чтения формат
-    
-    Args:
-        seconds: время в секундах
-    
-    Returns:
-        str: отформатированная строка времени
-    """
-    if seconds < 0.001:
-        return f"{seconds * 1000000:.2f} мкс"
-    elif seconds < 1:
-        return f"{seconds * 1000:.2f} мс"
-    else:
-        return f"{seconds:.2f} сек"
-
-@register.filter
-def format_memory(megabytes):
-    """
-    Форматирует объем используемой памяти в удобный для чтения формат
-    
-    Args:
-        megabytes: объем памяти в мегабайтах
-    
-    Returns:
-        str: отформатированная строка объема памяти
-    """
-    if megabytes < 0.1:
-        return f"{megabytes * 1024:.2f} КБ"
-    else:
-        return f"{megabytes:.2f} МБ"
+    return mark_safe('<i class="fas fa-lock text-gray-500"></i>')

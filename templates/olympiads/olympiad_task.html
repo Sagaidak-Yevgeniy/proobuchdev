@@ -1,0 +1,676 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ task.title }} | {{ olympiad.title }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/codemirror.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/theme/dracula.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/styles/atom-one-dark.min.css">
+<style>
+    .CodeMirror {
+        height: 400px;
+        border-radius: 0.375rem;
+    }
+    .task-navigation-button {
+        opacity: 0.7;
+        transform: translateY(0);
+        transition: all 0.2s ease;
+    }
+    .task-navigation-button:hover:not(:disabled) {
+        opacity: 1;
+        transform: translateY(-2px);
+    }
+    .task-navigation-button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+    .task-test-case {
+        transition: all 0.3s ease;
+    }
+    .task-test-case:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    .test-case-result {
+        transition: all 0.3s ease;
+        transform: translateX(0);
+    }
+    .test-case-result.success {
+        background-color: rgba(16, 185, 129, 0.1);
+    }
+    .test-case-result.error {
+        background-color: rgba(239, 68, 68, 0.1);
+    }
+    .test-case-result:hover {
+        transform: translateX(5px);
+    }
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+    .pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Хлебные крошки -->
+    <div class="mb-6">
+        <nav class="flex" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li class="inline-flex items-center">
+                    <a href="{% url 'index' %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white">
+                        <svg class="w-3 h-3 mr-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2a1 1 0 0 0 1.414 1.414L2 10.414V18a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.586l.293.293a1 1 0 0 0 1.414-1.414Z"/>
+                        </svg>
+                        {% trans 'Главная' %}
+                    </a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                        </svg>
+                        <a href="{% url 'olympiads:olympiad_list' %}" class="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ml-2 dark:text-gray-400 dark:hover:text-white">{% trans 'Олимпиады' %}</a>
+                    </div>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                        </svg>
+                        <a href="{% url 'olympiads:olympiad_detail' olympiad_id=olympiad.id %}" class="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ml-2 dark:text-gray-400 dark:hover:text-white">{{ olympiad.title }}</a>
+                    </div>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                        </svg>
+                        <a href="{% url 'olympiads:olympiad_tasks' olympiad_id=olympiad.id %}" class="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ml-2 dark:text-gray-400 dark:hover:text-white">{% trans 'Задания' %}</a>
+                    </div>
+                </li>
+                <li aria-current="page">
+                    <div class="flex items-center">
+                        <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                        </svg>
+                        <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2 dark:text-gray-400">{{ task.title }}</span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Левая колонка - информация и навигация -->
+        <div class="lg:col-span-1">
+            <div class="space-y-6">
+                <!-- Таймер -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                            <i class="fas fa-hourglass-half text-red-500 mr-2"></i>
+                            {% trans 'Оставшееся время' %}
+                        </h2>
+                    </div>
+                    <div class="p-4">
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-red-600 dark:text-red-400" id="countdown">
+                                {{ time_left_minutes|floatformat:0 }} {% trans 'мин' %}
+                            </div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                {% if olympiad.time_limit_minutes > 0 %}
+                                    {% trans 'Персональный таймер' %}
+                                {% else %}
+                                    {% trans 'До конца олимпиады' %}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mt-3 dark:bg-gray-700">
+                            <div id="timer-progress" class="bg-red-600 h-2 rounded-full transition-all duration-1000" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Прогресс -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                            <i class="fas fa-tasks text-blue-500 mr-2"></i>
+                            {% trans 'Прогресс' %}
+                        </h2>
+                    </div>
+                    <div class="p-4">
+                        <div class="mb-2 flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {% trans 'Выполнено' %}: {{ progress.completed }} / {{ progress.total }}
+                            </span>
+                            <span class="text-sm font-bold text-blue-600 dark:text-blue-400">{{ participation.score }} / {{ participation.max_score }}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mb-4">
+                            <div class="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full" style="width: {{ progress.percent }}%"></div>
+                        </div>
+                        <a href="{% url 'olympiads:olympiad_tasks' olympiad_id=olympiad.id %}" 
+                           class="inline-flex items-center text-sm font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                            <i class="fas fa-list-ul mr-1"></i> {% trans 'Список всех заданий' %}
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Навигация между заданиями -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                            <i class="fas fa-exchange-alt text-purple-500 mr-2"></i>
+                            {% trans 'Навигация' %}
+                        </h2>
+                    </div>
+                    <div class="p-4 flex justify-between">
+                        {% if prev_task %}
+                            <a href="{% url 'olympiads:olympiad_task_detail' olympiad_id=olympiad.id task_id=prev_task.id %}" 
+                               class="task-navigation-button inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                                <i class="fas fa-arrow-left mr-1"></i> {% trans 'Предыдущее' %}
+                            </a>
+                        {% else %}
+                            <button disabled class="task-navigation-button inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg dark:bg-gray-700 dark:text-gray-300">
+                                <i class="fas fa-arrow-left mr-1"></i> {% trans 'Предыдущее' %}
+                            </button>
+                        {% endif %}
+                        
+                        {% if next_task %}
+                            <a href="{% url 'olympiads:olympiad_task_detail' olympiad_id=olympiad.id task_id=next_task.id %}" 
+                               class="task-navigation-button inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 {% if not next_task_available %}opacity-50 pointer-events-none{% endif %}">
+                                {% trans 'Следующее' %} <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+                        {% else %}
+                            <button disabled class="task-navigation-button inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg dark:bg-gray-700 dark:text-gray-300">
+                                {% trans 'Следующее' %} <i class="fas fa-arrow-right ml-1"></i>
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Действия -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                            <i class="fas fa-cog text-gray-500 mr-2"></i>
+                            {% trans 'Действия' %}
+                        </h2>
+                    </div>
+                    <div class="p-4">
+                        <a href="{% url 'olympiads:olympiad_detail' olympiad_id=olympiad.id %}" 
+                           class="w-full mb-2 inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                            <i class="fas fa-info-circle mr-1.5"></i> {% trans 'Информация об олимпиаде' %}
+                        </a>
+                        
+                        <a href="{% url 'olympiads:olympiad_finish' olympiad_id=olympiad.id %}" 
+                           class="w-full inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+                           onclick="return confirm('{% trans 'Вы уверены, что хотите завершить олимпиаду? Это действие нельзя отменить!' %}');">
+                            <i class="fas fa-flag-checkered mr-1.5"></i> {% trans 'Завершить олимпиаду' %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Правая колонка - содержимое задания -->
+        <div class="lg:col-span-3">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+                <!-- Заголовок задания -->
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800 dark:text-white">{{ task.title }}</h1>
+                        <div class="flex items-center mt-1 space-x-2">
+                            <span class="
+                                {% if task.task_type == 'programming' %}
+                                    text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900
+                                {% elif task.task_type == 'multiple_choice' %}
+                                    text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900
+                                {% else %}
+                                    text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900
+                                {% endif %}
+                                px-2 py-0.5 rounded-full text-xs font-medium">
+                                {{ task.get_task_type_display }}
+                            </span>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">{{ task.points }} {% trans 'баллов' %}</span>
+                        </div>
+                    </div>
+                    
+                    {% if submission %}
+                        <div>
+                            {% if submission.is_correct %}
+                                <div class="inline-flex items-center px-3 py-1 text-sm font-medium text-green-800 bg-green-100 rounded-full dark:bg-green-900 dark:text-green-300">
+                                    <i class="fas fa-check mr-1"></i> {% trans 'Выполнено' %}
+                                </div>
+                            {% else %}
+                                <div class="inline-flex items-center px-3 py-1 text-sm font-medium text-yellow-800 bg-yellow-100 rounded-full dark:bg-yellow-900 dark:text-yellow-300">
+                                    <i class="fas fa-clock mr-1"></i> {% trans 'В процессе' %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Описание задания -->
+                <div class="p-6 prose dark:prose-invert max-w-none">
+                    {{ task.description|safe }}
+                </div>
+                
+                <!-- Формы для разных типов заданий -->
+                <div class="p-6 border-t border-gray-200 dark:border-gray-700">
+                    {% if task.task_type == 'programming' %}
+                        <!-- Программирование -->
+                        <div>
+                            <!-- Примеры тестовых случаев -->
+                            {% if test_cases %}
+                                <div class="mb-6">
+                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">{% trans 'Примеры тестов' %}</h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {% for test_case in test_cases %}
+                                            <div class="task-test-case bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                                <div class="mb-2">
+                                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Входные данные' %}:</span>
+                                                    <pre class="mt-1 p-2 bg-gray-100 dark:bg-gray-800 rounded-md text-gray-800 dark:text-gray-200 text-sm font-mono overflow-x-auto">{{ test_case.input_data }}</pre>
+                                                </div>
+                                                <div>
+                                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Ожидаемый результат' %}:</span>
+                                                    <pre class="mt-1 p-2 bg-gray-100 dark:bg-gray-800 rounded-md text-gray-800 dark:text-gray-200 text-sm font-mono overflow-x-auto">{{ test_case.expected_output }}</pre>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Редактор кода -->
+                            <form id="code-form" method="post" action="{% url 'olympiads:olympiad_task_submit' olympiad_id=olympiad.id task_id=task.id %}">
+                                {% csrf_token %}
+                                <div class="mb-4">
+                                    <label for="code" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{% trans 'Ваше решение' %}:</label>
+                                    <textarea id="code" name="code" class="hidden">{{ initial_code }}</textarea>
+                                    <div id="editor-container" class="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden"></div>
+                                </div>
+                                
+                                <!-- Кнопки управления -->
+                                <div class="flex flex-wrap gap-2">
+                                    <button type="button" id="run-code" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors flex items-center">
+                                        <i class="fas fa-play mr-1.5"></i> {% trans 'Запустить' %}
+                                    </button>
+                                    
+                                    <button type="button" id="test-code" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center">
+                                        <i class="fas fa-vial mr-1.5"></i> {% trans 'Проверить на тестах' %}
+                                    </button>
+                                    
+                                    <button type="submit" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center">
+                                        <i class="fas fa-paper-plane mr-1.5"></i> {% trans 'Отправить решение' %}
+                                    </button>
+                                    
+                                    <button type="button" id="format-code" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors flex items-center">
+                                        <i class="fas fa-align-left mr-1.5"></i> {% trans 'Форматировать код' %}
+                                    </button>
+                                </div>
+                                
+                                <!-- Результаты выполнения -->
+                                <div id="execution-results" class="mt-6 hidden">
+                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">{% trans 'Результаты выполнения' %}</h3>
+                                    
+                                    <div id="execution-output" class="mt-3">
+                                        <div class="mb-2">
+                                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Стандартный вывод' %}:</span>
+                                            <pre id="stdout" class="mt-1 p-3 bg-gray-100 dark:bg-gray-800 rounded-md text-gray-800 dark:text-gray-200 text-sm font-mono overflow-x-auto min-h-[60px]"></pre>
+                                        </div>
+                                        
+                                        <div class="mb-2">
+                                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Стандартный поток ошибок' %}:</span>
+                                            <pre id="stderr" class="mt-1 p-3 bg-gray-100 dark:bg-gray-800 rounded-md text-red-600 dark:text-red-400 text-sm font-mono overflow-x-auto min-h-[60px]"></pre>
+                                        </div>
+                                        
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Время выполнения' %}:</span>
+                                            <span id="execution-time" class="ml-2 text-sm text-gray-600 dark:text-gray-400"></span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="test-results" class="mt-4 hidden">
+                                        <h4 class="text-md font-semibold text-gray-800 dark:text-white mb-2">{% trans 'Результаты тестов' %}</h4>
+                                        <div id="test-cases-results" class="space-y-2"></div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        
+                    {% elif task.task_type == 'multiple_choice' %}
+                        <!-- Вопрос с выбором вариантов -->
+                        <form id="multiple-choice-form" method="post" action="{% url 'olympiads:olympiad_task_submit' olympiad_id=olympiad.id task_id=task.id %}">
+                            {% csrf_token %}
+                            <div class="space-y-4">
+                                {% for option in options %}
+                                    <div class="relative flex items-start p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                        <div class="flex items-center h-5">
+                                            <input id="option-{{ option.id }}" name="options" type="checkbox" value="{{ option.id }}" 
+                                                class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-blue-600"
+                                                {% if submission and option in submission.selected_options.all %}checked{% endif %}>
+                                        </div>
+                                        <div class="ml-3 text-sm">
+                                            <label for="option-{{ option.id }}" class="font-medium text-gray-700 dark:text-gray-300">{{ option.text }}</label>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                
+                                <button type="submit" class="w-full mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center">
+                                    <i class="fas fa-paper-plane mr-1.5"></i> {% trans 'Отправить ответ' %}
+                                </button>
+                            </div>
+                        </form>
+                        
+                    {% elif task.task_type == 'theoretical' %}
+                        <!-- Теоретический вопрос -->
+                        <form id="theoretical-form" method="post" action="{% url 'olympiads:olympiad_task_submit' olympiad_id=olympiad.id task_id=task.id %}">
+                            {% csrf_token %}
+                            <div>
+                                <label for="answer" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{% trans 'Ваш ответ' %}:</label>
+                                <textarea id="answer" name="answer" rows="8" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">{{ submission.text_answer|default:'' }}</textarea>
+                                
+                                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                    {% trans 'Пожалуйста, дайте полный и обоснованный ответ на вопрос.' %}
+                                </p>
+                                
+                                <button type="submit" class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center">
+                                    <i class="fas fa-paper-plane mr-1.5"></i> {% trans 'Отправить ответ' %}
+                                </button>
+                            </div>
+                        </form>
+                    {% endif %}
+                    
+                    <!-- Блок обратной связи о выполнении задания -->
+                    {% if submission %}
+                        <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                                {% trans 'Информация о вашем решении' %}
+                            </h3>
+                            
+                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div>
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">{% trans 'Отправлено' %}:</span>
+                                        <span class="text-sm text-gray-700 dark:text-gray-300 ml-1">{{ submission.submitted_at|date:"d.m.Y H:i:s" }}</span>
+                                    </div>
+                                    
+                                    <div>
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">{% trans 'Баллы' %}:</span>
+                                        <span class="text-sm font-medium {% if submission.is_correct %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %} ml-1">
+                                            {{ submission.score }} / {{ submission.max_score }}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    {% if submission.is_correct %}
+                                        <div class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 px-4 py-3 rounded-lg">
+                                            <div class="flex">
+                                                <div class="flex-shrink-0">
+                                                    <i class="fas fa-check-circle text-green-500 dark:text-green-400"></i>
+                                                </div>
+                                                <div class="ml-3">
+                                                    <p class="text-sm font-medium">
+                                                        {% trans 'Поздравляем! Ваше решение правильное.' %}
+                                                    </p>
+                                                    {% if next_task %}
+                                                        <p class="text-sm mt-1">
+                                                            {% trans 'Вы можете перейти к следующему заданию.' %}
+                                                            <a href="{% url 'olympiads:olympiad_task_detail' olympiad_id=olympiad.id task_id=next_task.id %}" 
+                                                               class="font-medium underline">{% trans 'Перейти' %}</a>
+                                                        </p>
+                                                    {% else %}
+                                                        <p class="text-sm mt-1">
+                                                            {% trans 'Это было последнее задание. Вы можете завершить олимпиаду.' %}
+                                                        </p>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300 px-4 py-3 rounded-lg">
+                                            <div class="flex">
+                                                <div class="flex-shrink-0">
+                                                    <i class="fas fa-exclamation-triangle text-yellow-500 dark:text-yellow-400"></i>
+                                                </div>
+                                                <div class="ml-3">
+                                                    <p class="text-sm font-medium">
+                                                        {% trans 'Ваше решение требует доработки.' %}
+                                                    </p>
+                                                    {% if task.task_type == 'theoretical' %}
+                                                        <p class="text-sm mt-1">
+                                                            {% trans 'Ваш ответ будет проверен преподавателем. Вы можете продолжить выполнение других заданий.' %}
+                                                        </p>
+                                                    {% else %}
+                                                        <p class="text-sm mt-1">
+                                                            {% trans 'Пожалуйста, проверьте ваше решение и попробуйте еще раз.' %}
+                                                        </p>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/highlight.min.js"></script>
+
+{% if task.task_type == 'programming' %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация CodeMirror
+    const codeTextarea = document.getElementById('code');
+    const editor = CodeMirror.fromTextArea(codeTextarea, {
+        lineNumbers: true,
+        mode: 'python',
+        theme: document.documentElement.classList.contains('dark') ? 'dracula' : 'default',
+        indentUnit: 4,
+        smartIndent: true,
+        indentWithTabs: false,
+        lineWrapping: true,
+        extraKeys: {
+            "Tab": function(cm) {
+                cm.replaceSelection("    ");
+            }
+        }
+    });
+
+    // Обновление значения textarea при изменении кода
+    editor.on('change', function() {
+        codeTextarea.value = editor.getValue();
+    });
+
+    // Обработчик для запуска кода
+    document.getElementById('run-code').addEventListener('click', function() {
+        executeCode('execute');
+    });
+
+    // Обработчик для проверки кода на тестах
+    document.getElementById('test-code').addEventListener('click', function() {
+        executeCode('test');
+    });
+
+    // Обработчик для форматирования кода
+    document.getElementById('format-code').addEventListener('click', function() {
+        formatCode();
+    });
+
+    // Функция для выполнения кода
+    function executeCode(action) {
+        const code = editor.getValue();
+        const resultsBlock = document.getElementById('execution-results');
+        const stdout = document.getElementById('stdout');
+        const stderr = document.getElementById('stderr');
+        const executionTime = document.getElementById('execution-time');
+        const testResults = document.getElementById('test-results');
+        const testCasesResults = document.getElementById('test-cases-results');
+        
+        // Показываем результаты и индикатор загрузки
+        resultsBlock.classList.remove('hidden');
+        stdout.innerHTML = '<div class="pulse">Выполнение кода...</div>';
+        stderr.innerHTML = '';
+        executionTime.textContent = '';
+        
+        if (action === 'test') {
+            testResults.classList.remove('hidden');
+            testCasesResults.innerHTML = '<div class="pulse">Проверка на тестах...</div>';
+        } else {
+            testResults.classList.add('hidden');
+        }
+        
+        // Отправляем запрос на сервер
+        const url = action === 'test' ? '{{ urls.test }}' : '{{ urls.execute }}';
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ code: code })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Обновляем блок с результатами
+            stdout.innerHTML = data.stdout || 'Нет вывода';
+            stderr.innerHTML = data.stderr || 'Нет ошибок';
+            executionTime.textContent = data.execution_time ? `${data.execution_time.toFixed(2)} мс` : 'N/A';
+            
+            if (action === 'test' && data.test_results) {
+                testCasesResults.innerHTML = '';
+                
+                data.test_results.forEach((result, index) => {
+                    const testCase = document.createElement('div');
+                    testCase.className = `test-case-result p-3 rounded-lg border ${result.passed ? 'success border-green-200 dark:border-green-800' : 'error border-red-200 dark:border-red-800'}`;
+                    
+                    testCase.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <span class="font-medium text-gray-800 dark:text-gray-200">Тест #${index + 1}</span>
+                            <span class="${result.passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                                ${result.passed ? '<i class="fas fa-check-circle"></i> Успешно' : '<i class="fas fa-times-circle"></i> Ошибка'}
+                            </span>
+                        </div>
+                        <div class="mt-2">
+                            <div class="text-sm">
+                                <span class="text-gray-500 dark:text-gray-400">Входные данные:</span>
+                                <pre class="mt-1 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs">${result.input}</pre>
+                            </div>
+                            <div class="text-sm mt-2">
+                                <span class="text-gray-500 dark:text-gray-400">Ожидаемый результат:</span>
+                                <pre class="mt-1 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs">${result.expected}</pre>
+                            </div>
+                            <div class="text-sm mt-2">
+                                <span class="text-gray-500 dark:text-gray-400">Полученный результат:</span>
+                                <pre class="mt-1 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs">${result.actual}</pre>
+                            </div>
+                        </div>
+                    `;
+                    
+                    testCasesResults.appendChild(testCase);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            stderr.innerHTML = `Ошибка при выполнении запроса: ${error.message}`;
+            if (action === 'test') {
+                testCasesResults.innerHTML = 'Не удалось выполнить проверку';
+            }
+        });
+    }
+
+    // Функция для форматирования кода
+    function formatCode() {
+        const code = editor.getValue();
+        
+        fetch('{% url "olympiads:format_code" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ code: code, language: 'python' })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.formatted_code) {
+                editor.setValue(data.formatted_code);
+            } else {
+                console.error('Ошибка форматирования:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+
+    // Инициализация таймера
+    const timerElement = document.getElementById('countdown');
+    const timerProgress = document.getElementById('timer-progress');
+    let timeLeft = {{ time_left_minutes|floatformat:0 }};
+    const totalTime = {{ olympiad.time_limit_minutes|default:0 }};
+    
+    function updateTimer() {
+        const minutes = Math.floor(timeLeft);
+        const seconds = Math.floor((timeLeft - minutes) * 60);
+        
+        timerElement.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        
+        // Обновляем прогресс-бар
+        if (totalTime > 0) {
+            const percentLeft = (timeLeft / totalTime) * 100;
+            timerProgress.style.width = `${Math.max(0, percentLeft)}%`;
+            
+            // Меняем цвет в зависимости от оставшегося времени
+            if (percentLeft < 25) {
+                timerProgress.classList.add('bg-red-600');
+                timerProgress.classList.remove('bg-yellow-500', 'bg-blue-500');
+            } else if (percentLeft < 50) {
+                timerProgress.classList.add('bg-yellow-500');
+                timerProgress.classList.remove('bg-red-600', 'bg-blue-500');
+            } else {
+                timerProgress.classList.add('bg-blue-500');
+                timerProgress.classList.remove('bg-red-600', 'bg-yellow-500');
+            }
+        }
+        
+        // Уменьшаем оставшееся время
+        timeLeft -= 1/60; // Уменьшаем на 1 секунду
+        
+        if (timeLeft <= 0) {
+            // Время вышло, перенаправляем на страницу результатов
+            window.location.href = '{% url "olympiads:olympiad_results" olympiad_id=olympiad.id %}';
+        }
+    }
+    
+    // Обновляем таймер каждую секунду
+    setInterval(updateTimer, 1000);
+    updateTimer(); // Инициализируем сразу
+});
+</script>
+{% endif %}
+{% endblock %}

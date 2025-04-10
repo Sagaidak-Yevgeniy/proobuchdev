@@ -79,9 +79,14 @@
                                    class="flex items-center p-3 rounded-lg transition-colors 
                                           {% if task.id == current_task.id %}
                                           bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300
-                                          {% else %}
+                                          {% elif task_statuses|get_item:task.id|get_item:'available' %}
                                           bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300
-                                          {% endif %}">
+                                          {% else %}
+                                          bg-gray-50 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-70
+                                          {% endif %}"
+                                   {% if not task_statuses|get_item:task.id|get_item:'available' %}
+                                   onclick="event.preventDefault(); alert('Это задание будет доступно после выполнения предыдущего задания');"
+                                   {% endif %}>
                                     
                                     <!-- Номер задания -->
                                     <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center
