@@ -598,19 +598,30 @@ def olympiad_edit(request, olympiad_id):
         olympiad.description = request.POST.get('description')
         olympiad.short_description = request.POST.get('short_description', '')
         
-        start_date = request.POST.get('start_date')
-        start_time = request.POST.get('start_time')
-        end_date = request.POST.get('end_date')
-        end_time = request.POST.get('end_time')
+        start_datetime_str = request.POST.get('start_datetime')
+        end_datetime_str = request.POST.get('end_datetime')
         
-        # Объединяем дату и время
+        # Преобразуем строки дат в объекты datetime
         from datetime import datetime
-        olympiad.start_datetime = datetime.strptime(f"{start_date} {start_time}", "%Y-%m-%d %H:%M")
-        olympiad.end_datetime = datetime.strptime(f"{end_date} {end_time}", "%Y-%m-%d %H:%M")
         
-        olympiad.time_limit_minutes = request.POST.get('time_limit', 0)
+        if not start_datetime_str:
+            messages.error(request, _('Необходимо указать дату и время начала олимпиады'))
+            return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
+            
+        if not end_datetime_str:
+            messages.error(request, _('Необходимо указать дату и время окончания олимпиады'))
+            return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
+            
+        try:
+            olympiad.start_datetime = datetime.fromisoformat(start_datetime_str.replace('T', ' '))
+            olympiad.end_datetime = datetime.fromisoformat(end_datetime_str.replace('T', ' '))
+        except ValueError:
+            messages.error(request, _('Некорректный формат даты и времени'))
+            return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
+        
+        olympiad.time_limit_minutes = int(request.POST.get('time_limit_minutes', '0') or '0')
         olympiad.is_open = request.POST.get('is_open') == 'on'
-        olympiad.min_passing_score = request.POST.get('min_passing_score', 0)
+        olympiad.min_passing_score = int(request.POST.get('min_passing_score', '0') or '0')
         
         # Сохраняем изменения
         olympiad.save()
