@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 urlpatterns = [
@@ -11,4 +11,7 @@ urlpatterns = [
     path('<slug:slug>/edit-content/', views.course_edit_content, name='course_edit_content'),
     path('<slug:slug>/delete/', views.course_delete, name='course_delete'),
     path('<slug:slug>/enroll/', views.course_enroll, name='course_enroll'),
+    
+    # Включаем пути для сертификатов
+    path('', include('courses.urls_certificates')),
 ]

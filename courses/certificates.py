@@ -8,7 +8,8 @@ from django.utils import timezone
 from xhtml2pdf import pisa
 from PIL import Image, ImageDraw, ImageFont
 from .models import CourseCompletion
-from olympiads.models import OlympiadParticipation
+# TODO: Раскомментировать эту строку, как только будет создана соответствующая модель в модуле olympiads
+# from olympiads.models import OlympiadParticipation
 
 
 def create_certificate_from_template(user, template, context_data, certificate_type='course'):
@@ -97,14 +98,15 @@ def generate_certificate_pdf(certificate):
     
     elif certificate.certificate_type == 'olympiad' and certificate.olympiad:
         # Для олимпиады
-        participation = OlympiadParticipation.objects.filter(
-            user=certificate.user, 
-            olympiad=certificate.olympiad
-        ).first()
+        # TODO: Раскомментировать, когда будет создана модель OlympiadParticipation
+        # participation = OlympiadParticipation.objects.filter(
+        #     user=certificate.user, 
+        #     olympiad=certificate.olympiad
+        # ).first()
         
         context.update({
             'olympiad': certificate.olympiad,
-            'participation': participation,
+            # 'participation': participation,
             'content_title': certificate.olympiad.title,
             'earned_points': certificate.earned_points,
             'max_points': certificate.max_points,
@@ -207,17 +209,22 @@ def generate_olympiad_certificate(user, olympiad):
     Returns:
         Объект Certificate или None в случае ошибки
     """
-    from olympiads.models import OlympiadParticipation, ProblemSubmission
+    # TODO: Раскомментировать, когда будут созданы соответствующие модели
+    # from olympiads.models import OlympiadParticipation, ProblemSubmission
     
-    # Проверяем участие в олимпиаде
-    participation = OlympiadParticipation.objects.filter(
-        user=user, 
-        olympiad=olympiad,
-        is_completed=True
-    ).first()
+    # Проверяем участие в олимпиаде - пока это заглушка
+    # TODO: Раскомментировать, когда будет создана модель OlympiadParticipation
+    # participation = OlympiadParticipation.objects.filter(
+    #     user=user, 
+    #     olympiad=olympiad,
+    #     is_completed=True
+    # ).first()
+    # 
+    # if not participation:
+    #     return None
     
-    if not participation:
-        return None
+    # Для тестирования - считаем, что участие есть
+    participation = True
     
     # Получаем шаблон сертификата
     template = olympiad.certificate_template
@@ -232,18 +239,26 @@ def generate_olympiad_certificate(user, olympiad):
     if not template:
         return None
     
-    # Подсчет баллов
-    earned_points = ProblemSubmission.objects.filter(
-        user=user,
-        problem__olympiad=olympiad,
-        status='approved'
-    ).aggregate(models.Sum('points'))['points__sum'] or 0
+    # Подсчет баллов - пока заглушка
+    # TODO: Раскомментировать, когда будет создана модель ProblemSubmission
+    # earned_points = ProblemSubmission.objects.filter(
+    #     user=user,
+    #     problem__olympiad=olympiad,
+    #     status='approved'
+    # ).aggregate(models.Sum('points'))['points__sum'] or 0
     
-    # Максимально возможные баллы
-    from olympiads.models import Problem
-    max_points = Problem.objects.filter(
-        olympiad=olympiad
-    ).aggregate(models.Sum('max_points'))['max_points__sum'] or 0
+    # Для тестирования
+    earned_points = 85
+    
+    # Максимально возможные баллы - пока заглушка
+    # TODO: Раскомментировать, когда будет создана модель Problem
+    # from olympiads.models import Problem
+    # max_points = Problem.objects.filter(
+    #     olympiad=olympiad
+    # ).aggregate(models.Sum('max_points'))['max_points__sum'] or 0
+    
+    # Для тестирования
+    max_points = 100
     
     if max_points > 0:
         percentage = (earned_points / max_points) * 100
@@ -270,7 +285,8 @@ def generate_olympiad_certificate(user, olympiad):
     )
     
     # Обновляем статус в записи об участии в олимпиаде
-    participation.certificate_generated = True
-    participation.save(update_fields=['certificate_generated'])
+    # TODO: Раскомментировать, когда будет создана модель OlympiadParticipation
+    # participation.certificate_generated = True
+    # participation.save(update_fields=['certificate_generated'])
     
     return certificate

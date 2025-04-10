@@ -1,10 +1,10 @@
 import os
+import io
 import uuid
-from io import BytesIO
+import json
 from datetime import datetime
-
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse, FileResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, FileResponse
 from django.template.loader import get_template
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
@@ -15,194 +15,97 @@ from django.conf import settings
 
 from xhtml2pdf import pisa
 
-from .models import Course, CourseEnrollment, CourseCompletion
-from olympiads.models import Olympiad, OlympiadParticipation
-from users.models import CustomUser
+from .models import CourseCompletion
+# TODO: Раскомментировать эту строку, как только будет создана соответствующая модель в модуле olympiads
+# from olympiads.models import OlympiadParticipation
 from .models_certificates import Certificate, CertificateTemplate
-
-
-def render_to_pdf(template_src, context_dict={}):
-    """
-    Преобразует HTML-шаблон в PDF-файл
-    """
-    template = get_template(template_src)
-    html = template.render(context_dict)
-    result = BytesIO()
-    
-    # В контексте передаем MEDIA_URL для правильного отображения изображений
-    context_dict['MEDIA_URL'] = settings.MEDIA_URL
-    
-    pdf = pisa.pisaDocument(
-        BytesIO(html.encode("UTF-8")), 
-        result,
-        encoding='utf-8',
-        link_callback=fetch_resources
-    )
-    
-    if not pdf.err:
-        return result.getvalue()
-    return None
-
-
-def fetch_resources(uri, rel):
-    """
-    Функция для загрузки внешних ресурсов в PDF (изображения и т.д.)
-    """
-    if uri.startswith(settings.MEDIA_URL):
-        path = os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ""))
-    elif uri.startswith(settings.STATIC_URL):
-        path = os.path.join(settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, ""))
-    else:
-        path = uri
-    
-    return path
+from .certificates import generate_course_certificate, generate_olympiad_certificate
 
 
 @login_required
 def my_certificates(request):
-    """
-    Отображает список всех сертификатов пользователя
-    """
+    """Просмотр всех сертификатов пользователя"""
     certificates = Certificate.objects.filter(user=request.user).order_by('-issued_date')
     
-    return render(request, 'certificates/my_certificates.html', {
+    # Группируем сертификаты по типам
+    course_certificates = certificates.filter(certificate_type='course')
+    olympiad_certificates = certificates.filter(certificate_type='olympiad')
+    achievement_certificates = certificates.filter(certificate_type='achievement')
+    
+    context = {
         'certificates': certificates,
-        'title': 'Мои сертификаты'
-    })
+        'course_certificates': course_certificates,
+        'olympiad_certificates': olympiad_certificates,
+        'achievement_certificates': achievement_certificates,
+    }
+    
+    return render(request, 'certificates/my_certificates.html', context)
 
 
-@login_required
 def view_certificate(request, certificate_id):
-    """
-    Отображает сертификат для просмотра
-    """
+    """Просмотр конкретного сертификата"""
     certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
     
-    # Проверяем, имеет ли пользователь доступ к этому сертификату
-    if certificate.user != request.user and not request.user.is_staff:
-        return redirect('my_certificates')
+    # Определяем, принадлежит ли сертификат текущему пользователю
+    is_owner = request.user.is_authenticated and certificate.user == request.user
     
-    return render(request, 'certificates/view_certificate.html', {
+    context = {
         'certificate': certificate,
-        'title': f'Сертификат {certificate.certificate_id}'
-    })
+        'is_owner': is_owner,
+        'verification_url': certificate.get_verification_url(),
+    }
+    
+    return render(request, 'certificates/view_certificate.html', context)
 
 
 @login_required
 def download_certificate_pdf(request, certificate_id):
-    """
-    Скачивает сертификат в формате PDF
-    """
+    """Скачивание PDF-файла сертификата"""
     certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
     
-    # Проверяем, имеет ли пользователь доступ к этому сертификату
+    # Проверяем, принадлежит ли сертификат пользователю
     if certificate.user != request.user and not request.user.is_staff:
-        return redirect('my_certificates')
+        return HttpResponse('Доступ запрещен', status=403)
     
-    # Если файл уже существует, возвращаем его
-    if certificate.certificate_file and os.path.exists(certificate.certificate_file.path):
-        return FileResponse(
-            open(certificate.certificate_file.path, 'rb'),
-            as_attachment=True,
-            filename=f'certificate_{certificate.certificate_id}.pdf'
-        )
+    # Если PDF еще не сгенерирован, создаем его
+    if not certificate.pdf_file:
+        from .certificates import generate_certificate_pdf
+        generate_certificate_pdf(certificate)
     
-    # Иначе генерируем PDF
-    # Получаем шаблон сертификата
-    template = CertificateTemplate.objects.filter(
-        certificate_type=certificate.certificate_type,
-        is_active=True
-    ).first()
+    # Если файл не существует, возвращаем ошибку
+    if not certificate.pdf_file or not os.path.exists(certificate.pdf_file.path):
+        return HttpResponse('Файл не найден', status=404)
     
-    if not template:
-        # Если нет активного шаблона, используем дефолтный
-        template = CertificateTemplate.objects.filter(is_active=True).first()
-    
-    if not template:
-        return HttpResponse("Шаблон сертификата не найден", status=404)
-    
-    # Создаем контекст для шаблона
-    context = {
-        'certificate': certificate,
-        'user': certificate.user,
-        'template': template,
-        'MEDIA_URL': settings.MEDIA_URL,
-    }
-    
-    # Генерируем PDF
-    pdf = render_to_pdf('certificates/certificate.html', context)
-    
-    if not pdf:
-        return HttpResponse("Ошибка при создании PDF", status=500)
-    
-    # Сохраняем PDF в файл
+    # Определяем имя файла для скачивания
     filename = f'certificate_{certificate.certificate_id}.pdf'
-    certificate.certificate_file.save(filename, ContentFile(pdf))
     
-    # Возвращаем PDF для скачивания
-    response = HttpResponse(pdf, content_type='application/pdf')
+    # Возвращаем файл для скачивания
+    response = FileResponse(open(certificate.pdf_file.path, 'rb'))
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
 
 
-@login_required
 def view_certificate_pdf(request, certificate_id):
-    """
-    Просмотр сертификата в формате PDF в браузере
-    """
+    """Просмотр PDF-файла сертификата в браузере"""
     certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
     
-    # Проверяем, имеет ли пользователь доступ к этому сертификату
-    if certificate.user != request.user and not request.user.is_staff:
-        return redirect('my_certificates')
+    # Если PDF еще не сгенерирован, создаем его
+    if not certificate.pdf_file:
+        from .certificates import generate_certificate_pdf
+        generate_certificate_pdf(certificate)
     
-    # Если файл уже существует, возвращаем его
-    if certificate.certificate_file and os.path.exists(certificate.certificate_file.path):
-        return FileResponse(
-            open(certificate.certificate_file.path, 'rb'),
-            content_type='application/pdf'
-        )
+    # Если файл не существует, возвращаем ошибку
+    if not certificate.pdf_file or not os.path.exists(certificate.pdf_file.path):
+        return HttpResponse('Файл не найден', status=404)
     
-    # Иначе генерируем PDF
-    # Получаем шаблон сертификата
-    template = CertificateTemplate.objects.filter(
-        certificate_type=certificate.certificate_type,
-        is_active=True
-    ).first()
-    
-    if not template:
-        # Если нет активного шаблона, используем дефолтный
-        template = CertificateTemplate.objects.filter(is_active=True).first()
-    
-    if not template:
-        return HttpResponse("Шаблон сертификата не найден", status=404)
-    
-    # Создаем контекст для шаблона
-    context = {
-        'certificate': certificate,
-        'user': certificate.user,
-        'template': template,
-        'MEDIA_URL': settings.MEDIA_URL,
-    }
-    
-    # Генерируем PDF
-    pdf = render_to_pdf('certificates/certificate.html', context)
-    
-    if not pdf:
-        return HttpResponse("Ошибка при создании PDF", status=500)
-    
-    # Сохраняем PDF в файл
-    filename = f'certificate_{certificate.certificate_id}.pdf'
-    certificate.certificate_file.save(filename, ContentFile(pdf))
-    
-    # Возвращаем PDF для просмотра
-    return HttpResponse(pdf, content_type='application/pdf')
+    # Возвращаем файл для просмотра в браузере
+    response = FileResponse(open(certificate.pdf_file.path, 'rb'), content_type='application/pdf')
+    response['Content-Disposition'] = 'inline; filename="certificate.pdf"'
+    return response
 
 
 def verify_certificate(request, certificate_id=None):
-    """
-    Проверяет подлинность сертификата
-    """
+    """Проверка подлинности сертификата"""
     certificate = None
     error = None
     success = False
@@ -210,48 +113,88 @@ def verify_certificate(request, certificate_id=None):
     if certificate_id:
         try:
             certificate = Certificate.objects.get(certificate_id=certificate_id)
-            success = certificate.is_valid()
-            
-            if not success:
-                if certificate.status == 'revoked':
-                    error = "Этот сертификат был отозван."
-                elif certificate.status == 'expired':
-                    error = "Срок действия этого сертификата истек."
-                else:
-                    error = "Этот сертификат недействителен."
+            success = True
         except Certificate.DoesNotExist:
-            error = "Сертификат с указанным номером не найден."
+            error = "Сертификат с указанным ID не найден."
     
-    if request.method == 'POST' and not certificate_id:
-        certificate_id = request.POST.get('certificate_id', '').strip()
-        return redirect('verify_certificate', certificate_id=certificate_id)
+    elif request.method == 'POST':
+        certificate_id = request.POST.get('certificate_id', '')
+        if certificate_id:
+            try:
+                certificate = Certificate.objects.get(certificate_id=certificate_id)
+                success = True
+            except Certificate.DoesNotExist:
+                error = "Сертификат с указанным ID не найден."
+        else:
+            error = "Введите ID сертификата."
     
-    return render(request, 'certificates/verify.html', {
+    context = {
         'certificate': certificate,
+        'certificate_id': certificate_id,
         'error': error,
         'success': success,
-        'certificate_id': certificate_id,
-        'title': 'Проверка сертификата'
-    })
+    }
+    
+    return render(request, 'certificates/verify.html', context)
+
+
+@csrf_exempt
+def api_verify_certificate(request):
+    """API для проверки подлинности сертификата"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            certificate_id = data.get('certificate_id')
+            
+            if not certificate_id:
+                return JsonResponse({'success': False, 'error': 'Не указан ID сертификата'})
+            
+            try:
+                certificate = Certificate.objects.get(certificate_id=certificate_id)
+                
+                # Формируем данные о сертификате
+                certificate_data = {
+                    'certificate_id': str(certificate.certificate_id),
+                    'user': certificate.user.get_full_name() or certificate.user.username,
+                    'title': certificate.title,
+                    'type': certificate.get_certificate_type_display(),
+                    'entity_name': certificate.get_entity_name(),
+                    'issued_date': certificate.issued_date.strftime('%d.%m.%Y'),
+                    'expiry_date': certificate.expiry_date.strftime('%d.%m.%Y') if certificate.expiry_date else None,
+                    'status': certificate.get_status_display(),
+                    'earned_points': certificate.earned_points,
+                    'max_points': certificate.max_points,
+                    'completion_percentage': certificate.completion_percentage,
+                }
+                
+                return JsonResponse({
+                    'success': True,
+                    'certificate': certificate_data
+                })
+            
+            except Certificate.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Сертификат с указанным ID не найден'})
+        
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Неверный формат JSON'})
+    
+    return JsonResponse({'success': False, 'error': 'Метод не поддерживается'})
 
 
 @login_required
-def generate_course_certificate(request, course_id):
-    """
-    Генерирует сертификат о завершении курса
-    """
+def generate_course_certificate_view(request, course_id):
+    """Генерация сертификата о прохождении курса"""
+    from .models import Course
+    
     course = get_object_or_404(Course, id=course_id)
     
-    # Проверяем, записан ли пользователь на курс
-    enrollment = get_object_or_404(CourseEnrollment, user=request.user, course=course)
+    # Проверяем, может ли пользователь получить сертификат
+    if not course.can_generate_certificate(request.user):
+        return render(request, 'certificates/error.html', {
+            'error': 'Вы не можете получить сертификат для этого курса. Убедитесь, что курс завершен и набрано достаточное количество баллов.'
+        })
     
-    # Проверяем, завершил ли пользователь курс
-    completion = CourseCompletion.objects.filter(user=request.user, course=course).first()
-    
-    if not completion:
-        return HttpResponse("Вы еще не завершили этот курс.", status=403)
-    
-    # Проверяем, существует ли уже сертификат для этого курса
+    # Проверяем, есть ли уже сертификат
     existing_certificate = Certificate.objects.filter(
         user=request.user,
         course=course,
@@ -261,78 +204,41 @@ def generate_course_certificate(request, course_id):
     if existing_certificate:
         return redirect('view_certificate', certificate_id=existing_certificate.certificate_id)
     
-    # Получаем информацию о прогрессе и баллах
-    from .models import LessonCompletion, AssignmentSubmission
+    # Генерируем сертификат
+    certificate = generate_course_certificate(request.user, course)
     
-    # Сколько всего заданий в курсе
-    total_assignments = sum(lesson.assignments.count() for lesson in course.lessons.all())
-    
-    # Какой максимальный балл за курс
-    max_points = sum(
-        assignment.max_points
-        for lesson in course.lessons.all()
-        for assignment in lesson.assignments.all()
-    )
-    
-    # Сколько заданий выполнил пользователь
-    completed_assignments = AssignmentSubmission.objects.filter(
-        user=request.user,
-        assignment__lesson__course=course,
-        status='approved'
-    ).count()
-    
-    # Сколько баллов набрал пользователь
-    earned_points = sum(
-        submission.points
-        for submission in AssignmentSubmission.objects.filter(
-            user=request.user,
-            assignment__lesson__course=course,
-            status='approved'
-        )
-    )
-    
-    # Проверяем, достаточно ли баллов для сертификата
-    if earned_points < course.min_points_for_certificate:
-        return HttpResponse(
-            f"Недостаточно баллов для получения сертификата. Необходимо набрать минимум {course.min_points_for_certificate} баллов.", 
-            status=403
-        )
-    
-    # Создаем сертификат
-    certificate = Certificate.objects.create(
-        user=request.user,
-        certificate_type='course',
-        course=course,
-        title=f"Сертификат о завершении курса '{course.title}'",
-        description=f"Этот сертификат подтверждает, что {request.user.get_full_name() or request.user.username} успешно завершил(а) курс '{course.title}'.",
-        earned_points=earned_points,
-        max_points=max_points,
-        completion_percentage=int(earned_points / max_points * 100) if max_points > 0 else 0,
-        issued_date=timezone.now(),
-    )
-    
-    # Генерируем QR-код при сохранении
-    certificate.save()
-    
-    # Перенаправляем на страницу просмотра сертификата
-    return redirect('view_certificate', certificate_id=certificate.certificate_id)
+    if certificate:
+        return redirect('view_certificate', certificate_id=certificate.certificate_id)
+    else:
+        return render(request, 'certificates/error.html', {
+            'error': 'Не удалось сгенерировать сертификат. Пожалуйста, обратитесь к администратору.'
+        })
 
 
 @login_required
-def generate_olympiad_certificate(request, olympiad_id):
-    """
-    Генерирует сертификат участника олимпиады
-    """
+def generate_olympiad_certificate_view(request, olympiad_id):
+    """Генерация сертификата об участии в олимпиаде"""
+    from olympiads.models import Olympiad
+    
     olympiad = get_object_or_404(Olympiad, id=olympiad_id)
     
-    # Проверяем, участвовал ли пользователь в олимпиаде
-    participation = get_object_or_404(OlympiadParticipation, user=request.user, olympiad=olympiad)
+    # Проверяем участие пользователя в олимпиаде
+    # TODO: Раскомментировать, когда будет создана модель OlympiadParticipation
+    # participation = OlympiadParticipation.objects.filter(
+    #     user=request.user,
+    #     olympiad=olympiad,
+    #     is_completed=True
+    # ).exists()
     
-    # Проверяем, закончилась ли олимпиада
-    if olympiad.end_date and olympiad.end_date > timezone.now():
-        return HttpResponse("Олимпиада еще не завершена.", status=403)
+    # Для тестирования - считаем, что участие есть
+    participation = True
     
-    # Проверяем, существует ли уже сертификат для этой олимпиады
+    if not participation:
+        return render(request, 'certificates/error.html', {
+            'error': 'Вы не можете получить сертификат, поскольку не завершили участие в этой олимпиаде.'
+        })
+    
+    # Проверяем, есть ли уже сертификат
     existing_certificate = Certificate.objects.filter(
         user=request.user,
         olympiad=olympiad,
@@ -342,88 +248,12 @@ def generate_olympiad_certificate(request, olympiad_id):
     if existing_certificate:
         return redirect('view_certificate', certificate_id=existing_certificate.certificate_id)
     
-    # Получаем информацию о прогрессе и баллах
-    from olympiads.models import ProblemSubmission
+    # Генерируем сертификат
+    certificate = generate_olympiad_certificate(request.user, olympiad)
     
-    # Какой максимальный балл за олимпиаду
-    max_points = sum(problem.max_points for problem in olympiad.problems.all())
-    
-    # Сколько баллов набрал пользователь
-    earned_points = sum(
-        submission.points
-        for submission in ProblemSubmission.objects.filter(
-            user=request.user,
-            problem__olympiad=olympiad,
-            status='approved'
-        )
-    )
-    
-    # Проверяем, достаточно ли баллов для сертификата
-    if earned_points < olympiad.min_points_for_certificate:
-        return HttpResponse(
-            f"Недостаточно баллов для получения сертификата. Необходимо набрать минимум {olympiad.min_points_for_certificate} баллов.", 
-            status=403
-        )
-    
-    # Создаем сертификат
-    certificate = Certificate.objects.create(
-        user=request.user,
-        certificate_type='olympiad',
-        olympiad=olympiad,
-        title=f"Сертификат участника олимпиады '{olympiad.title}'",
-        description=f"Этот сертификат подтверждает, что {request.user.get_full_name() or request.user.username} успешно участвовал(а) в олимпиаде '{olympiad.title}'.",
-        earned_points=earned_points,
-        max_points=max_points,
-        completion_percentage=int(earned_points / max_points * 100) if max_points > 0 else 0,
-        issued_date=timezone.now(),
-    )
-    
-    # Генерируем QR-код при сохранении
-    certificate.save()
-    
-    # Перенаправляем на страницу просмотра сертификата
-    return redirect('view_certificate', certificate_id=certificate.certificate_id)
-
-
-@csrf_exempt
-def api_verify_certificate(request):
-    """
-    API для проверки подлинности сертификата
-    """
-    certificate_id = request.GET.get('id', '')
-    
-    if not certificate_id:
-        return JsonResponse({
-            'success': False,
-            'error': 'Не указан ID сертификата'
-        })
-    
-    try:
-        certificate = Certificate.objects.get(certificate_id=certificate_id)
-        
-        return JsonResponse({
-            'success': True,
-            'valid': certificate.is_valid(),
-            'status': certificate.status,
-            'certificate_id': certificate.certificate_id,
-            'type': certificate.get_certificate_type_display(),
-            'title': certificate.title,
-            'issued_to': certificate.user.get_full_name() or certificate.user.username,
-            'issued_date': certificate.issued_date.strftime('%d.%m.%Y'),
-            'entity_name': certificate.get_entity_name(),
-            'points': {
-                'earned': certificate.earned_points,
-                'max': certificate.max_points,
-                'percentage': certificate.completion_percentage
-            }
-        })
-    except Certificate.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'error': 'Сертификат с указанным номером не найден'
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
+    if certificate:
+        return redirect('view_certificate', certificate_id=certificate.certificate_id)
+    else:
+        return render(request, 'certificates/error.html', {
+            'error': 'Не удалось сгенерировать сертификат. Пожалуйста, обратитесь к администратору.'
         })

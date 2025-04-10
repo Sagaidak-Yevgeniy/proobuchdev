@@ -3,261 +3,279 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Сертификат {{ certificate.certificate_id }}</title>
+    <title>{{ certificate.title }}</title>
     <style>
         @page {
             size: A4 landscape;
             margin: 0;
         }
+        
         body {
+            font-family: 'Arial', sans-serif;
             margin: 0;
             padding: 0;
-            font-family: {{ template.text_font|default:'Roboto, Arial, sans-serif' }};
-            color: {{ template.text_color|default:'#000000' }};
-            background-color: #FFFFFF;
-        }
-        .certificate-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
             width: 100%;
             height: 100%;
+            color: #333;
+            background-color: #fff;
+        }
+        
+        .certificate-container {
+            width: 297mm;
+            height: 210mm;
             position: relative;
-            background-image: url({{ template.background_image.url }});
-            background-size: cover;
-            background-position: center;
+            overflow: hidden;
+            background-color: #fff;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .certificate-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        
+        .certificate-content {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            justify-content: space-between;
+            padding: 40px;
             box-sizing: border-box;
         }
-        .certificate-content {
-            width: 90%;
-            height: 90%;
-            background-color: rgba(255, 255, 255, 0.85);
-            border-radius: 10px;
-            padding: 40px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        
+        .certificate-header {
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: space-between;
-            text-align: center;
+            align-items: flex-start;
         }
-        .header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            margin-bottom: 30px;
-        }
+        
         .logo {
             max-width: 150px;
-            max-height: 150px;
-            margin-bottom: 20px;
+            max-height: 80px;
         }
-        .title {
-            font-family: {{ template.title_font|default:'Roboto, Arial, sans-serif' }};
-            font-size: {{ template.title_font_size|default:'48' }}px;
+        
+        .certificate-title {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .certificate-title h1 {
+            font-size: {{ certificate.template_used.title_font_size }}px;
+            margin: 0;
             font-weight: bold;
-            color: {{ template.title_color|default:'#000000' }};
-            margin-bottom: 10px;
+            color: {{ certificate.template_used.title_color }};
             text-transform: uppercase;
+            letter-spacing: 2px;
         }
-        .certificate-id {
-            font-size: 18px;
-            color: #666;
-            margin-bottom: 20px;
+        
+        .certificate-title h2 {
+            font-size: {{ certificate.template_used.text_font_size }}px;
+            margin: 10px 0 0;
+            font-weight: normal;
+            color: {{ certificate.template_used.text_color }};
         }
-        .recipient {
-            margin-bottom: 30px;
-        }
-        .recipient-intro {
-            font-size: 20px;
-            margin-bottom: 10px;
-        }
-        .recipient-name {
-            font-family: {{ template.title_font|default:'Roboto, Arial, sans-serif' }};
-            font-size: 30px;
-            font-weight: bold;
-            margin-bottom: 30px;
-            text-transform: uppercase;
-        }
-        .achievement {
-            margin-bottom: 30px;
-        }
-        .achievement-intro {
-            font-size: 20px;
-            margin-bottom: 10px;
-        }
-        .achievement-title {
-            font-family: {{ template.title_font|default:'Roboto, Arial, sans-serif' }};
-            font-size: 28px;
-            font-weight: bold;
-            color: #0070c0;
-            margin-bottom: 20px;
-            text-transform: uppercase;
-        }
-        .results {
-            font-size: 20px;
-            margin-bottom: 30px;
-        }
-        .completion-date {
-            font-size: 20px;
-            margin-bottom: 40px;
-        }
-        .footer {
+        
+        .certificate-body {
+            text-align: center;
+            margin: 20px 0;
+            flex-grow: 1;
             display: flex;
-            width: 100%;
-            justify-content: space-between;
-            align-items: flex-end;
+            flex-direction: column;
+            justify-content: center;
         }
-        .signature-section {
+        
+        .recipient-name {
+            font-size: {{ certificate.template_used.recipient_name_font_size }}px;
+            margin: 20px 0;
+            font-weight: bold;
+            color: {{ certificate.template_used.text_color }};
+        }
+        
+        .certificate-text {
+            font-size: {{ certificate.template_used.text_font_size }}px;
+            margin: 10px 0;
+            line-height: 1.5;
+            color: {{ certificate.template_used.text_color }};
+        }
+        
+        .certificate-course {
+            font-size: {{ certificate.template_used.text_font_size|add:"4" }}px;
+            margin: 15px 0;
+            font-weight: bold;
+            color: {{ certificate.template_used.title_color }};
+        }
+        
+        .certificate-details {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+        
+        .certificate-signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 60px;
+        }
+        
+        .signature {
             display: flex;
             flex-direction: column;
             align-items: center;
+            margin: 0 20px;
         }
-        .signature-image {
-            max-width: 150px;
-            max-height: 80px;
-            margin-bottom: 10px;
-        }
+        
         .signature-line {
             width: 200px;
-            border-bottom: 2px solid #000;
-            margin-bottom: 10px;
-        }
-        .signatory-name {
-            font-weight: bold;
-            font-size: 18px;
+            border-bottom: 1px solid #333;
             margin-bottom: 5px;
         }
-        .signatory-position {
+        
+        .signature-name {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .signature-title {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .certificate-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .footer-text {
+            margin: 0;
+        }
+        
+        .certificate-id {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .certificate-date {
             font-size: 16px;
             color: #666;
         }
-        .verification {
+        
+        .certificate-verification {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            max-width: 150px;
         }
+        
         .qr-code {
-            width: 120px;
-            height: 120px;
-            margin-bottom: 10px;
+            width: 80px;
+            height: 80px;
+            margin-left: 10px;
         }
+        
         .verification-text {
             font-size: 12px;
             color: #666;
-            text-align: center;
-        }
-        .special {
-            border: 2px solid #0070c0;
-            padding: 8px 20px;
-            color: #0070c0;
-            font-weight: bold;
-            font-size: 18px;
-            display: inline-block;
-            transform: rotate(-5deg);
-            margin-top: 20px;
-            position: absolute;
-            top: 80px;
-            right: 100px;
-        }
-        .progress-bar {
-            width: 60%;
-            height: 20px;
-            background-color: #eaeaea;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 10px auto 30px;
-        }
-        .progress-bar-fill {
-            height: 100%;
-            background-color: #0070c0;
-            width: {{ certificate.completion_percentage }}%;
-        }
-        .watermark {
-            position: absolute;
-            font-size: 150px;
-            color: rgba(0, 112, 192, 0.07);
-            transform: rotate(-45deg);
-            z-index: -1;
-            font-weight: bold;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
+            max-width: 200px;
         }
     </style>
 </head>
 <body>
     <div class="certificate-container">
-        {% if certificate.status == 'revoked' %}
-        <div class="special">ОТОЗВАН</div>
-        {% elif certificate.status == 'expired' %}
-        <div class="special">ИСТЁК</div>
+        {% if certificate.template_used.background_image %}
+            <img src="{{ MEDIA_URL }}{{ certificate.template_used.background_image }}" class="certificate-background" alt="Фон сертификата">
         {% endif %}
         
-        <div class="watermark">СЕРТИФИКАТ</div>
-        
         <div class="certificate-content">
-            <div class="header">
-                {% if template.show_logo %}
-                <img src="{{ MEDIA_URL }}images/logo.png" alt="Логотип" class="logo">
-                {% endif %}
-                <div class="title">СЕРТИФИКАТ</div>
-                <div class="certificate-id">№ {{ certificate.certificate_id }}</div>
-            </div>
-            
-            <div class="recipient">
-                <div class="recipient-intro">Настоящим удостоверяется, что</div>
-                <div class="recipient-name">{{ user.get_full_name|default:user.username }}</div>
-            </div>
-            
-            <div class="achievement">
-                {% if certificate.certificate_type == 'course' %}
-                <div class="achievement-intro">успешно завершил(а) курс:</div>
-                {% elif certificate.certificate_type == 'olympiad' %}
-                <div class="achievement-intro">успешно участвовал(а) в олимпиаде:</div>
+            <div class="certificate-header">
+                {% if certificate.template_used.logo_image %}
+                    <img src="{{ MEDIA_URL }}{{ certificate.template_used.logo_image }}" class="logo" alt="Логотип">
                 {% else %}
-                <div class="achievement-intro">получил(а) достижение:</div>
+                    <div style="width: 150px;"></div>
                 {% endif %}
-                <div class="achievement-title">{{ certificate.get_entity_name }}</div>
+                <div class="certificate-id">ID: {{ certificate.certificate_id }}</div>
             </div>
             
-            <div class="results">
-                Результат: {{ certificate.earned_points }} из {{ certificate.max_points }} баллов ({{ certificate.completion_percentage }}%)
+            <div class="certificate-title">
+                <h1>{{ certificate.template_used.title_text }}</h1>
+                {% if certificate.template_used.subtitle_text %}
+                    <h2>{{ certificate.template_used.subtitle_text }}</h2>
+                {% endif %}
             </div>
             
-            <div class="progress-bar">
-                <div class="progress-bar-fill"></div>
-            </div>
-            
-            <div class="completion-date">
-                Дата выдачи: {{ certificate.issued_date|date:"d.m.Y" }}
-            </div>
-            
-            <div class="footer">
-                {% if template.show_signature %}
-                <div class="signature-section">
-                    {% if template.signature_image %}
-                    <img src="{{ template.signature_image.url }}" alt="Подпись" class="signature-image">
-                    {% else %}
-                    <div class="signature-line"></div>
-                    {% endif %}
-                    <div class="signatory-name">{{ template.signatory_name|default:"" }}</div>
-                    <div class="signatory-position">{{ template.signatory_position|default:"" }}</div>
-                </div>
+            <div class="certificate-body">
+                <p class="certificate-text">Настоящим подтверждается, что</p>
+                <p class="recipient-name">{{ certificate.user.get_full_name|default:certificate.user.username }}</p>
+                
+                {% if certificate.certificate_type == 'course' %}
+                    <p class="certificate-text">успешно прошел(прошла) курс</p>
+                    <p class="certificate-course">{{ certificate.course.title }}</p>
+                    <p class="certificate-text">и выполнил(а) все необходимые задания</p>
+                    
+                    <div class="certificate-details">
+                        <p class="certificate-text">Результат: {{ certificate.earned_points }} из {{ certificate.max_points }} баллов ({{ certificate.completion_percentage }}%)</p>
+                        <p class="certificate-date">Дата выдачи: {{ certificate.issued_date|date:"d.m.Y" }}</p>
+                    </div>
+                    
+                {% elif certificate.certificate_type == 'olympiad' %}
+                    <p class="certificate-text">принял(а) участие в олимпиаде</p>
+                    <p class="certificate-course">{{ certificate.olympiad.title }}</p>
+                    <p class="certificate-text">и показал(а) высокие результаты</p>
+                    
+                    <div class="certificate-details">
+                        <p class="certificate-text">Результат: {{ certificate.earned_points }} из {{ certificate.max_points }} баллов ({{ certificate.completion_percentage }}%)</p>
+                        <p class="certificate-date">Дата выдачи: {{ certificate.issued_date|date:"d.m.Y" }}</p>
+                    </div>
+                    
+                {% else %}
+                    <p class="certificate-text">{{ certificate.description }}</p>
+                    <p class="certificate-date">Дата выдачи: {{ certificate.issued_date|date:"d.m.Y" }}</p>
                 {% endif %}
                 
-                {% if template.show_qr_code and certificate.qr_code %}
-                <div class="verification">
-                    <img src="{{ certificate.qr_code.url }}" alt="QR-код" class="qr-code">
-                    <div class="verification-text">
-                        Для проверки подлинности сертификата отсканируйте QR-код или посетите сайт и введите номер сертификата
+                <div class="certificate-signatures">
+                    <div class="signature">
+                        <div class="signature-line"></div>
+                        {% if certificate.certificate_type == 'course' and certificate.course %}
+                            <p class="signature-name">{{ certificate.course.author.get_full_name|default:"Преподаватель курса" }}</p>
+                            <p class="signature-title">Автор курса</p>
+                        {% elif certificate.certificate_type == 'olympiad' and certificate.olympiad %}
+                            <p class="signature-name">{{ certificate.olympiad.organizer.get_full_name|default:"Организатор" }}</p>
+                            <p class="signature-title">Организатор</p>
+                        {% else %}
+                            <p class="signature-name">Подпись</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="signature">
+                        <div class="signature-line"></div>
+                        <p class="signature-name">Администрация платформы</p>
+                        <p class="signature-title">Образовательная платформа</p>
                     </div>
                 </div>
-                {% endif %}
+            </div>
+            
+            <div class="certificate-footer">
+                <p class="footer-text">{{ certificate.template_used.footer_text|default:"© Образовательная платформа, 2025" }}</p>
+                
+                <div class="certificate-verification">
+                    <div class="verification-text">
+                        Для проверки подлинности сертификата отсканируйте QR-код или посетите:
+                        {{ verification_url }}
+                    </div>
+                    {% if certificate.qr_code %}
+                        <img src="{{ MEDIA_URL }}{{ certificate.qr_code }}" class="qr-code" alt="QR-код для проверки">
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>

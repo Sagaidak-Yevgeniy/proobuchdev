@@ -1,107 +1,120 @@
+import os
+import io
+import uuid
+import qrcode
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
 from django.urls import reverse
-import uuid
-import os
-import base64
-import io
-import qrcode
+from django.contrib.auth import get_user_model
+
 from django.core.files.base import ContentFile
 
+User = get_user_model()
+
+
 class CertificateTemplate(models.Model):
-    """Шаблон сертификата"""
+    """Модель шаблона сертификата"""
     
-    TEMPLATE_TYPES = [
+    TEMPLATE_TYPE_CHOICES = [
         ('course', 'Курс'),
         ('olympiad', 'Олимпиада'),
         ('achievement', 'Достижение'),
     ]
     
-    name = models.CharField(
-        max_length=100,
-        verbose_name='Название шаблона'
-    )
+    name = models.CharField(max_length=200, verbose_name='Название шаблона')
     template_type = models.CharField(
-        max_length=20,
-        choices=TEMPLATE_TYPES,
+        max_length=20, 
+        choices=TEMPLATE_TYPE_CHOICES,
         default='course',
         verbose_name='Тип шаблона'
     )
+    
+    # Настройки дизайна
     background_image = models.ImageField(
-        upload_to='certificate_templates/',
-        verbose_name='Фоновое изображение',
-        help_text='Рекомендуемый размер: 1200x850px'
+        upload_to='certificate_templates/backgrounds/',
+        blank=True,
+        null=True,
+        verbose_name='Фоновое изображение'
     )
     logo_image = models.ImageField(
         upload_to='certificate_templates/logos/',
-        null=True,
         blank=True,
-        verbose_name='Логотип',
-        help_text='Логотип, который будет размещен на сертификате'
+        null=True,
+        verbose_name='Логотип'
     )
-    title_text = models.CharField(
-        max_length=200,
-        default='СЕРТИФИКАТ',
-        verbose_name='Заголовок сертификата'
-    )
-    subtitle_text = models.CharField(
-        max_length=200,
-        default='о прохождении курса',
-        verbose_name='Подзаголовок сертификата'
-    )
-    footer_text = models.TextField(
-        default='© Образовательная платформа, 2025',
-        verbose_name='Текст в нижней части сертификата'
-    )
-    title_font_size = models.PositiveIntegerField(
-        default=48,
-        verbose_name='Размер шрифта заголовка'
-    )
-    text_font_size = models.PositiveIntegerField(
-        default=24,
-        verbose_name='Размер шрифта текста'
-    )
-    recipient_name_font_size = models.PositiveIntegerField(
-        default=36,
-        verbose_name='Размер шрифта имени получателя'
-    )
-    text_color = models.CharField(
-        max_length=20,
-        default='#000000',
-        verbose_name='Цвет текста'
-    )
+    
+    # Цвета и шрифты
     title_color = models.CharField(
-        max_length=20,
+        max_length=20, 
         default='#1a1a1a',
         verbose_name='Цвет заголовка'
     )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата создания'
+    text_color = models.CharField(
+        max_length=20, 
+        default='#333333',
+        verbose_name='Цвет текста'
     )
-    updated_at = models.DateTimeField(
-        auto_now=True,
-        verbose_name='Дата обновления'
+    
+    # Размеры шрифтов
+    title_font_size = models.PositiveSmallIntegerField(
+        default=48,
+        verbose_name='Размер шрифта заголовка'
     )
+    text_font_size = models.PositiveSmallIntegerField(
+        default=24,
+        verbose_name='Размер шрифта текста'
+    )
+    recipient_name_font_size = models.PositiveSmallIntegerField(
+        default=36,
+        verbose_name='Размер шрифта имени получателя'
+    )
+    
+    # Тексты
+    title_text = models.CharField(
+        max_length=100, 
+        default='СЕРТИФИКАТ',
+        verbose_name='Текст заголовка'
+    )
+    subtitle_text = models.CharField(
+        max_length=200, 
+        blank=True,
+        verbose_name='Текст подзаголовка'
+    )
+    footer_text = models.CharField(
+        max_length=200, 
+        default='© Образовательная платформа, 2025',
+        verbose_name='Текст футера'
+    )
+    
     is_active = models.BooleanField(
         default=True,
         verbose_name='Активен'
     )
     
+    # Мета-информация
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Создан'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Обновлен'
+    )
+    
     class Meta:
         verbose_name = 'Шаблон сертификата'
         verbose_name_plural = 'Шаблоны сертификатов'
-        ordering = ['-created_at']
+        ordering = ['name']
     
     def __str__(self):
-        return f"{self.name} ({self.get_template_type_display()})"
+        return f'{self.name} ({self.get_template_type_display()})'
 
 
 class Certificate(models.Model):
-    """Модель сертификата, выданного пользователю"""
+    """Модель сертификата"""
     
-    CERTIFICATE_TYPES = [
+    CERTIFICATE_TYPE_CHOICES = [
         ('course', 'Курс'),
         ('olympiad', 'Олимпиада'),
         ('achievement', 'Достижение'),
@@ -110,89 +123,79 @@ class Certificate(models.Model):
     STATUS_CHOICES = [
         ('active', 'Действителен'),
         ('revoked', 'Отозван'),
-        ('expired', 'Истёк'),
+        ('expired', 'Истек'),
     ]
     
-    # Идентификаторы
+    # Основная информация
     certificate_id = models.UUIDField(
+        primary_key=True,
         default=uuid.uuid4,
-        unique=True,
         editable=False,
-        verbose_name='Уникальный ID сертификата'
+        verbose_name='ID сертификата'
     )
+    
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        User,
         on_delete=models.CASCADE,
         related_name='certificates',
         verbose_name='Пользователь'
     )
     
-    # Основная информация
     certificate_type = models.CharField(
         max_length=20,
-        choices=CERTIFICATE_TYPES,
+        choices=CERTIFICATE_TYPE_CHOICES,
         default='course',
         verbose_name='Тип сертификата'
     )
+    
+    # Связи с сущностями
     course = models.ForeignKey(
-        'Course',
-        on_delete=models.CASCADE,
+        'courses.Course',
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='certificates',
         verbose_name='Курс'
     )
+    
     olympiad = models.ForeignKey(
         'olympiads.Olympiad',
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='certificates',
         verbose_name='Олимпиада'
     )
+    
     achievement = models.ForeignKey(
         'gamification.Achievement',
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='certificates',
         verbose_name='Достижение'
     )
     
-    # Метаданные
+    # Информация о сертификате
     title = models.CharField(
-        max_length=255,
-        verbose_name='Название сертификата'
+        max_length=200,
+        verbose_name='Название'
     )
+    
     description = models.TextField(
         blank=True,
         verbose_name='Описание'
     )
-    issued_date = models.DateTimeField(
-        default=timezone.now,
-        verbose_name='Дата выдачи'
-    )
-    expiry_date = models.DateTimeField(
+    
+    template_used = models.ForeignKey(
+        CertificateTemplate,
+        on_delete=models.SET_NULL,
         null=True,
-        blank=True,
-        verbose_name='Срок действия'
+        related_name='certificates',
+        verbose_name='Использованный шаблон'
     )
     
-    # Оценка и статистика
-    earned_points = models.PositiveIntegerField(
-        default=0,
-        verbose_name='Набранные баллы'
-    )
-    max_points = models.PositiveIntegerField(
-        default=100,
-        verbose_name='Максимальные баллы'
-    )
-    completion_percentage = models.FloatField(
-        default=0,
-        verbose_name='Процент выполнения'
-    )
-    
-    # Статус
+    # Статус и даты
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -200,25 +203,57 @@ class Certificate(models.Model):
         verbose_name='Статус'
     )
     
-    # Файлы и изображения
+    issued_date = models.DateTimeField(
+        default=timezone.now,
+        verbose_name='Дата выдачи'
+    )
+    
+    expiry_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Дата истечения'
+    )
+    
+    # Результаты
+    earned_points = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Набрано баллов'
+    )
+    
+    max_points = models.PositiveIntegerField(
+        default=100,
+        verbose_name='Максимум баллов'
+    )
+    
+    completion_percentage = models.FloatField(
+        default=0,
+        verbose_name='Процент выполнения'
+    )
+    
+    # Файлы
     pdf_file = models.FileField(
         upload_to='certificates/pdf/',
         null=True,
         blank=True,
-        verbose_name='PDF файл сертификата'
+        verbose_name='PDF-файл'
     )
+    
     qr_code = models.ImageField(
-        upload_to='certificates/qrcodes/',
+        upload_to='certificates/qr_codes/',
         null=True,
         blank=True,
-        verbose_name='QR-код сертификата'
+        verbose_name='QR-код'
     )
-    template_used = models.ForeignKey(
-        CertificateTemplate,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name='issued_certificates',
-        verbose_name='Использованный шаблон'
+    
+    # Мета-информация
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Создан'
+    )
+    
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Обновлен'
     )
     
     class Meta:
@@ -227,17 +262,21 @@ class Certificate(models.Model):
         ordering = ['-issued_date']
     
     def __str__(self):
-        return f"Сертификат {self.certificate_id} - {self.user.username}"
+        return f'{self.title} - {self.user.username} ({self.certificate_id})'
     
     def save(self, *args, **kwargs):
-        # Если сертификат создается, генерируем ему QR-код
+        """Переопределяем метод сохранения для генерации QR-кода"""
         if not self.qr_code:
             self.generate_qr_code()
+        
+        # Проверка статуса по дате истечения
+        if self.expiry_date and self.expiry_date < timezone.now():
+            self.status = 'expired'
         
         super().save(*args, **kwargs)
     
     def get_entity_name(self):
-        """Возвращает название сущности, за которую выдан сертификат"""
+        """Возвращает название связанной сущности"""
         if self.certificate_type == 'course' and self.course:
             return self.course.title
         elif self.certificate_type == 'olympiad' and self.olympiad:
@@ -246,14 +285,9 @@ class Certificate(models.Model):
             return self.achievement.name
         return "Неизвестно"
     
-    def get_absolute_url(self):
-        """Получить URL для просмотра сертификата"""
-        return reverse('view_certificate', kwargs={'certificate_id': self.certificate_id})
-    
     def get_verification_url(self):
-        """Получить URL для проверки подлинности сертификата"""
-        base_url = settings.BASE_URL or 'http://localhost:8000'
-        return f"{base_url}{reverse('verify_certificate', kwargs={'certificate_id': self.certificate_id})}"
+        """Возвращает URL для проверки подлинности сертификата"""
+        return settings.BASE_URL + reverse('verify_certificate', args=[self.certificate_id])
     
     def generate_qr_code(self):
         """Генерирует QR-код для сертификата"""
@@ -264,19 +298,20 @@ class Certificate(models.Model):
             border=4,
         )
         
-        # Добавляем URL для проверки подлинности в QR-код
-        qr.add_data(self.get_verification_url())
+        # Добавляем URL для проверки в QR-код
+        verification_url = settings.BASE_URL + reverse('verify_certificate', args=[self.certificate_id])
+        qr.add_data(verification_url)
         qr.make(fit=True)
         
         # Создаем изображение QR-кода
         img = qr.make_image(fill_color="black", back_color="white")
         
-        # Сохраняем QR-код в память
+        # Конвертируем в байты для сохранения
         buffer = io.BytesIO()
-        img.save(buffer, format="PNG")
+        img.save(buffer, format='PNG')
         buffer.seek(0)
         
-        # Сохраняем как поле изображения
-        filename = f'certificate-qr-{self.certificate_id}.png'
+        # Сохраняем в поле модели
+        filename = f'qr_certificate_{self.certificate_id}.png'
         self.qr_code.save(filename, ContentFile(buffer.read()), save=False)
         buffer.close()
