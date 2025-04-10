@@ -1,46 +1,101 @@
-<svg width="800" height="450" xmlns="http://www.w3.org/2000/svg">
-  <!-- Градиентный фон -->
+<svg width="800" height="450" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <!-- Градиенты -->
   <defs>
+    <!-- Современный градиент фона -->
     <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#4338ca" />
-      <stop offset="100%" stop-color="#3b82f6" />
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="50%" stop-color="#7c3aed" />
+      <stop offset="100%" stop-color="#c026d3" />
     </linearGradient>
-    <linearGradient id="trophy-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fbbf24" />
+    
+    <!-- Градиент для медали -->
+    <linearGradient id="medal-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fcd34d" />
       <stop offset="100%" stop-color="#f59e0b" />
     </linearGradient>
+    
+    <!-- Градиент для ленты -->
+    <linearGradient id="ribbon-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#7c3aed" />
+    </linearGradient>
+    
+    <!-- Маска для волнистого узора -->
+    <pattern id="wave-pattern" patternUnits="userSpaceOnUse" width="200" height="200" patternTransform="rotate(10)">
+      <path d="M-50,150 C 0,100 50,200 100,150 C 150,100 200,200 250,150 C 300,100 350,200 400,150" 
+            fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="20" />
+    </pattern>
+    
+    <!-- Маска для точечного узора -->
+    <pattern id="dot-pattern" patternUnits="userSpaceOnUse" width="30" height="30">
+      <circle cx="15" cy="15" r="1.5" fill="rgba(255,255,255,0.15)" />
+    </pattern>
+    
+    <!-- Фильтр свечения -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
   </defs>
   
   <!-- Фон -->
   <rect width="800" height="450" fill="url(#bg-gradient)" />
   
-  <!-- Узор из кругов -->
-  <circle cx="100" cy="100" r="80" fill="rgba(255, 255, 255, 0.1)" />
-  <circle cx="700" cy="380" r="120" fill="rgba(255, 255, 255, 0.05)" />
-  <circle cx="200" cy="420" r="60" fill="rgba(255, 255, 255, 0.07)" />
-  <circle cx="650" cy="150" r="90" fill="rgba(255, 255, 255, 0.03)" />
+  <!-- Волнистый узор -->
+  <rect width="800" height="450" fill="url(#wave-pattern)" />
   
-  <!-- Стилизованный трофей -->
-  <g transform="translate(350, 140) scale(1.5)">
-    <!-- Основание трофея -->
-    <rect x="35" y="160" width="80" height="20" rx="5" fill="url(#trophy-gradient)" />
-    <rect x="65" y="180" width="20" height="30" fill="url(#trophy-gradient)" />
-    <rect x="45" y="210" width="60" height="10" rx="3" fill="url(#trophy-gradient)" />
+  <!-- Точечный узор -->
+  <rect width="800" height="450" fill="url(#dot-pattern)" />
+  
+  <!-- Круги на фоне -->
+  <circle cx="100" cy="80" r="120" fill="rgba(255, 255, 255, 0.05)" />
+  <circle cx="700" cy="380" r="150" fill="rgba(255, 255, 255, 0.03)" />
+  <circle cx="600" cy="100" r="100" fill="rgba(0, 0, 0, 0.05)" />
+  
+  <!-- Медаль -->
+  <g transform="translate(400, 180)" filter="url(#glow)">
+    <!-- Медаль -->
+    <circle cx="0" cy="0" r="70" fill="url(#medal-gradient)" />
+    <circle cx="0" cy="0" r="60" fill="url(#medal-gradient)" stroke="rgba(255,255,255,0.5)" stroke-width="2" />
     
-    <!-- Чаша трофея -->
-    <path d="M40,20 L110,20 C110,20 120,80 75,130 C30,80 40,20 40,20 Z" fill="url(#trophy-gradient)" />
+    <!-- Звезда внутри медали -->
+    <path d="M0,-40 L9.2,-12.3 L38.7,-12.3 L15.1,4.7 L23.4,32.3 L0,16 L-23.4,32.3 L-15.1,4.7 L-38.7,-12.3 L-9.2,-12.3 Z" 
+          fill="white" opacity="0.9" />
     
-    <!-- Ручки трофея -->
-    <path d="M40,40 C0,40 0,80 40,80" fill="none" stroke="url(#trophy-gradient)" stroke-width="10" />
-    <path d="M110,40 C150,40 150,80 110,80" fill="none" stroke="url(#trophy-gradient)" stroke-width="10" />
-    
-    <!-- Блики на трофее -->
-    <ellipse cx="60" cy="50" rx="8" ry="15" fill="rgba(255, 255, 255, 0.3)" />
+    <!-- Лента -->
+    <path d="M-25,0 L-25,100 Q-15,90 0,95 Q15,90 25,100 L25,0" 
+          fill="url(#ribbon-gradient)" />
   </g>
   
-  <!-- Текст "Олимпиада" -->
-  <text x="400" y="350" font-family="Arial, sans-serif" font-size="36" font-weight="bold" 
-        text-anchor="middle" fill="white">ОЛИМПИАДА</text>
-  <text x="400" y="390" font-family="Arial, sans-serif" font-size="24" 
-        text-anchor="middle" fill="rgba(255, 255, 255, 0.7)">Программирование</text>
+  <!-- Светящиеся звезды -->
+  <g opacity="0.7">
+    <circle cx="150" cy="120" r="2" fill="white" />
+    <circle cx="650" cy="80" r="1.5" fill="white" />
+    <circle cx="720" cy="200" r="2" fill="white" />
+    <circle cx="200" cy="300" r="1.5" fill="white" />
+    <circle cx="500" cy="90" r="2" fill="white" />
+    <circle cx="300" cy="180" r="1.5" fill="white" />
+    <circle cx="120" cy="220" r="2" fill="white" />
+    <circle cx="580" cy="300" r="1.5" fill="white" />
+  </g>
+  
+  <!-- Текст -->
+  <g>
+    <!-- Современная тень для текста -->
+    <filter id="text-shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="rgba(0,0,0,0.3)" />
+    </filter>
+    
+    <!-- Заголовок "ОЛИМПИАДА" с тенью -->
+    <text x="400" y="350" font-family="Arial, sans-serif" font-size="42" font-weight="bold" 
+          text-anchor="middle" fill="white" filter="url(#text-shadow)">
+      ОЛИМПИАДА
+    </text>
+    
+    <!-- Подзаголовок -->
+    <text x="400" y="390" font-family="Arial, sans-serif" font-size="26" 
+          text-anchor="middle" fill="rgba(255, 255, 255, 0.85)" filter="url(#text-shadow)">
+      Программирование
+    </text>
+  </g>
 </svg>
