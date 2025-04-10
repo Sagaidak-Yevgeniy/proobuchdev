@@ -30,35 +30,83 @@ from users.models import CustomUser
 # Просмотр списка олимпиад
 def olympiad_list(request):
     now = timezone.now()
-    # Добавляем в предстоящие олимпиады также опубликованные олимпиады
-    upcoming_olympiads = Olympiad.objects.filter(
-        Q(status=Olympiad.OlympiadStatus.PUBLISHED) | 
-        Q(status=Olympiad.OlympiadStatus.PUBLISHED, start_datetime__gt=now)
-    ).order_by('start_datetime')
     
-    active_olympiads = Olympiad.objects.filter(
-        Q(status=Olympiad.OlympiadStatus.ACTIVE) |
-        Q(status=Olympiad.OlympiadStatus.PUBLISHED, start_datetime__lte=now, end_datetime__gte=now),
-    ).order_by('end_datetime')
+    # Параметры фильтрации
+    search_query = request.GET.get('search', '')
+    filter_status = request.GET.get('status', '')
     
-    completed_olympiads = Olympiad.objects.filter(
-        Q(status=Olympiad.OlympiadStatus.COMPLETED) | 
-        Q(status=Olympiad.OlympiadStatus.ACTIVE, end_datetime__lt=now)
-    ).order_by('-end_datetime')[:10]
+    # Базовый запрос
+    olympiads_query = Olympiad.objects
+    
+    # Применяем поисковый запрос, если он есть
+    if search_query:
+        olympiads_query = olympiads_query.filter(
+            Q(title__icontains=search_query) | 
+            Q(description__icontains=search_query) |
+            Q(short_description__icontains=search_query)
+        )
+    
+    # Фильтр по статусу
+    if filter_status == 'upcoming':
+        # Только предстоящие
+        olympiads = olympiads_query.filter(
+            status=Olympiad.OlympiadStatus.PUBLISHED, 
+            start_datetime__gt=now
+        ).order_by('start_datetime')
+        
+        upcoming_olympiads = olympiads
+        active_olympiads = []
+        completed_olympiads = []
+    elif filter_status == 'active':
+        # Только активные
+        olympiads = olympiads_query.filter(
+            Q(status=Olympiad.OlympiadStatus.ACTIVE) |
+            Q(status=Olympiad.OlympiadStatus.PUBLISHED, start_datetime__lte=now, end_datetime__gte=now)
+        ).order_by('end_datetime')
+        
+        upcoming_olympiads = []
+        active_olympiads = olympiads
+        completed_olympiads = []
+    elif filter_status == 'completed':
+        # Только завершенные
+        olympiads = olympiads_query.filter(
+            Q(status=Olympiad.OlympiadStatus.COMPLETED) | 
+            Q(status=Olympiad.OlympiadStatus.ACTIVE, end_datetime__lt=now)
+        ).order_by('-end_datetime')
+        
+        upcoming_olympiads = []
+        active_olympiads = []
+        completed_olympiads = olympiads
+    else:
+        # Без фильтра показываем все категории
+        upcoming_olympiads = olympiads_query.filter(
+            status=Olympiad.OlympiadStatus.PUBLISHED, 
+            start_datetime__gt=now
+        ).order_by('start_datetime')
+        
+        active_olympiads = olympiads_query.filter(
+            Q(status=Olympiad.OlympiadStatus.ACTIVE) |
+            Q(status=Olympiad.OlympiadStatus.PUBLISHED, start_datetime__lte=now, end_datetime__gte=now)
+        ).order_by('end_datetime')
+        
+        completed_olympiads = olympiads_query.filter(
+            Q(status=Olympiad.OlympiadStatus.COMPLETED) | 
+            Q(status=Olympiad.OlympiadStatus.ACTIVE, end_datetime__lt=now)
+        ).order_by('-end_datetime')[:10]
     
     # Если пользователь авторизован, добавляем информацию об участии
     if request.user.is_authenticated:
         user_participations = OlympiadParticipation.objects.filter(user=request.user)
         user_participation_ids = {p.olympiad_id for p in user_participations}
         
-        # Добавляем информацию о приглашениях (временно отключено)
-        # user_invitations = OlympiadUserInvitation.objects.filter(
-        #    user=request.user, 
-        #    is_accepted=False,
-        #    olympiad__start_datetime__gt=now
-        # )
-        # user_invitation_ids = {i.olympiad_id for i in user_invitations}
-        user_invitation_ids = set()
+        # Добавляем информацию о приглашениях (используем существующую модель OlympiadInvitation)
+        user_invitations = OlympiadInvitation.objects.filter(
+            user=request.user, 
+            is_accepted=False
+        ).filter(
+            Q(expires_at__isnull=True) | Q(expires_at__gt=now)
+        )
+        user_invitation_ids = {i.olympiad_id for i in user_invitations}
     else:
         user_participation_ids = set()
         user_invitation_ids = set()
@@ -68,7 +116,9 @@ def olympiad_list(request):
         'active_olympiads': active_olympiads,
         'completed_olympiads': completed_olympiads,
         'user_participation_ids': user_participation_ids,
-        'user_invitation_ids': user_invitation_ids
+        'user_invitation_ids': user_invitation_ids,
+        'search_query': search_query,
+        'filter_status': filter_status
     }
     
     return render(request, 'olympiads/olympiad_list.html', context)

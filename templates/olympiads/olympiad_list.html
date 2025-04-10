@@ -4,13 +4,77 @@
 
 {% block extra_head %}
 <script src="{% static 'js/olympiad_timer.js' %}"></script>
+<script>
+    // Глобальная функция для создания таймеров олимпиады, чтобы избежать ошибки "createOlympiadTimer is not defined"
+    window.createOlympiadTimer = function(startDateStr, endDateStr, elementIds, onTimeUpdate, onComplete) {
+        // Преобразуем строки дат в объекты Date
+        const startDate = new Date(startDateStr.replace(/-/g, '/'));
+        const endDate = new Date(endDateStr.replace(/-/g, '/'));
+        
+        // Получаем DOM-элементы таймера
+        const elements = {
+            container: document.getElementById(elementIds.container || 'olympiad-timer-container'),
+            status: document.getElementById(elementIds.status || 'olympiad-status'),
+            timerLabel: document.getElementById(elementIds.timerLabel || 'timer-label'),
+            days: document.getElementById(elementIds.days || 'days'),
+            hours: document.getElementById(elementIds.hours || 'hours'),
+            minutes: document.getElementById(elementIds.minutes || 'minutes'),
+            seconds: document.getElementById(elementIds.seconds || 'seconds'),
+            progressBar: document.getElementById(elementIds.progressBar || 'timer-progress-bar'),
+            digits: document.getElementById(elementIds.digits || 'timer-digits')
+        };
+        
+        // Создаем и возвращаем новый экземпляр таймера
+        const timer = new OlympiadTimer(
+            startDate,
+            endDate,
+            elements,
+            onTimeUpdate,
+            onComplete
+        );
+        
+        return timer;
+    };
+</script>
 {% endblock %}
 
 {% block title %}{% trans 'Олимпиады' %}{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-8 text-center">{% trans 'Олимпиады' %}</h1>
+    <h1 class="text-3xl font-bold mb-6 text-center">{% trans 'Олимпиады' %}</h1>
+
+    <!-- Форма поиска и фильтрации -->
+    <div class="mb-8 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+        <form method="GET" action="{% url 'olympiads:olympiad_list' %}" class="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4">
+            <div class="flex-grow">
+                <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{% trans 'Поиск олимпиады' %}</label>
+                <input type="text" id="search" name="search" value="{{ search_query }}" 
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white" 
+                       placeholder="{% trans 'Введите название или описание олимпиады' %}">
+            </div>
+            <div class="md:w-1/4">
+                <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{% trans 'Статус' %}</label>
+                <select id="status" name="status" 
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                    <option value="" {% if not filter_status %}selected{% endif %}>{% trans 'Все олимпиады' %}</option>
+                    <option value="upcoming" {% if filter_status == 'upcoming' %}selected{% endif %}>{% trans 'Предстоящие' %}</option>
+                    <option value="active" {% if filter_status == 'active' %}selected{% endif %}>{% trans 'Активные' %}</option>
+                    <option value="completed" {% if filter_status == 'completed' %}selected{% endif %}>{% trans 'Завершенные' %}</option>
+                </select>
+            </div>
+            <div class="md:flex md:items-end">
+                <button type="submit" class="w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors">
+                    {% trans 'Применить' %}
+                </button>
+                {% if search_query or filter_status %}
+                <a href="{% url 'olympiads:olympiad_list' %}" class="mt-2 md:mt-0 md:ml-2 block text-center md:inline-block px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md font-medium transition-colors">
+                    {% trans 'Сбросить' %}
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
     
     <!-- Предстоящие олимпиады -->
     {% if upcoming_olympiads %}
