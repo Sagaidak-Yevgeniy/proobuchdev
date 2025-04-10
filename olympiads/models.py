@@ -64,6 +64,10 @@ class Olympiad(models.Model):
     def is_upcoming(self):
         """Проверяет, ожидается ли начало олимпиады"""
         return self.start_datetime > timezone.now() and self.status == self.OlympiadStatus.PUBLISHED
+        
+    def has_started(self):
+        """Проверяет, началась ли олимпиада (но не обязательно активна)"""
+        return self.start_datetime <= timezone.now()
     
     def can_participate(self, user):
         """Определяет, может ли пользователь участвовать в олимпиаде"""

@@ -232,7 +232,12 @@ def olympiad_register(request, olympiad_id):
     )
     
     messages.success(request, _('Вы успешно зарегистрировались на олимпиаду'))
-    return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
+    
+    # Если олимпиада уже началась, перенаправляем на страницу с заданиями
+    if olympiad.has_started() and olympiad.is_active():
+        return redirect('olympiads:olympiad_tasks', olympiad_id=olympiad.id)
+    else:
+        return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
 
 # Просмотр заданий олимпиады
 @login_required

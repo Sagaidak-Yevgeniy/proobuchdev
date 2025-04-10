@@ -222,13 +222,6 @@
                                     <p class="text-sm text-gray-600 dark:text-gray-400">{% trans 'Это закрытая олимпиада, требуется приглашение' %}</p>
                                     {% else %}
                                     <p class="text-sm text-gray-600 dark:text-gray-400">{% trans 'Вы еще можете принять участие' %}</p>
-                                    <form action="{% url 'olympiads:olympiad_register' olympiad_id=olympiad.id %}" method="post" class="mt-4">
-                                        {% csrf_token %}
-                                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors">
-                                            {% trans 'Принять участие' %}
-                                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                                        </button>
-                                    </form>
                                     {% if user_participation %}
                                     <div class="mt-4">
                                         <a href="{% url 'olympiads:olympiad_tasks' olympiad_id=olympiad.id %}" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium transition-colors">
@@ -236,6 +229,14 @@
                                             <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                                         </a>
                                     </div>
+                                    {% else %}
+                                    <form action="{% url 'olympiads:olympiad_register' olympiad_id=olympiad.id %}" method="post" class="mt-4">
+                                        {% csrf_token %}
+                                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors">
+                                            {% trans 'Принять участие' %}
+                                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                                        </button>
+                                    </form>
                                     {% endif %}
                                     {% endif %}
                                 </div>
