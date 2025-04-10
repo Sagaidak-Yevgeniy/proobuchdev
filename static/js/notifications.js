@@ -26,43 +26,16 @@ document.addEventListener('DOMContentLoaded', function() {
         loadNotifications();
     }
     
-    // Позиционирует выпадающее меню относительно кнопки
+    // Устанавливает максимальную высоту выпадающего меню
     function positionDropdown() {
-        if (window.innerWidth < 640) {
-            // На мобильных устройствах используем фиксированное позиционирование
-            // Позиционирование задано через CSS классы в HTML
-            
-            // Устанавливаем максимальную высоту для мобильных устройств
-            const maxHeight = window.innerHeight * 0.8; // 80% от высоты экрана
-            notificationDropdown.style.maxHeight = `${maxHeight}px`;
-            
-            // Для мобильных устройств всегда центрируем меню
-            // и убираем свойства, которые могут повлиять на позиционирование
-            notificationDropdown.style.margin = '0 auto';
-            notificationDropdown.style.width = 'calc(100vw - 16px)';
-            notificationDropdown.style.left = '8px';  // Отступ слева 8px (0.5rem)
-            notificationDropdown.style.right = '8px'; // Отступ справа 8px (0.5rem)
-            
-            // Устанавливаем максимальную высоту для внутреннего контейнера с уведомлениями
-            const listContainer = notificationDropdown.querySelector('.overflow-y-auto');
-            if (listContainer) {
-                listContainer.style.maxHeight = `${maxHeight - 120}px`; // за вычетом высоты шапки и футера
-            }
-            
-            return;
-        }
+        // Устанавливаем только максимальную высоту, все остальное через CSS
+        const maxHeight = window.innerHeight * 0.8; // 80% от высоты экрана
+        notificationDropdown.style.maxHeight = `${maxHeight}px`;
         
-        // На десктопе используем абсолютное позиционирование
-        notificationDropdown.style.maxHeight = '80vh';
-        notificationDropdown.style.margin = '0';
-        notificationDropdown.style.width = '';
-        notificationDropdown.style.left = 'auto';
-        notificationDropdown.style.right = '0';
-        
-        // Сбрасываем высоту внутреннего контейнера
+        // Устанавливаем максимальную высоту для внутреннего контейнера с уведомлениями
         const listContainer = notificationDropdown.querySelector('.overflow-y-auto');
         if (listContainer) {
-            listContainer.style.maxHeight = '60vh';
+            listContainer.style.maxHeight = `${maxHeight - 120}px`; // за вычетом высоты шапки и футера
         }
     }
     
