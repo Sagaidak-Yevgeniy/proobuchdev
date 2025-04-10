@@ -84,48 +84,134 @@
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen flex flex-col transition-colors duration-200">
     <!-- Навигационная панель -->
-    <nav class="bg-blue-600 text-white shadow-lg dark:bg-gray-800">
-        <div class="container mx-auto px-4 py-3">
-            <div class="lg:flex lg:justify-between lg:items-center">
-                <!-- Мобильное меню и логотип -->
-                <div class="flex justify-between items-center">
-                    <a href="{% url 'home' %}" class="text-xl font-bold flex items-center">
-                        <i class="fas fa-graduation-cap mr-2"></i><span class="md:inline hidden">ПроОбучение</span><span class="md:hidden">ПроОбучение</span>
+    <nav class="bg-blue-600 text-white shadow-lg dark:bg-gray-800 sticky top-0 z-50 px-4 py-3">
+        <div class="container mx-auto">
+            <div class="flex items-center justify-between h-16">
+                <!-- Логотип и мобильное меню -->
+                <div class="flex items-center">
+                    <a href="{% url 'home' %}" class="flex items-center space-x-2">
+                        <i class="fas fa-graduation-cap text-2xl"></i>
+                        <span class="font-bold text-xl">ПроОбучение</span>
                     </a>
-                    
-                    <div class="flex items-center">
-                        <!-- Колокольчик уведомлений (только для авторизованных пользователей) -->
-                        {% if user.is_authenticated %}
-                        <div class="mr-3">
-                            {% include "components/notification_dropdown.html" %}
-                        </div>
-                        {% endif %}
-                        
-                        <!-- Гамбургер меню для мобильных устройств -->
-                        <button id="mobile-menu-button" class="lg:hidden text-white focus:outline-none">
-                            <i class="fas fa-bars text-xl"></i>
-                        </button>
-                    </div>
                 </div>
                 
-                <!-- Навигационное меню -->
-                <div id="navigation-menu" class="hidden lg:flex flex-col lg:flex-row lg:items-center lg:justify-between w-full lg:w-auto mt-4 lg:mt-0">
-                    <div class="flex flex-col lg:flex-row lg:items-center lg:space-x-4 mb-4 lg:mb-0">
-                        <a href="{% url 'course_list' %}" class="py-2 px-2 lg:py-0 text-base font-medium hover:text-blue-200 transition-colors">Курсы</a>
-                        <a href="{% url 'olympiad_list' %}" class="py-2 px-2 lg:py-0 text-base font-medium hover:text-blue-200 transition-colors">Олимпиады</a>
-                        {% if user.is_authenticated %}
-                            <a href="{% url 'chat_history' %}" class="py-2 px-2 lg:py-0 text-base font-medium hover:text-blue-200 transition-colors">
-                                <i class="fas fa-robot mr-1"></i>AI-ассистент
-                            </a>
-                            <a href="{% url 'my_courses' %}" class="py-2 px-2 lg:py-0 text-base font-medium hover:text-blue-200 transition-colors">Мои курсы</a>
-                            <a href="{% url 'dashboard:index' %}" class="py-2 px-2 lg:py-0 text-base font-medium hover:text-blue-200 transition-colors">
-                              <i class="fas fa-chart-line mr-1"></i>Дашборд
-                            </a>
-                            {% if user.profile.is_teacher %}
-                            <a href="{% url 'course_create' %}" class="py-2 px-2 lg:py-0 text-base font-medium hover:text-blue-200 transition-colors">Создать курс</a>
-                            {% endif %}
+                <!-- Десктопное меню -->
+                <div class="hidden lg:flex space-x-1">
+                    <a href="{% url 'course_list' %}" class="px-4 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors flex items-center">
+                        <i class="fas fa-book mr-2"></i>Курсы
+                    </a>
+                    <a href="{% url 'olympiad_list' %}" class="px-4 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors flex items-center">
+                        <i class="fas fa-medal mr-2"></i>Олимпиады
+                    </a>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'chat_history' %}" class="px-4 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors flex items-center">
+                            <i class="fas fa-robot mr-2"></i>AI-ассистент
+                        </a>
+                        <a href="{% url 'my_courses' %}" class="px-4 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors flex items-center">
+                            <i class="fas fa-user-graduate mr-2"></i>Мои курсы
+                        </a>
+                        <a href="{% url 'dashboard:index' %}" class="px-4 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors flex items-center">
+                            <i class="fas fa-chart-line mr-2"></i>Дашборд
+                        </a>
+                        {% if user.profile.is_teacher %}
+                        <a href="{% url 'course_create' %}" class="px-4 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors flex items-center">
+                            <i class="fas fa-plus-circle mr-2"></i>Создать курс
+                        </a>
                         {% endif %}
+                    {% endif %}
+                </div>
+                
+                <!-- Правая часть (уведомления, профиль) -->
+                <div class="flex items-center space-x-4">
+                    {% if user.is_authenticated %}
+                    <!-- Уведомления -->
+                    <div class="relative">
+                        {% include "components/notification_dropdown.html" %}
                     </div>
+
+                    <!-- Выпадающее меню пользователя (только на desktop) -->
+                    <div class="relative hidden lg:block">
+                        <button class="flex items-center space-x-2 text-white hover:bg-blue-700 transition-colors rounded-md px-3 py-2" onclick="toggleDropdown()">
+                            <div class="w-8 h-8 rounded-full bg-blue-800 flex items-center justify-center">
+                                <span class="text-sm font-bold">{{ user.username|first|upper }}</span>
+                            </div>
+                            <span class="text-sm font-medium max-w-[120px] truncate">{{ user.username }}</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="userDropdown" class="absolute right-0 hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-lg rounded-lg mt-2 py-2 w-60 z-10">
+                            <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-600">
+                                <div class="font-medium">{{ user.get_full_name|default:user.username }}</div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</div>
+                                <div class="text-xs mt-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded-full px-2 py-0.5 inline-block">{{ user.profile.get_role_display }}</div>
+                            </div>
+                            <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                <i class="fas fa-user mr-2"></i>Мой профиль
+                            </a>
+                            <a href="{% url 'achievement_list' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                <i class="fas fa-trophy mr-2"></i>Достижения
+                            </a>
+                            <a href="{% url 'my_certificates' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                <i class="fas fa-certificate mr-2"></i>Мои сертификаты
+                            </a>
+                            <a href="{% url 'leaderboard' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                <i class="fas fa-list-ol mr-2"></i>Рейтинг
+                            </a>
+                            <a href="{% url 'interface_settings' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                <i class="fas fa-sliders-h mr-2"></i>Настройки интерфейса
+                            </a>
+                            {% if user.is_staff or user.profile.is_admin %}
+                            <div class="border-t border-gray-200 dark:border-gray-600 my-1"></div>
+                            <a href="{% url 'admin:index' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                <i class="fas fa-cog mr-2"></i>Админ-панель
+                            </a>
+                            {% endif %}
+                            <div class="border-t border-gray-200 dark:border-gray-600 my-1"></div>
+                            <a href="{% url 'logout' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 text-red-600 dark:text-red-400">
+                                <i class="fas fa-sign-out-alt mr-2"></i>Выйти
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Кнопки авторизации (только на desktop) -->
+                    <div class="hidden lg:flex items-center space-x-3">
+                        <a href="{% url 'login' %}" class="text-white hover:bg-blue-700 transition-colors rounded-md px-4 py-2">Войти</a>
+                        <a href="{% url 'register' %}" class="bg-white text-blue-600 hover:bg-blue-50 transition-colors rounded-md px-4 py-2 font-medium">Регистрация</a>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Гамбургер для мобильного меню -->
+                    <button id="mobile-menu-button" class="lg:hidden text-white focus:outline-none">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Мобильное меню (скрыто по умолчанию) -->
+            <div id="navigation-menu" class="hidden lg:hidden mt-3 space-y-1 pb-3">
+                <a href="{% url 'course_list' %}" class="block px-4 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-book mr-2"></i>Курсы
+                </a>
+                <a href="{% url 'olympiad_list' %}" class="block px-4 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-medal mr-2"></i>Олимпиады
+                </a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'chat_history' %}" class="block px-4 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-robot mr-2"></i>AI-ассистент
+                    </a>
+                    <a href="{% url 'my_courses' %}" class="block px-4 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-user-graduate mr-2"></i>Мои курсы
+                    </a>
+                    <a href="{% url 'dashboard:index' %}" class="block px-4 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-chart-line mr-2"></i>Дашборд
+                    </a>
+                    {% if user.profile.is_teacher %}
+                    <a href="{% url 'course_create' %}" class="block px-4 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-plus-circle mr-2"></i>Создать курс
+                    </a>
+                    {% endif %}
+                {% endif %}
+                
+                <div class="pt-4 border-t border-blue-500 mt-3">
                     
                     <div class="flex flex-col lg:flex-row lg:items-center lg:space-x-4">
                         {% if user.is_authenticated %}
