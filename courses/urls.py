@@ -13,5 +13,6 @@ urlpatterns = [
     path('<slug:slug>/enroll/', views.course_enroll, name='course_enroll'),
     
     # Включаем пути для сертификатов
-    path('', include('courses.urls_certificates')),
+    # Используем отдельный префикс, чтобы избежать конфликта с другими URL
+    path('certificates/', include('courses.urls_certificates')),
 ]
