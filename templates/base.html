@@ -58,8 +58,38 @@
             {% if user.interface.high_contrast %}
             .dark { --tw-text-opacity: 1; color: rgba(255, 255, 255, var(--tw-text-opacity)); }
             .dark .text-gray-400 { --tw-text-opacity: 1; color: rgba(255, 255, 255, var(--tw-text-opacity)); }
-            .dark .text-gray-300 { --tw-text-opacity: 1; color: rgba(255, 255, 255, var(--tw-text-opacity)); }
             {% endif %}
+        {% endif %}
+        
+        /* Общие стили */
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Анимация для выпадающих меню */
+        @keyframes dropdown-scale {
+            0% {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        /* Стили для выпадающих меню */
+        #desktopUserDropdown,
+        #mobileUserDropdown,
+        #notificationDropdown {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            animation: dropdown-scale 0.2s ease-out;
+            transform-origin: top right;
+            border-radius: 0.75rem;
+        }
+            .dark .text-gray-300 { --tw-text-opacity: 1; color: rgba(255, 255, 255, var(--tw-text-opacity)); }
             
             {% if not user.interface.enable_animations %}
             * { 
@@ -67,7 +97,6 @@
                 animation: none !important;
             }
             {% endif %}
-        {% endif %}
         
         /* Темная тема */
         .dark { background-color: #121212; color: #e0e0e0; }
@@ -131,33 +160,33 @@
 
                     <!-- Выпадающее меню пользователя (только на desktop) -->
                     <div class="relative hidden lg:block">
-                        <button id="desktopUserMenuButton" class="flex items-center text-white hover:bg-blue-700 transition-colors rounded-full py-1 pl-1 pr-2 md:pr-3">
-                            <div class="w-8 h-8 rounded-full bg-blue-800 flex items-center justify-center border-2 border-blue-400">
+                        <button id="desktopUserMenuButton" class="flex items-center text-white hover:bg-blue-600 hover:shadow-md transition-all duration-300 rounded-full py-1 pl-1 pr-2 md:pr-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center border-2 border-blue-300 shadow-inner">
                                 <span class="text-sm font-bold">{{ user.username|first|upper }}</span>
                             </div>
                             <span class="text-sm font-medium max-w-[120px] truncate hidden md:inline ml-2">{{ user.username }}</span>
-                            <i class="fas fa-chevron-down text-xs ml-1"></i>
+                            <i class="fas fa-chevron-down text-xs ml-1 opacity-75"></i>
                         </button>
-                        <div id="desktopUserDropdown" class="absolute right-0 hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-lg rounded-lg mt-2 py-2 w-56 max-w-[calc(100vw-2rem)] z-20" style="right: 0; left: auto;">
+                        <div id="desktopUserDropdown" class="absolute right-0 hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-xl rounded-xl mt-2 py-2 w-56 max-w-[calc(100vw-2rem)] z-20 border border-gray-100 dark:border-gray-600" style="right: 0; left: auto; transform-origin: top right; animation: dropdown-scale 0.2s ease-out;">
                             <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-600">
                                 <div class="font-medium">{{ user.get_full_name|default:user.username }}</div>
                                 <div class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</div>
                                 <div class="text-xs mt-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded-full px-2 py-0.5 inline-block">{{ user.profile.get_role_display }}</div>
                             </div>
-                            <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <i class="fas fa-user mr-2"></i>Мой профиль
+                            <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
+                                <i class="fas fa-user mr-2 text-blue-600 dark:text-blue-400"></i>Мой профиль
                             </a>
-                            <a href="{% url 'achievement_list' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <i class="fas fa-trophy mr-2"></i>Достижения
+                            <a href="{% url 'achievement_list' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
+                                <i class="fas fa-trophy mr-2 text-yellow-500 dark:text-yellow-400"></i>Достижения
                             </a>
-                            <a href="{% url 'my_certificates' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <i class="fas fa-certificate mr-2"></i>Мои сертификаты
+                            <a href="{% url 'my_certificates' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
+                                <i class="fas fa-certificate mr-2 text-green-600 dark:text-green-400"></i>Мои сертификаты
                             </a>
-                            <a href="{% url 'leaderboard' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <i class="fas fa-list-ol mr-2"></i>Рейтинг
+                            <a href="{% url 'leaderboard' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
+                                <i class="fas fa-list-ol mr-2 text-purple-600 dark:text-purple-400"></i>Рейтинг
                             </a>
-                            <a href="{% url 'interface_settings' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <i class="fas fa-sliders-h mr-2"></i>Настройки интерфейса
+                            <a href="{% url 'interface_settings' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
+                                <i class="fas fa-sliders-h mr-2 text-gray-600 dark:text-gray-400"></i>Настройки интерфейса
                             </a>
                             {% if user.is_staff or user.profile.is_admin %}
                             <div class="border-t border-gray-200 dark:border-gray-600 my-1"></div>
@@ -216,29 +245,29 @@
                     <div class="flex flex-col lg:flex-row lg:items-center lg:space-x-4">
                         {% if user.is_authenticated %}
                             <div class="relative py-2 lg:py-0">
-                                <button id="mobileUserMenuButton" class="flex items-center hover:text-blue-200 w-full lg:w-auto rounded-full py-1">
-                                    <div class="w-6 h-6 rounded-full bg-blue-700 flex items-center justify-center mr-2 border border-blue-400">
+                                <button id="mobileUserMenuButton" class="flex items-center hover:text-blue-200 hover:bg-blue-700/30 w-full lg:w-auto rounded-full py-2 px-3 transition-all duration-300">
+                                    <div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center mr-2 border-2 border-blue-300 shadow-inner">
                                         <span class="text-xs font-bold">{{ user.username|first|upper }}</span>
                                     </div>
                                     <span class="truncate max-w-[120px]">{{ user.username }}</span> 
-                                    <span class="text-xs ml-1">({{ user.profile.get_role_display }})</span> 
-                                    <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                                    <span class="text-xs ml-1 bg-blue-700/70 px-1.5 py-0.5 rounded-full">({{ user.profile.get_role_display }})</span> 
+                                    <i class="fas fa-chevron-down ml-1 text-xs opacity-75"></i>
                                 </button>
-                                <div id="mobileUserDropdown" class="absolute left-0 sm:right-0 sm:left-auto hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-lg rounded-lg mt-2 py-2 w-full sm:w-48 z-20 max-w-[calc(100vw-2rem)]">
-                                    <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                        <i class="fas fa-user mr-2"></i>Мой профиль
+                                <div id="mobileUserDropdown" class="absolute left-0 sm:right-0 sm:left-auto hidden bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-xl rounded-xl mt-2 py-2 w-full sm:w-48 z-20 max-w-[calc(100vw-2rem)] border border-gray-100 dark:border-gray-600">
+                                    <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
+                                        <i class="fas fa-user mr-2 text-blue-600 dark:text-blue-400"></i>Мой профиль
                                     </a>
-                                    <a href="{% url 'achievement_list' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                        <i class="fas fa-trophy mr-2"></i>Достижения
+                                    <a href="{% url 'achievement_list' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
+                                        <i class="fas fa-trophy mr-2 text-yellow-500 dark:text-yellow-400"></i>Достижения
                                     </a>
-                                    <a href="{% url 'my_certificates' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                        <i class="fas fa-certificate mr-2"></i>Мои сертификаты
+                                    <a href="{% url 'my_certificates' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
+                                        <i class="fas fa-certificate mr-2 text-green-600 dark:text-green-400"></i>Мои сертификаты
                                     </a>
-                                    <a href="{% url 'leaderboard' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                        <i class="fas fa-list-ol mr-2"></i>Рейтинг
+                                    <a href="{% url 'leaderboard' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
+                                        <i class="fas fa-list-ol mr-2 text-purple-600 dark:text-purple-400"></i>Рейтинг
                                     </a>
-                                    <a href="{% url 'interface_settings' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                        <i class="fas fa-sliders-h mr-2"></i>Настройки интерфейса
+                                    <a href="{% url 'interface_settings' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 rounded-md mx-1 my-0.5">
+                                        <i class="fas fa-sliders-h mr-2 text-gray-600 dark:text-gray-400"></i>Настройки интерфейса
                                     </a>
                                     {% if user.is_staff or user.profile.is_admin %}
                                     <a href="{% url 'admin:index' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
