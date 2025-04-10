@@ -1,8 +1,8 @@
 {% load static %}
 
-<div class="olympiad-card group relative overflow-hidden rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl dark:bg-gray-800 bg-white transform hover:-translate-y-1">
+<div class="olympiad-card group relative overflow-hidden rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl dark:bg-gray-800 bg-white transform hover:-translate-y-1 h-full flex flex-col">
     <!-- Обложка олимпиады с анимацией при наведении -->
-    <div class="relative h-48 overflow-hidden">
+    <div class="relative h-40 sm:h-48 overflow-hidden">
         {% if olympiad.image %}
         <img src="{{ olympiad.image.url }}" alt="{{ olympiad.title }}" 
              class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">
@@ -28,7 +28,7 @@
             <!-- Баллы или пройдено (если есть) -->
             {% if participation_score is not None %}
             <div class="rounded-full bg-yellow-500 px-3 py-1 text-xs font-semibold text-white shadow-md">
-                {{ participation_score }} / {{ olympiad.max_score }} баллов
+                {{ participation_score }} / {{ olympiad.max_score }}
             </div>
             {% elif olympiad in user_participation_ids %}
             <div class="rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white shadow-md">
@@ -43,24 +43,24 @@
     </div>
     
     <!-- Основное содержимое карточки -->
-    <div class="p-4">
+    <div class="p-4 flex-1 flex flex-col">
         <!-- Заголовок и описание -->
-        <h3 class="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white line-clamp-1">
+        <h3 class="mb-2 text-lg sm:text-xl font-bold tracking-tight text-gray-900 dark:text-white line-clamp-1">
             {{ olympiad.title }}
         </h3>
-        <p class="mb-4 text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+        <p class="mb-4 text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
             {{ olympiad.short_description }}
         </p>
         
         <!-- Информация об олимпиаде -->
-        <div class="mb-4 space-y-2 text-sm text-gray-700 dark:text-gray-400">
+        <div class="mb-4 space-y-2 text-xs sm:text-sm text-gray-700 dark:text-gray-400 flex-1">
             <!-- Даты проведения -->
             <div class="flex items-center">
-                <svg class="mr-1.5 h-4 w-4 text-gray-500 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="min-w-4 mr-1.5 h-4 w-4 text-gray-500 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                           d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                 </svg>
-                
+                <span class="line-clamp-1">
                 {% if olympiad_status == 'upcoming' %}
                     Начало через {{ time_left }}
                 {% elif olympiad_status == 'active' %}
@@ -68,33 +68,38 @@
                 {% else %}
                     Завершено {{ olympiad.end_datetime|date:"d.m.Y" }}
                 {% endif %}
+                </span>
             </div>
             
             <!-- Задания -->
             <div class="flex items-center">
-                <svg class="mr-1.5 h-4 w-4 text-gray-500 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="min-w-4 mr-1.5 h-4 w-4 text-gray-500 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                           d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                 </svg>
+                <span class="line-clamp-1">
                 {{ olympiad.tasks.count }} {% if olympiad.tasks.count == 1 %}задание{% else %}заданий{% endif %}
+                </span>
             </div>
             
             <!-- Связанный курс, если есть -->
             {% if olympiad.related_course %}
             <div class="flex items-center">
-                <svg class="mr-1.5 h-4 w-4 text-gray-500 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="min-w-4 mr-1.5 h-4 w-4 text-gray-500 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                           d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                 </svg>
+                <span class="line-clamp-1">
                 Курс: {{ olympiad.related_course.title }}
+                </span>
             </div>
             {% endif %}
         </div>
         
         <!-- Действия -->
-        <div class="mt-auto flex justify-between">
+        <div class="mt-auto flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 sm:justify-between">
             <a href="{% url 'olympiads:olympiad_detail' olympiad_id=olympiad.id %}" 
-               class="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800">
+               class="w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-center text-xs sm:text-sm font-medium text-white transition-all duration-200 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-800 hover:scale-105">
                 Подробнее
                 <svg class="ml-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
@@ -104,7 +109,7 @@
             <!-- Если олимпиада активна, показать кнопку "Перейти к заданиям" -->
             {% if olympiad_status == 'active' and olympiad in user_participation_ids %}
             <a href="{% url 'olympiads:olympiad_tasks' olympiad_id=olympiad.id %}" 
-               class="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800">
+               class="w-full sm:w-auto inline-flex items-center justify-center rounded-md bg-green-600 px-4 py-2 text-center text-xs sm:text-sm font-medium text-white transition-all duration-200 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-300 dark:focus:ring-green-800 hover:scale-105">
                 К заданиям
                 <svg class="ml-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>

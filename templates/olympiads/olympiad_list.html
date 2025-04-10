@@ -32,48 +32,97 @@
     .active-olympiad .olympiad-status-badge {
         animation: pulse 2s infinite;
     }
+    
+    /* Анимированный градиентный текст */
+    @keyframes gradient-text {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    
+    .animated-gradient-text {
+        background: linear-gradient(90deg, #3B82F6, #8B5CF6, #EC4899, #3B82F6);
+        background-size: 300% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: gradient-text 6s ease infinite;
+    }
+    
+    /* Улучшенная карточная сетка для мобильных */
+    @media (max-width: 640px) {
+        .olympiad-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <h1 class="text-4xl font-bold mb-8 text-center text-gray-800 dark:text-gray-100">
-        {% trans 'Олимпиады по программированию' %}
-    </h1>
+    <div class="mb-8 text-center">
+        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-gray-100 animated-gradient-text">
+            {% trans 'Олимпиады по программированию' %}
+        </h1>
+        <p class="mt-3 text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-sm sm:text-base">
+            Участвуйте в соревнованиях, решайте интересные задачи и демонстрируйте свои навыки в программировании
+        </p>
+    </div>
 
-    <!-- Форма поиска и фильтрации -->
-    <div class="mb-10 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md">
-        <form method="GET" action="{% url 'olympiads:olympiad_list' %}" class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-            <div class="flex-grow">
-                <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{% trans 'Поиск олимпиады' %}</label>
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <input type="text" id="search" name="search" value="{{ search_query }}" 
-                           class="w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white" 
-                           placeholder="{% trans 'Введите название или описание олимпиады' %}">
+    <!-- Улучшенная навигация с табами для мобильных -->
+    <div class="mb-6 flex items-center justify-center overflow-x-auto">
+        <div class="inline-flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 shadow-inner">
+            <a href="{% url 'olympiads:olympiad_list' %}{% if search_query %}?search={{ search_query }}{% endif %}" 
+                class="px-4 py-2 rounded-lg font-medium text-sm sm:text-base text-center transition-all duration-200 whitespace-nowrap
+                {% if not filter_status %}bg-blue-600 text-white shadow-md{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">
+                Все
+            </a>
+            <a href="{% url 'olympiads:olympiad_list' %}?status=active{% if search_query %}&search={{ search_query }}{% endif %}" 
+                class="px-4 py-2 rounded-lg font-medium text-sm sm:text-base text-center transition-all duration-200 whitespace-nowrap
+                {% if filter_status == 'active' %}bg-green-600 text-white shadow-md{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">
+                Активные
+            </a>
+            <a href="{% url 'olympiads:olympiad_list' %}?status=upcoming{% if search_query %}&search={{ search_query }}{% endif %}" 
+                class="px-4 py-2 rounded-lg font-medium text-sm sm:text-base text-center transition-all duration-200 whitespace-nowrap
+                {% if filter_status == 'upcoming' %}bg-blue-500 text-white shadow-md{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">
+                Предстоящие
+            </a>
+            <a href="{% url 'olympiads:olympiad_list' %}?status=completed{% if search_query %}&search={{ search_query }}{% endif %}" 
+                class="px-4 py-2 rounded-lg font-medium text-sm sm:text-base text-center transition-all duration-200 whitespace-nowrap
+                {% if filter_status == 'completed' %}bg-purple-600 text-white shadow-md{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700{% endif %}">
+                Завершенные
+            </a>
+        </div>
+    </div>
+
+    <!-- Форма поиска и фильтрации с улучшенной адаптивностью -->
+    <div class="mb-10 bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-md">
+        <form method="GET" action="{% url 'olympiads:olympiad_list' %}" class="flex flex-col space-y-4">
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                    </svg>
                 </div>
+                <input type="text" id="search" name="search" value="{{ search_query }}" 
+                       class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm sm:text-base" 
+                       placeholder="{% trans 'Поиск олимпиады по названию или описанию...' %}">
             </div>
-            <div class="md:w-1/4">
-                <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{% trans 'Статус' %}</label>
-                <select id="status" name="status" 
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
-                    <option value="" {% if not filter_status %}selected{% endif %}>{% trans 'Все олимпиады' %}</option>
-                    <option value="upcoming" {% if filter_status == 'upcoming' %}selected{% endif %}>{% trans 'Предстоящие' %}</option>
-                    <option value="active" {% if filter_status == 'active' %}selected{% endif %}>{% trans 'Активные' %}</option>
-                    <option value="completed" {% if filter_status == 'completed' %}selected{% endif %}>{% trans 'Завершенные' %}</option>
-                </select>
-            </div>
-            <div class="md:flex md:items-end">
-                <button type="submit" class="w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors">
-                    {% trans 'Применить' %}
+            
+            {% if filter_status %}
+                <input type="hidden" name="status" value="{{ filter_status }}">
+            {% endif %}
+            
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                <button type="submit" class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-xl font-medium hover:from-blue-600 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 shadow-md text-sm sm:text-base">
+                    <i class="fas fa-search mr-2"></i>{% trans 'Найти' %}
                 </button>
-                {% if search_query or filter_status %}
-                <a href="{% url 'olympiads:olympiad_list' %}" class="mt-2 md:mt-0 md:ml-2 block text-center md:inline-block px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md font-medium transition-colors">
-                    {% trans 'Сбросить' %}
+                {% if search_query %}
+                <a href="{% url 'olympiads:olympiad_list' %}{% if filter_status %}?status={{ filter_status }}{% endif %}" 
+                   class="w-full sm:w-auto block text-center px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl font-medium transition-all duration-300 text-sm sm:text-base">
+                    <i class="fas fa-times mr-2"></i>{% trans 'Сбросить поиск' %}
                 </a>
                 {% endif %}
             </div>
@@ -83,10 +132,18 @@
     <!-- Предстоящие олимпиады -->
     {% if upcoming_olympiads %}
     <div class="mb-12">
-        <h2 class="text-2xl font-semibold mb-6 text-gray-800 dark:text-gray-200">
-            {% trans 'Предстоящие олимпиады' %}
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="flex items-center mb-6">
+            <div class="bg-blue-500 rounded-full w-10 h-10 flex items-center justify-center shadow-md mr-3">
+                <i class="fas fa-calendar-alt text-white text-lg"></i>
+            </div>
+            <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">
+                {% trans 'Предстоящие олимпиады' %}
+            </h2>
+            <div class="ml-3 px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs font-semibold rounded-full">
+                {{ upcoming_olympiads|length }}
+            </div>
+        </div>
+        <div class="olympiad-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {% for olympiad in upcoming_olympiads %}
                 {% with olympiad_status="upcoming" olympiad_status_text="Скоро" time_left=olympiad.start_datetime|timeuntil participation_score=None %}
                     {% include "olympiads/components/olympiad_card.html" %}
@@ -99,10 +156,18 @@
     <!-- Активные олимпиады -->
     {% if active_olympiads %}
     <div class="mb-12">
-        <h2 class="text-2xl font-semibold mb-6 text-gray-800 dark:text-gray-200">
-            {% trans 'Активные олимпиады' %}
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="flex items-center mb-6">
+            <div class="bg-green-500 rounded-full w-10 h-10 flex items-center justify-center shadow-md mr-3">
+                <i class="fas fa-play text-white text-lg"></i>
+            </div>
+            <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">
+                {% trans 'Активные олимпиады' %}
+            </h2>
+            <div class="ml-3 px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs font-semibold rounded-full">
+                {{ active_olympiads|length }}
+            </div>
+        </div>
+        <div class="olympiad-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {% for olympiad in active_olympiads %}
                 {% with olympiad_status="active" olympiad_status_text="Активна" time_left=olympiad.end_datetime|timeuntil participation_score=None %}
                     {% include "olympiads/components/olympiad_card.html" %}
@@ -114,11 +179,19 @@
     
     <!-- Завершенные олимпиады -->
     {% if completed_olympiads %}
-    <div>
-        <h2 class="text-2xl font-semibold mb-6 text-gray-800 dark:text-gray-200">
-            {% trans 'Завершенные олимпиады' %}
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div class="mb-6">
+        <div class="flex items-center mb-6">
+            <div class="bg-purple-500 rounded-full w-10 h-10 flex items-center justify-center shadow-md mr-3">
+                <i class="fas fa-flag-checkered text-white text-lg"></i>
+            </div>
+            <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">
+                {% trans 'Завершенные олимпиады' %}
+            </h2>
+            <div class="ml-3 px-3 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 text-xs font-semibold rounded-full">
+                {{ completed_olympiads|length }}
+            </div>
+        </div>
+        <div class="olympiad-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {% for olympiad in completed_olympiads %}
                 {% with olympiad_status="completed" olympiad_status_text="Завершена" time_left=None participation_score=None %}
                     {% include "olympiads/components/olympiad_card.html" %}
@@ -129,57 +202,119 @@
     {% endif %}
     
     {% if not upcoming_olympiads and not active_olympiads and not completed_olympiads %}
-    <div class="text-center py-16 bg-white dark:bg-gray-800 rounded-xl shadow-md">
-        <div class="mb-6">
-            <svg class="w-20 h-20 mx-auto text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+    <div class="text-center py-16 bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden relative">
+        <!-- Декоративные элементы для интересного дизайна -->
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+        <div class="absolute top-0 right-0 w-20 h-20">
+            <svg class="text-gray-100 dark:text-gray-800" viewBox="0 0 100 100" fill="currentColor">
+                <circle cx="75" cy="25" r="20"/>
             </svg>
         </div>
-        <h3 class="text-2xl font-semibold text-gray-700 dark:text-gray-300">{% trans 'Нет активных олимпиад' %}</h3>
-        <p class="mt-3 text-gray-600 dark:text-gray-400 max-w-md mx-auto">
-            {% trans 'В настоящее время нет доступных олимпиад. Пожалуйста, загляните позже или обратитесь к преподавателю!' %}
-        </p>
+        <div class="absolute bottom-0 left-0 w-20 h-20">
+            <svg class="text-gray-100 dark:text-gray-800" viewBox="0 0 100 100" fill="currentColor">
+                <circle cx="25" cy="75" r="20"/>
+            </svg>
+        </div>
+        
+        <!-- Основное содержимое -->
+        <div class="relative z-10">
+            <div class="mb-6">
+                <div class="mx-auto w-24 h-24 rounded-full bg-blue-50 dark:bg-gray-700 flex items-center justify-center">
+                    <svg class="w-14 h-14 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                </div>
+            </div>
+            
+            <h3 class="text-2xl sm:text-3xl font-bold text-gray-700 dark:text-gray-300 mb-2">
+                {% if search_query %}
+                    {% trans 'Ничего не найдено' %}
+                {% else %}
+                    {% trans 'Нет активных олимпиад' %}
+                {% endif %}
+            </h3>
+            
+            <p class="mt-3 text-gray-600 dark:text-gray-400 max-w-md mx-auto text-sm sm:text-base">
+                {% if search_query %}
+                    {% trans 'По запросу' %} <span class="font-medium text-blue-600 dark:text-blue-400">"{{ search_query }}"</span> {% trans 'ничего не найдено. Пожалуйста, попробуйте изменить запрос или сбросить поиск.' %}
+                {% else %}
+                    {% trans 'В настоящее время нет доступных олимпиад. Пожалуйста, загляните позже или обратитесь к преподавателю!' %}
+                {% endif %}
+            </p>
+            
+            {% if search_query %}
+            <div class="mt-6">
+                <a href="{% url 'olympiads:olympiad_list' %}{% if filter_status %}?status={{ filter_status }}{% endif %}" 
+                   class="inline-flex items-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105">
+                    <i class="fas fa-times mr-2"></i>
+                    {% trans 'Сбросить поиск' %}
+                </a>
+            </div>
+            {% endif %}
+        </div>
     </div>
     {% endif %}
     
     <!-- Секция для преподавателей и администраторов -->
     {% if user.is_authenticated and user.profile.is_teacher or user.profile.is_admin %}
     <div class="mt-16 pt-8 border-t border-gray-200 dark:border-gray-700">
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">
-                {% trans 'Управление олимпиадами' %}
-            </h2>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+            <div class="flex items-center">
+                <div class="bg-indigo-500 rounded-full w-10 h-10 flex items-center justify-center shadow-md mr-3">
+                    <i class="fas fa-tools text-white text-lg"></i>
+                </div>
+                <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200">
+                    {% trans 'Управление олимпиадами' %}
+                </h2>
+            </div>
             <a href="{% url 'olympiads:olympiad_create' %}" 
-               class="inline-flex items-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">
+               class="inline-flex items-center justify-center px-5 py-3 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-xl text-sm font-medium hover:from-blue-600 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 shadow-md">
+                <i class="fas fa-plus-circle mr-2"></i>
                 {% trans 'Создать олимпиаду' %}
-                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
             </a>
         </div>
-        <div class="bg-white dark:bg-gray-800 shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
+    
+        <!-- Карточки управления -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <!-- Карточка панели управления олимпиадами -->
             <a href="{% url 'olympiads:olympiad_manage_list' %}" 
-               class="block p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white p-3 rounded-full">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
+               class="block bg-white dark:bg-gray-800 shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                <div class="p-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-3 rounded-xl shadow-md">
+                            <i class="fas fa-tasks text-xl"></i>
                         </div>
                         <div class="ml-4">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                                {% trans 'Панель управления олимпиадами' %}
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1 flex items-center">
+                                {% trans 'Мои олимпиады' %}
+                                <i class="fas fa-chevron-right text-sm ml-2 text-blue-500"></i>
                             </h3>
                             <p class="text-sm text-gray-600 dark:text-gray-400">
-                                {% trans 'Создание и редактирование олимпиад, управление участниками и заданиями' %}
+                                {% trans 'Просмотр, редактирование и настройка созданных вами олимпиад' %}
                             </p>
                         </div>
                     </div>
-                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
+                </div>
+            </a>
+            
+            <!-- Карточка "Создать задания" -->
+            <a href="{% url 'olympiads:olympiad_create' %}" 
+               class="block bg-white dark:bg-gray-800 shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                <div class="p-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 bg-gradient-to-br from-green-500 to-teal-600 text-white p-3 rounded-xl shadow-md">
+                            <i class="fas fa-code text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1 flex items-center">
+                                {% trans 'Управление заданиями' %}
+                                <i class="fas fa-chevron-right text-sm ml-2 text-green-500"></i>
+                            </h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                {% trans 'Создание и редактирование заданий для олимпиад и их проверка' %}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </a>
         </div>
