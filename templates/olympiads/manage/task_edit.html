@@ -1,62 +1,273 @@
 {% extends 'base.html' %}
 {% load i18n %}
 {% load static %}
+{% load markdownify %}
 
 {% block title %}{% trans 'Редактирование задания' %} | {{ task.title }}{% endblock %}
 
+{% block extra_head %}
+<!-- EasyMDE - Markdown Editor -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+
+<!-- CodeMirror для подсветки синтаксиса -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/theme/dracula.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/mode/python/python.min.js"></script>
+
+<!-- Marked.js для обработки Markdown -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<!-- KaTeX для отображения математических формул -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+<style>
+    .CodeMirror {
+        height: 300px;
+        border-radius: 0.375rem;
+    }
+    .editor-toolbar {
+        border-radius: 0.375rem 0.375rem 0 0;
+    }
+    .EasyMDEContainer .CodeMirror {
+        border-radius: 0 0 0.375rem 0.375rem;
+    }
+    .tab-active {
+        border-bottom: 2px solid #3b82f6;
+    }
+    .preview-content {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        min-height: 300px;
+    }
+    .dark .preview-content {
+        border-color: #4b5563;
+        background-color: #1f2937;
+    }
+    .form-section {
+        transition: all 0.3s ease;
+        transform: translateY(0);
+    }
+    .form-section:hover {
+        transform: translateY(-2px);
+    }
+    .katex-html {
+        display: none;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <div class="mb-6 flex items-center">
-        <a href="{% url 'olympiads:olympiad_edit' olympiad_id=olympiad.id %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mr-3">
-            <i class="fas fa-arrow-left"></i>
-        </a>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-            {% trans 'Редактирование задания' %}: {{ task.title }}
-        </h1>
+    <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between">
+        <div class="flex items-center mb-4 md:mb-0">
+            <a href="{% url 'olympiads:olympiad_edit' olympiad_id=olympiad.id %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mr-3">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+                {% trans 'Редактирование задания' %}
+            </h1>
+        </div>
+        <span class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium dark:bg-indigo-900 dark:text-indigo-300">
+            {{ task.title }}
+        </span>
     </div>
     
-    <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg mb-6">
-        <form method="post" action="{% url 'olympiads:olympiad_task_edit' olympiad_id=olympiad.id task_id=task.id %}">
-            {% csrf_token %}
+    <!-- Навигация по вкладкам -->
+    <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
+        <ul class="flex flex-wrap -mb-px" id="formTabs" role="tablist">
+            <li class="mr-2" role="presentation">
+                <button type="button" class="inline-block p-4 tab-active" id="basic-tab" data-tab="basic" role="tab" aria-selected="true">
+                    <i class="fas fa-info-circle mr-2"></i>{% trans 'Основная информация' %}
+                </button>
+            </li>
+            <li class="mr-2" role="presentation">
+                <button type="button" class="inline-block p-4" id="content-tab" data-tab="content" role="tab" aria-selected="false">
+                    <i class="fas fa-file-alt mr-2"></i>{% trans 'Контент задания' %}
+                </button>
+            </li>
+            <li class="mr-2" role="presentation">
+                <button type="button" class="inline-block p-4" id="settings-tab" data-tab="settings" role="tab" aria-selected="false">
+                    <i class="fas fa-cog mr-2"></i>{% trans 'Настройки' %}
+                </button>
+            </li>
+            <li role="presentation">
+                <button type="button" class="inline-block p-4" id="preview-tab" data-tab="preview" role="tab" aria-selected="false">
+                    <i class="fas fa-eye mr-2"></i>{% trans 'Предпросмотр' %}
+                </button>
+            </li>
+        </ul>
+    </div>
+    
+    <form method="post" action="{% url 'olympiads:olympiad_task_edit' olympiad_id=olympiad.id task_id=task.id %}" class="space-y-8">
+        {% csrf_token %}
+        
+        <!-- Содержимое вкладок -->
+        <div class="tab-content">
+            <!-- Вкладка с основной информацией -->
+            <div class="tab-pane active" id="basic-content">
+                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden form-section">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Основная информация' %}</h2>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="id_title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Название' %} *</label>
+                                <input type="text" name="title" id="id_title" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" value="{{ task.title }}" required>
+                            </div>
+                            <div>
+                                <label for="id_task_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Тип задания' %} (только для чтения)</label>
+                                <input type="text" id="id_task_type_display" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white" value="{{ task.get_task_type_display }}" readonly>
+                                <input type="hidden" name="task_type" value="{{ task.task_type }}">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label for="id_points" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Баллы' %} *</label>
+                                <input type="number" name="points" id="id_points" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" value="{{ task.points }}" min="1" required>
+                            </div>
+                            <div>
+                                <label for="id_difficulty" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Сложность' %}</label>
+                                <select name="difficulty" id="id_difficulty" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                    <option value="1" {% if task.difficulty == 1 %}selected{% endif %}>{% trans 'Лёгкая' %}</option>
+                                    <option value="2" {% if task.difficulty == 2 %}selected{% endif %}>{% trans 'Ниже среднего' %}</option>
+                                    <option value="3" {% if task.difficulty == 3 %}selected{% endif %}>{% trans 'Средняя' %}</option>
+                                    <option value="4" {% if task.difficulty == 4 %}selected{% endif %}>{% trans 'Выше среднего' %}</option>
+                                    <option value="5" {% if task.difficulty == 5 %}selected{% endif %}>{% trans 'Сложная' %}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="id_topic" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Тема задания' %}</label>
+                                <input type="text" name="topic" id="id_topic" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" value="{{ task.topic }}">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label for="id_course" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Связанный курс' %}</label>
+                            <select name="course" id="id_course" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">{% trans '-- Нет связанного курса --' %}</option>
+                                {% for course in courses %}
+                                <option value="{{ course.id }}" {% if task.course_id == course.id %}selected{% endif %}>{{ course.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
-            <div class="px-4 py-5 sm:p-6 space-y-6">
-                <fieldset class="space-y-4">
-                    <legend class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Основная информация' %}</legend>
-                    
-                    <div>
-                        <label for="id_title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Название' %} *</label>
-                        <input type="text" name="title" id="id_title" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" value="{{ task.title }}" required>
+            <!-- Вкладка с контентом -->
+            <div class="tab-pane" id="content-content" style="display: none;">
+                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden form-section">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Контент задания' %}</h2>
                     </div>
-                    
-                    <div>
-                        <label for="id_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Описание' %} *</label>
-                        <textarea name="description" id="id_description" rows="5" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400" required>{{ task.description }}</textarea>
+                    <div class="p-6 space-y-4">
+                        <div class="flex items-center mb-4">
+                            <input id="id_use_markdown" name="use_markdown" type="checkbox" {% if task.use_markdown %}checked{% endif %} class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600">
+                            <label for="id_use_markdown" class="ms-2 text-sm font-medium text-gray-900 dark:text-white">{% trans 'Использовать Markdown' %}</label>
+                            
+                            <div class="ml-6 flex items-center">
+                                <input id="id_use_latex" name="use_latex" type="checkbox" {% if task.use_latex %}checked{% endif %} class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600">
+                                <label for="id_use_latex" class="ms-2 text-sm font-medium text-gray-900 dark:text-white">{% trans 'Использовать LaTeX' %}</label>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label for="id_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Описание задания' %} *</label>
+                            <textarea name="description" id="id_description" rows="10" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400" required>{{ task.description }}</textarea>
+                        </div>
+                        
+                        {% if task.task_type == 'programming' %}
+                        <div class="mt-6 programming-fields">
+                            <label for="id_initial_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Начальный код' %}</label>
+                            <textarea name="initial_code" id="id_initial_code" rows="8" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 font-mono">{{ task.initial_code }}</textarea>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{% trans 'Код, который будет предоставлен участнику в начале' %}</p>
+                        </div>
+                        {% endif %}
                     </div>
-                    
-                    <div>
-                        <label for="id_points" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Баллы' %} *</label>
-                        <input type="number" name="points" id="id_points" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" value="{{ task.points }}" min="1" required>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{% trans 'Количество баллов за правильное решение' %}</p>
+                </div>
+            </div>
+            
+            <!-- Вкладка с настройками -->
+            <div class="tab-pane" id="settings-content" style="display: none;">
+                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden form-section">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Настройки задания' %}</h2>
                     </div>
-                    
-                    <div>
-                        <label for="id_order" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Порядок отображения' %}</label>
-                        <input type="number" name="order" id="id_order" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" value="{{ task.order }}" min="1">
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{% trans 'Порядок отображения задания в списке (меньшие значения отображаются первыми)' %}</p>
+                    <div class="p-6 space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="id_order" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Порядок отображения' %}</label>
+                                <input type="number" name="order" id="id_order" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" value="{{ task.order }}" min="1">
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{% trans 'Порядок отображения задания в списке' %}</p>
+                            </div>
+                            <div>
+                                <label for="id_min_passing_score" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Мин. проходной балл' %}</label>
+                                <input type="number" name="min_passing_score" id="id_min_passing_score" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" value="{{ task.min_passing_score|default_if_none:0 }}" min="0">
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{% trans 'Минимальный балл для зачёта задания' %}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="id_max_attempts" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Макс. количество попыток' %}</label>
+                                <input type="number" name="max_attempts" id="id_max_attempts" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" value="{{ task.max_attempts|default_if_none:0 }}" min="0">
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{% trans '0 - без ограничений, иначе - максимальное число попыток' %}</p>
+                            </div>
+                            <div>
+                                <label for="id_time_limit_minutes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Ограничение по времени (мин)' %}</label>
+                                <input type="number" name="time_limit_minutes" id="id_time_limit_minutes" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" value="{{ task.time_limit_minutes|default_if_none:0 }}" min="0">
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{% trans '0 - без ограничений, иначе - время на выполнение задания' %}</p>
+                            </div>
+                        </div>
+                        
+                        {% if task.task_type == 'programming' %}
+                        <div>
+                            <label for="id_memory_limit_mb" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Ограничение по памяти (МБ)' %}</label>
+                            <input type="number" name="memory_limit_mb" id="id_memory_limit_mb" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" value="{{ task.memory_limit_mb|default_if_none:0 }}" min="0">
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{% trans '0 - без ограничений, иначе - максимальный объем памяти для решения' %}</p>
+                        </div>
+                        {% endif %}
                     </div>
-                </fieldset>
-                
-                {% if task.task_type == 'PROGRAMMING' %}
-                <fieldset class="space-y-4">
-                    <legend class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Задание на программирование' %}</legend>
-                    
-                    <div>
-                        <label for="id_initial_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Начальный код' %}</label>
-                        <textarea name="initial_code" id="id_initial_code" rows="8" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 font-mono">{{ task.initial_code }}</textarea>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{% trans 'Код, который будет отображаться в редакторе изначально' %}</p>
+                </div>
+            </div>
+            
+            <!-- Вкладка с предпросмотром -->
+            <div class="tab-pane" id="preview-content" style="display: none;">
+                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden form-section">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Предпросмотр задания' %}</h2>
                     </div>
-                </fieldset>
-                {% endif %}
+                    <div class="p-6">
+                        <div class="preview-title text-xl font-bold mb-4"></div>
+                        
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium dark:bg-blue-900 dark:text-blue-300">
+                                <i class="fas fa-star mr-1"></i>
+                                <span class="preview-points"></span> {% trans 'баллов' %}
+                            </div>
+                            
+                            <div class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium dark:bg-green-900 dark:text-green-300">
+                                <i class="fas fa-tag mr-1"></i>
+                                <span class="preview-topic"></span>
+                            </div>
+                            
+                            <div class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium dark:bg-purple-900 dark:text-purple-300">
+                                <i class="fas fa-layer-group mr-1"></i>
+                                <span class="preview-difficulty"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="preview-content bg-gray-50 dark:bg-gray-700"></div>
+                    </div>
+                </div>
+            </div>
                 
                 {% if task.task_type == 'MULTIPLE_CHOICE' %}
                 <fieldset class="space-y-4">
@@ -144,9 +355,9 @@
         </form>
     </div>
     
-    {% if task.task_type == 'PROGRAMMING' %}
-    <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-        <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+    {% if task.task_type == 'programming' %}
+    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden mt-8">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
             <div>
                 <h2 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
                     {% trans 'Тестовые случаи' %}
@@ -365,4 +576,166 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endif %}
+
+<!-- Основной JavaScript для работы с редактором, вкладками и предпросмотром -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация вкладок
+    const tabButtons = document.querySelectorAll('[data-tab]');
+    const tabContents = document.querySelectorAll('.tab-pane');
+    
+    // Функция переключения вкладок
+    function switchTab(tabId) {
+        // Скрываем все содержимое вкладок
+        tabContents.forEach(content => {
+            content.style.display = 'none';
+        });
+        
+        // Удаляем класс активности у всех кнопок
+        tabButtons.forEach(button => {
+            button.classList.remove('tab-active');
+        });
+        
+        // Показываем содержимое выбранной вкладки
+        document.getElementById(tabId + '-content').style.display = 'block';
+        
+        // Добавляем класс активности к кнопке
+        document.querySelector(`[data-tab="${tabId}"]`).classList.add('tab-active');
+        
+        // Если выбрана вкладка предпросмотра, обновляем его
+        if (tabId === 'preview') {
+            updatePreview();
+        }
+    }
+    
+    // Назначаем обработчики клика для кнопок вкладок
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const tabId = this.getAttribute('data-tab');
+            switchTab(tabId);
+        });
+    });
+    
+    // Инициализация редактора Markdown
+    let descriptionEditor;
+    if (document.getElementById('id_description')) {
+        descriptionEditor = new EasyMDE({
+            element: document.getElementById('id_description'),
+            spellChecker: false,
+            autosave: {
+                enabled: true,
+                uniqueId: 'task_description_' + {{ task.id }},
+                delay: 1000,
+            },
+            renderingConfig: {
+                codeSyntaxHighlighting: true,
+                markedOptions: {
+                    breaks: true
+                }
+            },
+            toolbar: [
+                'bold', 'italic', 'heading', '|',
+                'code', 'quote', 'unordered-list', 'ordered-list', '|',
+                'link', 'image', 'table', '|',
+                'preview', 'side-by-side', 'fullscreen', '|',
+                'guide'
+            ]
+        });
+    }
+    
+    // Инициализация редактора кода для задания на программирование
+    let codeEditor;
+    if (document.getElementById('id_initial_code')) {
+        codeEditor = CodeMirror.fromTextArea(document.getElementById('id_initial_code'), {
+            lineNumbers: true,
+            mode: 'python',
+            theme: 'dracula',
+            indentUnit: 4,
+            indentWithTabs: false,
+            extraKeys: {"Tab": function(cm) {
+                if (cm.somethingSelected()) {
+                    cm.indentSelection("add");
+                } else {
+                    cm.replaceSelection("    ", "end", "+input");
+                }
+            }}
+        });
+    }
+    
+    // Функция обновления предпросмотра
+    function updatePreview() {
+        const title = document.getElementById('id_title').value;
+        const description = descriptionEditor ? descriptionEditor.value() : document.getElementById('id_description').value;
+        const points = document.getElementById('id_points').value;
+        const topic = document.getElementById('id_topic').value;
+        const difficulty = document.getElementById('id_difficulty').selectedOptions[0].text;
+        
+        // Обновляем элементы предпросмотра
+        document.querySelector('.preview-title').textContent = title;
+        document.querySelector('.preview-points').textContent = points;
+        document.querySelector('.preview-topic').textContent = topic || 'Без категории';
+        document.querySelector('.preview-difficulty').textContent = difficulty;
+        
+        // Обрабатываем описание как Markdown, если опция включена
+        const useMarkdown = document.getElementById('id_use_markdown').checked;
+        if (useMarkdown) {
+            // Создаем временный div для отображения HTML после конвертации Markdown
+            const temp = document.createElement('div');
+            temp.innerHTML = marked.parse(description);
+            document.querySelector('.preview-content').innerHTML = temp.innerHTML;
+            
+            // Если включена опция LaTeX, обрабатываем формулы
+            if (document.getElementById('id_use_latex').checked) {
+                renderMathInElement(document.querySelector('.preview-content'), {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ],
+                    throwOnError: false
+                });
+            }
+        } else {
+            document.querySelector('.preview-content').innerHTML = description.replace(/\n/g, '<br>');
+        }
+    }
+    
+    // Добавляем обработчики изменений формы для автоматического обновления предпросмотра
+    const formInputs = document.querySelectorAll('form input, form textarea, form select');
+    formInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            if (document.getElementById('preview-content').style.display === 'block') {
+                updatePreview();
+            }
+        });
+    });
+    
+    // Обработчик для переключения Markdown/LaTeX
+    document.getElementById('id_use_markdown').addEventListener('change', function() {
+        if (this.checked) {
+            document.getElementById('id_use_latex').disabled = false;
+        } else {
+            document.getElementById('id_use_latex').checked = false;
+            document.getElementById('id_use_latex').disabled = true;
+        }
+    });
+    
+    // Инициализация состояния Markdown/LaTeX при загрузке
+    if (!document.getElementById('id_use_markdown').checked) {
+        document.getElementById('id_use_latex').checked = false;
+        document.getElementById('id_use_latex').disabled = true;
+    }
+    
+    // Функция показа уведомления (для тестовых случаев и других действий)
+    window.showNotification = function(message, type) {
+        const notificationEl = document.createElement('div');
+        notificationEl.className = `fixed bottom-4 right-4 p-4 rounded-md shadow-lg text-white ${type === 'error' ? 'bg-red-600' : type === 'success' ? 'bg-green-600' : 'bg-blue-600'}`;
+        notificationEl.textContent = message;
+        document.body.appendChild(notificationEl);
+        
+        setTimeout(() => {
+            notificationEl.remove();
+        }, 3000);
+    }
+});
+</script>
 {% endblock %}
