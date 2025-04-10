@@ -956,7 +956,7 @@ class SystemTester:
                     
                 # Проверка страницы просмотра сертификата
                 response = self.client.get(
-                    reverse('olympiads:certificate_detail', kwargs={'pk': cert.id})
+                    reverse('olympiads:olympiad_certificate', kwargs={'olympiad_id': olympiad.id})
                 )
                 
                 if response.status_code == 200:
@@ -1167,7 +1167,7 @@ class SystemTester:
             }
             
             response = self.client.post(
-                reverse('olympiads:submit_solution', kwargs={
+                reverse('olympiads:olympiad_task_submit', kwargs={
                     'olympiad_id': olympiad.id,
                     'task_id': task.id
                 }),
@@ -1197,7 +1197,7 @@ class SystemTester:
             )
             
             response = self.client.get(
-                reverse('olympiads:certificate_detail', kwargs={'pk': cert.id})
+                reverse('olympiads:olympiad_certificate', kwargs={'olympiad_id': olympiad.id})
             )
             
             if response.status_code != 200:
