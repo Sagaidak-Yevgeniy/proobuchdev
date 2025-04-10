@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
@@ -315,7 +316,7 @@ class OlympiadInvitation(models.Model):
     olympiad = models.ForeignKey(Olympiad, on_delete=models.CASCADE,
                                related_name='invitations', verbose_name=_('Олимпиада'))
     
-    code = models.CharField(_('Код приглашения'), max_length=32, unique=True)
+    code = models.CharField(_('Код приглашения'), max_length=32, unique=True, default='00000000000000000000000000000000')
     description = models.CharField(_('Описание'), max_length=255, blank=True)
     
     is_active = models.BooleanField(_('Активно'), default=True)
