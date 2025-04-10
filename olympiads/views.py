@@ -378,6 +378,12 @@ def olympiad_tasks(request, olympiad_id):
         'percent': int(completed_tasks / max(1, all_tasks.count()) * 100)
     }
     
+    # Добавляем состояние олимпиады в контекст для улучшения работы шаблона
+    olympiad_is_active = olympiad.is_active()
+    olympiad_is_completed = olympiad.is_completed()
+    olympiad_has_started = olympiad.has_started()
+    olympiad_is_upcoming = olympiad.is_upcoming()
+    
     context = {
         'olympiad': olympiad,
         'participation': participation,
@@ -386,7 +392,11 @@ def olympiad_tasks(request, olympiad_id):
         'task_statuses': task_statuses,
         'current_task': current_task,
         'time_left_minutes': int(time_left),
-        'progress': progress
+        'progress': progress,
+        'olympiad_is_active': olympiad_is_active,
+        'olympiad_is_completed': olympiad_is_completed, 
+        'olympiad_has_started': olympiad_has_started,
+        'olympiad_is_upcoming': olympiad_is_upcoming
     }
     
     return render(request, 'olympiads/olympiad_tasks.html', context)
@@ -522,6 +532,12 @@ def olympiad_task_detail(request, olympiad_id, task_id):
     else:
         urls = {}
     
+    # Добавляем состояние олимпиады в контекст для улучшения работы шаблона
+    olympiad_is_active = olympiad.is_active()
+    olympiad_is_completed = olympiad.is_completed()
+    olympiad_has_started = olympiad.has_started()
+    olympiad_is_upcoming = olympiad.is_upcoming()
+    
     context = {
         'olympiad': olympiad,
         'participation': participation,
@@ -536,7 +552,11 @@ def olympiad_task_detail(request, olympiad_id, task_id):
         'time_left_minutes': int(time_left),
         'initial_code': initial_code,
         'language': language,
-        'urls': urls
+        'urls': urls,
+        'olympiad_is_active': olympiad_is_active,
+        'olympiad_is_completed': olympiad_is_completed, 
+        'olympiad_has_started': olympiad_has_started,
+        'olympiad_is_upcoming': olympiad_is_upcoming
     }
     
     # Используем шаблон olympiad_task.html для отображения задания
@@ -696,6 +716,12 @@ def olympiad_results(request, olympiad_id):
     else:
         user_rank = None
     
+    # Добавляем состояние олимпиады в контекст для улучшения работы шаблона
+    olympiad_is_active = olympiad.is_active()
+    olympiad_is_completed = olympiad.is_completed()
+    olympiad_has_started = olympiad.has_started()
+    olympiad_is_upcoming = olympiad.is_upcoming()
+    
     context = {
         'olympiad': olympiad,
         'participation': participation,
@@ -703,7 +729,11 @@ def olympiad_results(request, olympiad_id):
         'has_certificate': has_certificate,
         'certificate': certificate,
         'top_participants': top_participants,
-        'user_rank': user_rank
+        'user_rank': user_rank,
+        'olympiad_is_active': olympiad_is_active,
+        'olympiad_is_completed': olympiad_is_completed, 
+        'olympiad_has_started': olympiad_has_started,
+        'olympiad_is_upcoming': olympiad_is_upcoming
     }
     
     return render(request, 'olympiads/olympiad_results.html', context)
