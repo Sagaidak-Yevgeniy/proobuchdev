@@ -883,7 +883,7 @@ class SystemTester:
         # Проверка API маркировки уведомления как прочитанное
         try:
             from notifications.models import Notification
-            notification = Notification.objects.filter(recipient=self.test_users['student']).first()
+            notification = Notification.objects.filter(content_type__model='user', object_id=self.test_users['student'].id).first()
             
             if notification:
                 response = self.client.post(
@@ -895,7 +895,7 @@ class SystemTester:
                     # Обновляем объект из базы
                     notification.refresh_from_db()
                     
-                    if notification.read:
+                    if notification.is_read:
                         self.test_results['passed'].append('Отметка уведомления прочитанным')
                         print("✓ Отметка уведомления прочитанным работает корректно")
                     else:
