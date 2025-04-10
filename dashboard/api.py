@@ -154,7 +154,7 @@ def get_recent_activity(request):
     
     for completion in recent_completions:
         # Проверяем, нет ли уже уведомления об этом завершении урока
-        if not any(a['type'] == 'lesson_completed' and completion.lesson.title in a['message'] for a in activities):
+        if completion.completed_at and not any(a['type'] == 'lesson_completed' and completion.lesson.title in a['message'] for a in activities):
             activities.append({
                 'id': f"lesson_{completion.id}",
                 'type': 'lesson_completed',

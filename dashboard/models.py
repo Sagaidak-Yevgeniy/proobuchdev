@@ -3,6 +3,10 @@ from django.utils.translation import gettext_lazy as _
 
 from users.models import CustomUser
 
+# Импортируем модели из отдельных файлов
+from .models_events import Event, EventParticipant
+from .models_goals import StudentGoal, GoalStep
+
 
 class Widget(models.Model):
     """Модель для виджетов дашборда"""
