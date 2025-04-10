@@ -50,12 +50,12 @@
                                         <span class="w-2 h-2 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
                                         {% trans 'Активна' %}
                                     </span>
-                                    {% elif olympiad.is_upcoming %}
+                                    {% elif olympiad_is_upcoming %}
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
                                         <span class="w-2 h-2 bg-blue-500 rounded-full mr-1.5"></span>
                                         {% trans 'Скоро' %}
                                     </span>
-                                    {% elif olympiad.is_completed %}
+                                    {% elif olympiad_is_completed %}
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
                                         <span class="w-2 h-2 bg-gray-500 rounded-full mr-1.5"></span>
                                         {% trans 'Завершена' %}
@@ -203,7 +203,7 @@
                                     {% trans 'Посмотреть результаты' %}
                                     <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                                 </a>
-                                {% elif olympiad.is_active %}
+                                {% elif olympiad_is_active %}
                                 <div class="mb-4">
                                     <div class="text-lg font-medium text-green-600 dark:text-green-400">{% trans 'Вы участвуете в этой олимпиаде' %}</div>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">{% trans 'Начато' %}: {{ user_participation.started_at|date:"d.m.Y H:i" }}</p>
@@ -241,7 +241,7 @@
                                         <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     </button>
                                 </form>
-                            {% elif olympiad.is_active %}
+                            {% elif olympiad_is_active %}
                                 <div class="mb-4">
                                     <div class="text-lg font-medium text-yellow-600 dark:text-yellow-400">{% trans 'Олимпиада уже началась' %}</div>
                                     {% if not olympiad.is_open %}
@@ -266,7 +266,7 @@
                                     {% endif %}
                                     {% endif %}
                                 </div>
-                            {% elif olympiad.is_completed %}
+                            {% elif olympiad_is_completed %}
                                 <div class="mb-4">
                                     <div class="text-lg font-medium text-gray-600 dark:text-gray-400">{% trans 'Олимпиада завершена' %}</div>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">{% trans 'Вы не принимали участие' %}</p>
@@ -398,7 +398,7 @@
                 </table>
             </div>
             
-            {% if top_participants|length > 5 and olympiad.is_completed %}
+            {% if top_participants|length > 5 and olympiad_is_completed %}
             <div class="mt-4 text-center">
                 <a href="{% url 'olympiads:olympiad_results' olympiad_id=olympiad.id %}" class="inline-flex items-center px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium transition-all duration-200 hover:shadow-lg transform hover:-translate-y-1">
                     <i class="fas fa-list-ol mr-2"></i>
