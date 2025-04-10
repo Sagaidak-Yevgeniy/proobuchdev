@@ -1105,4 +1105,312 @@ def olympiad_statistics(request, olympiad_id):
         'score_distribution': score_distribution
     }
     
+    return render(request, 'olympiads/olympiad_statistics.html', context)
+
+
+# API для выполнения кода
+@login_required
+@require_POST
+def execute_code(request, olympiad_id, task_id):
+    # Получаем объекты из базы данных
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    task = get_object_or_404(OlympiadTask, id=task_id, olympiad=olympiad)
+    
+    # Проверяем, что задание является задачей программирования
+    if task.task_type != OlympiadTask.TaskType.PROGRAMMING:
+        return JsonResponse({
+            'success': False,
+            'error': 'Это задание не является задачей программирования'
+        })
+    
+    # Проверяем, что олимпиада активна и пользователь может участвовать
+    if not olympiad.can_participate(request.user):
+        return JsonResponse({
+            'success': False,
+            'error': 'Вы не можете участвовать в этой олимпиаде'
+        })
+    
+    # Парсим JSON-данные из запроса
+    try:
+        data = json.loads(request.body)
+        code = data.get('code', '')
+        language = data.get('language', 'python')
+        input_data = data.get('input', '')
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False, 
+            'error': 'Неверный формат данных'
+        })
+    
+    # Проверяем, что код не пустой
+    if not code.strip():
+        return JsonResponse({
+            'success': False,
+            'error': 'Код не может быть пустым'
+        })
+    
+    # Импортируем модуль для запуска кода
+    from .code_runner import (
+        run_code_with_input, 
+        ExecutionTimeLimitExceeded, 
+        ExecutionMemoryLimitExceeded, 
+        ExecutionRuntimeError, 
+        CompilationError,
+        DEFAULT_TIME_LIMIT,
+        DEFAULT_MEMORY_LIMIT
+    )
+    
+    # Определяем ограничения
+    time_limit = task.time_limit_minutes * 60 if task.time_limit_minutes > 0 else DEFAULT_TIME_LIMIT
+    memory_limit = task.memory_limit_mb if task.memory_limit_mb > 0 else DEFAULT_MEMORY_LIMIT
+    
+    try:
+        # Компилируем и запускаем код
+        from .code_runner import compile_code
+        temp_dir, filename, executable = compile_code(code, language)
+        
+        try:
+            # Запускаем код с пользовательским вводом
+            output, execution_time, memory_usage = run_code_with_input(
+                executable, language, input_data, time_limit, memory_limit
+            )
+            
+            # Возвращаем результат
+            return JsonResponse({
+                'success': True,
+                'output': output,
+                'execution_time': execution_time,
+                'memory_usage': memory_usage
+            })
+            
+        finally:
+            # Удаляем временные файлы
+            import shutil
+            shutil.rmtree(temp_dir)
+            
+    except CompilationError as e:
+        return JsonResponse({
+            'success': False,
+            'error': 'Ошибка компиляции',
+            'error_details': str(e)
+        })
+    except ExecutionTimeLimitExceeded as e:
+        return JsonResponse({
+            'success': False,
+            'error': 'Превышено ограничение по времени',
+            'error_details': str(e)
+        })
+    except ExecutionMemoryLimitExceeded as e:
+        return JsonResponse({
+            'success': False,
+            'error': 'Превышено ограничение по памяти',
+            'error_details': str(e)
+        })
+    except ExecutionRuntimeError as e:
+        return JsonResponse({
+            'success': False,
+            'error': 'Ошибка выполнения',
+            'error_details': str(e)
+        })
+    except Exception as e:
+        # Обрабатываем прочие ошибки
+        return JsonResponse({
+            'success': False,
+            'error': 'Произошла ошибка при выполнении кода',
+            'error_details': str(e)
+        })
+
+
+# API для сохранения кода
+@login_required
+@require_POST
+def save_code(request, olympiad_id, task_id):
+    # Получаем объекты из базы данных
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    task = get_object_or_404(OlympiadTask, id=task_id, olympiad=olympiad)
+    
+    # Проверяем, что задание является задачей программирования
+    if task.task_type != OlympiadTask.TaskType.PROGRAMMING:
+        return JsonResponse({
+            'success': False,
+            'error': 'Это задание не является задачей программирования'
+        })
+    
+    # Проверяем, что олимпиада активна и пользователь может участвовать
+    if not olympiad.can_participate(request.user):
+        return JsonResponse({
+            'success': False,
+            'error': 'Вы не можете участвовать в этой олимпиаде'
+        })
+    
+    # Парсим JSON-данные из запроса
+    try:
+        data = json.loads(request.body)
+        code = data.get('code', '')
+        language = data.get('language', 'python')
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False, 
+            'error': 'Неверный формат данных'
+        })
+    
+    # Получаем или создаем запись об участии
+    participation, created = OlympiadParticipation.objects.get_or_create(
+        olympiad=olympiad,
+        user=request.user,
+        defaults={
+            'max_score': sum(task.points for task in olympiad.tasks.all())
+        }
+    )
+    
+    # Создаем или обновляем submission
+    submission, created = OlympiadTaskSubmission.objects.get_or_create(
+        participation=participation,
+        task=task,
+        defaults={
+            'code': code,
+            'max_score': task.points
+        }
+    )
+    
+    if not created:
+        submission.code = code
+        submission.save(update_fields=['code'])
+    
+    return JsonResponse({
+        'success': True,
+        'message': 'Код успешно сохранен'
+    })
+
+
+# API для тестирования кода
+@login_required
+@require_POST
+def test_code(request, olympiad_id, task_id):
+    # Получаем объекты из базы данных
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    task = get_object_or_404(OlympiadTask, id=task_id, olympiad=olympiad)
+    
+    # Проверяем, что задание является задачей программирования
+    if task.task_type != OlympiadTask.TaskType.PROGRAMMING:
+        return JsonResponse({
+            'success': False,
+            'error': 'Это задание не является задачей программирования'
+        })
+    
+    # Проверяем, что олимпиада активна и пользователь может участвовать
+    if not olympiad.can_participate(request.user):
+        return JsonResponse({
+            'success': False,
+            'error': 'Вы не можете участвовать в этой олимпиаде'
+        })
+    
+    # Парсим JSON-данные из запроса
+    try:
+        data = json.loads(request.body)
+        code = data.get('code', '')
+        language = data.get('language', 'python')
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False, 
+            'error': 'Неверный формат данных'
+        })
+    
+    # Проверяем, что код не пустой
+    if not code.strip():
+        return JsonResponse({
+            'success': False,
+            'error': 'Код не может быть пустым'
+        })
+    
+    # Получаем тестовые случаи
+    test_cases = task.test_cases.all().order_by('order')
+    
+    # Если тестовые случаи отсутствуют
+    if not test_cases.exists():
+        return JsonResponse({
+            'success': False,
+            'error': 'Для этого задания не настроены тестовые случаи'
+        })
+    
+    # Формируем список тестов для проверки
+    test_case_data = [(tc.input_data, tc.expected_output) for tc in test_cases]
+    
+    # Импортируем модуль для проверки решения
+    from .code_runner import check_solution
+    
+    # Определяем ограничения
+    time_limit = task.time_limit_minutes * 60 if task.time_limit_minutes > 0 else 5
+    memory_limit = task.memory_limit_mb if task.memory_limit_mb > 0 else 512
+    
+    try:
+        # Проверяем решение на всех тестовых случаях
+        results, passed_count, total_count = check_solution(
+            code, language, test_case_data, 
+            time_limit=time_limit, memory_limit=memory_limit
+        )
+        
+        # Считаем баллы за решение
+        max_score = task.points
+        score = round(max_score * (passed_count / total_count)) if total_count > 0 else 0
+        is_correct = passed_count == total_count
+        
+        # Получаем или создаем запись об участии
+        participation, created = OlympiadParticipation.objects.get_or_create(
+            olympiad=olympiad,
+            user=request.user,
+            defaults={
+                'max_score': sum(t.points for t in olympiad.tasks.all())
+            }
+        )
+        
+        # Сохраняем результаты
+        submission = OlympiadTaskSubmission.objects.create(
+            participation=participation,
+            task=task,
+            code=code,
+            score=score,
+            max_score=max_score,
+            is_correct=is_correct,
+            passed_test_cases=passed_count,
+            total_test_cases=total_count
+        )
+        
+        # Обновляем общий счет участника
+        participation.calculate_score()
+        
+        # Преобразуем результаты для отправки
+        formatted_results = []
+        for i, result in enumerate(results):
+            test_case = test_cases[i]
+            formatted_results.append({
+                'test_case_id': result['test_case_id'],
+                'passed': result['passed'],
+                'input_data': test_case.input_data if not test_case.is_hidden else '(скрытый тест)',
+                'expected': test_case.expected_output if not test_case.is_hidden else '(скрытый тест)',
+                'output': result['output'],
+                'error': result['error'],
+                'execution_time': result['execution_time'],
+                'memory_usage': result['memory_usage']
+            })
+        
+        # Возвращаем результат проверки
+        return JsonResponse({
+            'success': True,
+            'passed_tests': passed_count,
+            'total_tests': total_count,
+            'score': score,
+            'max_score': max_score,
+            'is_correct': is_correct,
+            'test_results': formatted_results
+        })
+        
+    except Exception as e:
+        # Обрабатываем ошибки
+        return JsonResponse({
+            'success': False,
+            'error': 'Произошла ошибка при проверке решения',
+            'error_details': str(e)
+        })
+    
     return render(request, 'olympiads/manage/statistics.html', context)

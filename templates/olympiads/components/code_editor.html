@@ -1,0 +1,418 @@
+{% load static %}
+
+<div class="code-editor-container bg-gray-800 rounded-lg shadow-lg mb-6 flex flex-col h-full">
+    <!-- Панель инструментов -->
+    <div class="toolbar p-2 bg-gray-700 rounded-t-lg flex flex-wrap items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <!-- Выбор языка программирования -->
+            <div class="language-selector">
+                <select id="language-select" 
+                        class="bg-gray-800 text-white border border-gray-600 rounded px-2 py-1 text-sm">
+                    <option value="python" {% if language == 'python' %}selected{% endif %}>Python</option>
+                    <option value="cpp" {% if language == 'cpp' %}selected{% endif %}>C++</option>
+                    <option value="java" {% if language == 'java' %}selected{% endif %}>Java</option>
+                    <option value="javascript" {% if language == 'javascript' %}selected{% endif %}>JavaScript</option>
+                </select>
+            </div>
+            
+            <!-- Тема редактора -->
+            <div class="theme-selector">
+                <select id="theme-select" 
+                        class="bg-gray-800 text-white border border-gray-600 rounded px-2 py-1 text-sm">
+                    <option value="monokai" selected>Monokai (темная)</option>
+                    <option value="github">GitHub (светлая)</option>
+                    <option value="dracula">Dracula</option>
+                    <option value="solarized_dark">Solarized Dark</option>
+                    <option value="solarized_light">Solarized Light</option>
+                </select>
+            </div>
+            
+            <!-- Размер шрифта -->
+            <div class="font-size-selector">
+                <select id="font-size-select" 
+                        class="bg-gray-800 text-white border border-gray-600 rounded px-2 py-1 text-sm">
+                    <option value="12px">12px</option>
+                    <option value="14px" selected>14px</option>
+                    <option value="16px">16px</option>
+                    <option value="18px">18px</option>
+                    <option value="20px">20px</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+            <!-- Сохранение и отправка -->
+            <button id="save-code-btn" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded transition-colors">
+                <i class="fas fa-save mr-1"></i> Сохранить
+            </button>
+            
+            <button id="submit-code-btn" 
+                    class="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-1 rounded transition-colors">
+                <i class="fas fa-paper-plane mr-1"></i> Отправить
+            </button>
+            
+            <button id="reset-code-btn" 
+                    class="bg-gray-600 hover:bg-gray-700 text-white text-sm px-3 py-1 rounded transition-colors">
+                <i class="fas fa-undo mr-1"></i> Сбросить
+            </button>
+        </div>
+    </div>
+    
+    <!-- Редактор кода -->
+    <div class="editor-wrapper flex-grow relative">
+        <div id="code-editor" class="w-full h-full"></div>
+    </div>
+    
+    <!-- Панель ввода/вывода -->
+    <div class="io-panel bg-gray-700 rounded-b-lg p-2">
+        <div class="tab-container">
+            <div class="tabs flex space-x-1 bg-gray-800 p-1 rounded-t">
+                <button class="io-tab active px-3 py-1 rounded-t text-gray-200 text-sm bg-gray-700" data-target="input-panel">
+                    <i class="fas fa-keyboard mr-1"></i> Ввод
+                </button>
+                <button class="io-tab px-3 py-1 rounded-t text-gray-400 text-sm bg-gray-800" data-target="output-panel">
+                    <i class="fas fa-terminal mr-1"></i> Вывод
+                </button>
+                <button class="io-tab px-3 py-1 rounded-t text-gray-400 text-sm bg-gray-800" data-target="debug-panel">
+                    <i class="fas fa-bug mr-1"></i> Отладка
+                </button>
+            </div>
+            
+            <div class="tab-content">
+                <div id="input-panel" class="panel bg-gray-700 p-2 h-32 rounded-b">
+                    <textarea id="input-textarea" class="resize-none w-full h-full bg-gray-800 text-white p-2 rounded font-mono text-sm" placeholder="Введите входные данные для вашей программы..."></textarea>
+                </div>
+                
+                <div id="output-panel" class="panel bg-gray-700 p-2 h-32 rounded-b hidden">
+                    <pre id="output-content" class="w-full h-full bg-gray-800 text-white p-2 rounded font-mono text-sm overflow-auto"></pre>
+                </div>
+                
+                <div id="debug-panel" class="panel bg-gray-700 p-2 h-32 rounded-b hidden">
+                    <pre id="debug-content" class="w-full h-full bg-gray-800 text-white p-2 rounded font-mono text-sm overflow-auto"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для результатов проверки -->
+<div id="test-results-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Результаты проверки</h3>
+            <button id="close-test-results" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="p-4 overflow-y-auto flex-grow">
+            <div id="test-results-summary" class="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded">
+                <div class="flex items-center space-x-4">
+                    <div class="stats-item p-2 bg-blue-100 dark:bg-blue-900 rounded">
+                        <span class="font-bold text-blue-800 dark:text-blue-300">Всего тестов:</span> 
+                        <span id="total-tests" class="text-lg font-bold">0</span>
+                    </div>
+                    <div class="stats-item p-2 bg-green-100 dark:bg-green-900 rounded">
+                        <span class="font-bold text-green-800 dark:text-green-300">Пройдено:</span> 
+                        <span id="passed-tests" class="text-lg font-bold">0</span>
+                    </div>
+                    <div class="stats-item p-2 bg-red-100 dark:bg-red-900 rounded">
+                        <span class="font-bold text-red-800 dark:text-red-300">Не пройдено:</span> 
+                        <span id="failed-tests" class="text-lg font-bold">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="test-results-list" class="space-y-4">
+                <!-- Сюда будут добавляться карточки с результатами тестов -->
+            </div>
+        </div>
+        
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+            <button id="close-test-results-btn" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                Закрыть
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Подключение Ace Editor -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.9.6/ace.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.9.6/ext-language_tools.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Инициализация редактора кода
+        const editor = ace.edit('code-editor');
+        editor.setTheme('ace/theme/monokai');
+        editor.session.setMode('ace/mode/python');
+        editor.setOptions({
+            enableBasicAutocompletion: true,
+            enableSnippets: true,
+            enableLiveAutocompletion: true,
+            fontSize: '14px',
+            showPrintMargin: false,
+        });
+        
+        // Загрузка начального кода
+        const initialCode = `{{ initial_code|default:"" }}`.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+        editor.setValue(initialCode);
+        editor.clearSelection();
+        
+        // Определение отображаемых ошибок
+        editor.getSession().setUseWorker(true);
+        
+        // Функция для смены языка программирования
+        function setLanguage(language) {
+            const modes = {
+                'python': 'python',
+                'cpp': 'c_cpp',
+                'java': 'java',
+                'javascript': 'javascript'
+            };
+            
+            if (modes[language]) {
+                editor.session.setMode(`ace/mode/${modes[language]}`);
+            }
+        }
+        
+        // Функция для смены темы редактора
+        function setTheme(theme) {
+            editor.setTheme(`ace/theme/${theme}`);
+        }
+        
+        // Функция для изменения размера шрифта
+        function setFontSize(size) {
+            editor.setOptions({
+                fontSize: size
+            });
+        }
+        
+        // Обработчики для селекторов
+        document.getElementById('language-select').addEventListener('change', function() {
+            setLanguage(this.value);
+        });
+        
+        document.getElementById('theme-select').addEventListener('change', function() {
+            setTheme(this.value);
+        });
+        
+        document.getElementById('font-size-select').addEventListener('change', function() {
+            setFontSize(this.value);
+        });
+        
+        // Обработчики вкладок ввода/вывода
+        document.querySelectorAll('.io-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Сначала убираем класс active у всех вкладок
+                document.querySelectorAll('.io-tab').forEach(t => {
+                    t.classList.remove('active', 'bg-gray-700');
+                    t.classList.add('bg-gray-800', 'text-gray-400');
+                });
+                
+                // Затем добавляем класс active к текущей вкладке
+                this.classList.add('active', 'bg-gray-700');
+                this.classList.remove('bg-gray-800', 'text-gray-400');
+                this.classList.add('text-gray-200');
+                
+                // Скрываем все панели
+                document.querySelectorAll('.panel').forEach(panel => {
+                    panel.classList.add('hidden');
+                });
+                
+                // Показываем нужную панель
+                const targetPanel = this.getAttribute('data-target');
+                document.getElementById(targetPanel).classList.remove('hidden');
+            });
+        });
+        
+        // Обработчик для кнопки "Выполнить"
+        document.getElementById('submit-code-btn').addEventListener('click', function() {
+            const code = editor.getValue();
+            const input = document.getElementById('input-textarea').value;
+            const language = document.getElementById('language-select').value;
+            
+            // Показываем индикатор загрузки
+            document.getElementById('output-content').innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Выполнение...</div>';
+            document.getElementById('debug-content').innerHTML = '';
+            
+            // Переключаемся на вкладку вывода
+            document.querySelector('[data-target="output-panel"]').click();
+            
+            // Отправляем код на сервер для выполнения
+            fetch('{{ execute_url }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    code: code,
+                    input: input,
+                    language: language
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('output-content').textContent = data.output || 'Программа выполнена без вывода';
+                    
+                    // Отладочная информация
+                    let debugInfo = `Время выполнения: ${data.execution_time.toFixed(3)} сек\n`;
+                    debugInfo += `Использовано памяти: ${data.memory_usage.toFixed(2)} МБ\n`;
+                    document.getElementById('debug-content').textContent = debugInfo;
+                } else {
+                    document.getElementById('output-content').innerHTML = `<span class="text-red-500">${data.error}</span>`;
+                    document.getElementById('debug-content').textContent = data.error_details || '';
+                }
+            })
+            .catch(error => {
+                document.getElementById('output-content').innerHTML = `<span class="text-red-500">Ошибка: ${error.message}</span>`;
+            });
+        });
+        
+        // Обработчик для кнопки "Сохранить"
+        document.getElementById('save-code-btn').addEventListener('click', function() {
+            const code = editor.getValue();
+            const language = document.getElementById('language-select').value;
+            
+            // Отправляем код на сервер для сохранения
+            fetch('{{ save_url }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    code: code,
+                    language: language
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Код успешно сохранен', 'success');
+                } else {
+                    showNotification('Ошибка при сохранении: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Ошибка при сохранении: ' + error.message, 'error');
+            });
+        });
+        
+        // Обработчик для кнопки "Сбросить"
+        document.getElementById('reset-code-btn').addEventListener('click', function() {
+            if (confirm('Вы уверены, что хотите сбросить код до начального состояния?')) {
+                editor.setValue(initialCode);
+                editor.clearSelection();
+            }
+        });
+        
+        // Обработчики для модального окна с результатами тестов
+        document.querySelectorAll('#close-test-results, #close-test-results-btn').forEach(el => {
+            el.addEventListener('click', function() {
+                document.getElementById('test-results-modal').classList.add('hidden');
+            });
+        });
+        
+        // Функция для показа результатов тестов
+        window.showTestResults = function(results) {
+            const modal = document.getElementById('test-results-modal');
+            const resultsList = document.getElementById('test-results-list');
+            
+            // Очищаем предыдущие результаты
+            resultsList.innerHTML = '';
+            
+            // Обновляем статистику
+            const totalTests = results.total_tests;
+            const passedTests = results.passed_tests;
+            const failedTests = totalTests - passedTests;
+            
+            document.getElementById('total-tests').textContent = totalTests;
+            document.getElementById('passed-tests').textContent = passedTests;
+            document.getElementById('failed-tests').textContent = failedTests;
+            
+            // Заполняем список результатов
+            results.test_results.forEach((result, index) => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'test-result-item p-3 rounded border ' + 
+                                      (result.passed ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20' : 
+                                                      'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20');
+                
+                const header = document.createElement('div');
+                header.className = 'flex justify-between items-center cursor-pointer';
+                header.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <span class="test-status-icon ${result.passed ? 'text-green-500' : 'text-red-500'}">
+                            <i class="fas ${result.passed ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                        </span>
+                        <h4 class="font-bold">Тест #${result.test_case_id}</h4>
+                    </div>
+                    <button class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 test-details-toggle">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                `;
+                
+                const details = document.createElement('div');
+                details.className = 'test-details mt-2 hidden';
+                details.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <h5 class="font-semibold text-sm mb-1">Входные данные:</h5>
+                            <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs overflow-auto max-h-40">${result.input_data || '(пусто)'}</pre>
+                        </div>
+                        <div>
+                            <h5 class="font-semibold text-sm mb-1">Ожидаемый результат:</h5>
+                            <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs overflow-auto max-h-40">${result.expected || '(пусто)'}</pre>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <h5 class="font-semibold text-sm mb-1">Ваш результат:</h5>
+                        <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs overflow-auto max-h-40">${result.output || result.error || '(нет вывода)'}</pre>
+                    </div>
+                    ${result.execution_time ? `
+                    <div class="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                        <span>Время выполнения: ${result.execution_time.toFixed(3)} сек</span>
+                        <span class="ml-4">Память: ${result.memory_usage.toFixed(2)} МБ</span>
+                    </div>
+                    ` : ''}
+                `;
+                
+                resultItem.appendChild(header);
+                resultItem.appendChild(details);
+                resultsList.appendChild(resultItem);
+                
+                // Обработчик для разворачивания/сворачивания деталей теста
+                header.addEventListener('click', function() {
+                    const testDetails = this.nextElementSibling;
+                    const toggleIcon = this.querySelector('.test-details-toggle i');
+                    
+                    testDetails.classList.toggle('hidden');
+                    toggleIcon.classList.toggle('fa-chevron-down');
+                    toggleIcon.classList.toggle('fa-chevron-up');
+                });
+            });
+            
+            // Показываем модальное окно
+            modal.classList.remove('hidden');
+        };
+        
+        // Вспомогательная функция для получения CSRF-токена
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>

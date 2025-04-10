@@ -21,6 +21,11 @@ urlpatterns = [
     # API для обновления прогресса
     path('<int:olympiad_id>/update_progress/', views.olympiad_update_progress, name='olympiad_update_progress'),
     
+    # API для работы с кодом задач
+    path('<int:olympiad_id>/tasks/<int:task_id>/execute_code/', views.execute_code, name='execute_code'),
+    path('<int:olympiad_id>/tasks/<int:task_id>/save_code/', views.save_code, name='save_code'),
+    path('<int:olympiad_id>/tasks/<int:task_id>/test_code/', views.test_code, name='test_code'),
+    
     # Управление олимпиадами (для преподавателей и администраторов)
     path('manage/', views.olympiad_manage_list, name='olympiad_manage_list'),
     path('manage/create/', views.olympiad_create, name='olympiad_create'),
