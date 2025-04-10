@@ -598,7 +598,7 @@ class SystemTester:
                 
                 # Проверка участия в олимпиаде
                 response = self.client.post(
-                    reverse('olympiads:olympiad_participate', kwargs={'pk': olympiad.id}),
+                    reverse('olympiads:olympiad_register', kwargs={'olympiad_id': olympiad.id}),
                     follow=True
                 )
                 
@@ -1130,7 +1130,7 @@ class SystemTester:
                 
             olympiad = active_olympiads[0]
             response = self.client.post(
-                reverse('olympiads:olympiad_participate', kwargs={'pk': olympiad.id}),
+                reverse('olympiads:olympiad_register', kwargs={'olympiad_id': olympiad.id}),
                 follow=True
             )
             
