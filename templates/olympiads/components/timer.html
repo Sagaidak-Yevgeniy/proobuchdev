@@ -1,0 +1,46 @@
+{% load i18n %}
+
+<div id="olympiad-timer" 
+     class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 mb-6 sticky top-4 z-10 border border-blue-200 dark:border-blue-900"
+     data-olympiad-id="{{ olympiad.id }}"
+     data-end-time="{{ olympiad.end_datetime|date:'c' }}"
+     data-time-limit="{{ olympiad.time_limit_minutes }}"
+     data-start-time="{{ participation.started_at|date:'c' }}">
+    
+    <div class="flex justify-between items-center mb-2">
+        <h3 class="text-lg font-bold text-gray-800 dark:text-white">{% trans 'Оставшееся время' %}</h3>
+        <div id="timer-display" class="text-xl font-mono text-blue-600 dark:text-blue-400 font-bold">
+            --:--:--
+        </div>
+    </div>
+    
+    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mb-2">
+        <div id="timer-progress" class="bg-blue-600 h-2.5 rounded-full transition-all duration-1000 ease-linear" style="width: 100%"></div>
+    </div>
+    
+    <div id="timer-alert" class="hidden text-red-600 dark:text-red-400 text-sm font-medium">
+        <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        {% trans 'Внимание: осталось мало времени!' %}
+    </div>
+    
+    <div class="flex justify-between mt-2 text-sm text-gray-600 dark:text-gray-400">
+        <div>
+            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            {% trans 'Начало' %}: {{ participation.started_at|date:"d.m.Y H:i" }}
+        </div>
+        <div>
+            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            {% if olympiad.time_limit_minutes > 0 %}
+                {% trans 'Время на решение' %}: {{ olympiad.time_limit_minutes }} {% trans 'мин.' %}
+            {% else %}
+                {% trans 'Завершение' %}: {{ olympiad.end_datetime|date:"d.m.Y H:i" }}
+            {% endif %}
+        </div>
+    </div>
+</div>

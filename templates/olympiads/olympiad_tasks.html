@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ olympiad.title }} | {% trans 'Задания' %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <nav class="flex mb-6" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="{% url 'home' %}" class="text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-white">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+                    {% trans 'Главная' %}
+                </a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                    <a href="{% url 'olympiads:olympiad_list' %}" class="ml-1 text-gray-700 hover:text-blue-600 md:ml-2 dark:text-gray-300 dark:hover:text-white">{% trans 'Олимпиады' %}</a>
+                </div>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                    <a href="{% url 'olympiads:olympiad_detail' olympiad_id=olympiad.id %}" class="ml-1 text-gray-700 hover:text-blue-600 md:ml-2 dark:text-gray-300 dark:hover:text-white">{{ olympiad.title }}</a>
+                </div>
+            </li>
+            <li aria-current="page">
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                    <span class="ml-1 text-gray-500 md:ml-2 dark:text-gray-400">{% trans 'Задания' %}</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">{{ olympiad.title }} <span class="text-lg font-normal text-gray-500 dark:text-gray-400">{% trans 'Задания' %}</span></h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="md:col-span-2">
+            <!-- Список заданий -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">{% trans 'Список заданий' %}</h2>
+                
+                {% if tasks %}
+                <div class="space-y-4">
+                    {% for task in tasks %}
+                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border {% if task_statuses|get_item:task.id|get_item:'is_correct' %}border-green-500{% elif task_statuses|get_item:task.id|get_item:'submitted' %}border-yellow-500{% else %}border-gray-200 dark:border-gray-600{% endif %}">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                                {{ task.title }}
+                                {% if task_statuses|get_item:task.id|get_item:'is_correct' %}
+                                <span class="ml-2 text-green-600 dark:text-green-400"><i class="fas fa-check-circle"></i></span>
+                                {% elif task_statuses|get_item:task.id|get_item:'submitted' %}
+                                <span class="ml-2 text-yellow-600 dark:text-yellow-400"><i class="fas fa-exclamation-circle"></i></span>
+                                {% endif %}
+                            </h3>
+                            <div class="flex items-center">
+                                <span class="px-3 py-1 text-xs rounded-full {% if task.task_type == 'PROGRAMMING' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200{% elif task.task_type == 'MULTIPLE_CHOICE' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200{% else %}bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200{% endif %} mr-2">
+                                    {{ task.get_task_type_display }}
+                                </span>
+                                <span class="text-gray-600 dark:text-gray-300 font-medium">{{ task.points }} {% trans 'баллов' %}</span>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-300 mt-2 line-clamp-2">{{ task.description|truncatechars:100 }}</p>
+                        <div class="mt-3 flex justify-end">
+                            <a href="{% url 'olympiads:olympiad_task_detail' olympiad_id=olympiad.id task_id=task.id %}" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                                {% if task_statuses|get_item:task.id|get_item:'submitted' %}
+                                    {% trans 'Просмотреть решение' %}
+                                {% else %}
+                                    {% trans 'Решить задачу' %}
+                                {% endif %}
+                                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-6">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">{% trans 'Нет заданий' %}</h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{% trans 'В данной олимпиаде пока нет заданий.' %}</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if tasks %}
+            <!-- Кнопка завершения олимпиады -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">{% trans 'Завершение олимпиады' %}</h2>
+                <p class="text-gray-600 dark:text-gray-300 mb-4">{% trans 'Как только вы решите все задачи, или если вы хотите завершить олимпиаду раньше срока, нажмите кнопку ниже.' %}</p>
+                
+                <form method="post" action="{% url 'olympiads:olympiad_finish' olympiad_id=olympiad.id %}" class="mt-4" onsubmit="return confirm('{% trans 'Вы уверены, что хотите завершить олимпиаду? После этого действия вы не сможете вернуться к решению задач.' %}');">
+                    {% csrf_token %}
+                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:bg-green-700 dark:hover:bg-green-600">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        {% trans 'Завершить олимпиаду' %}
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div>
+            <!-- Компонент таймера -->
+            {% include 'olympiads/components/timer.html' %}
+            
+            <!-- Информация об олимпиаде -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">{% trans 'Информация' %}</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{% trans 'Ваш прогресс' %}</h3>
+                        <div class="mt-2">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ participation.score }} / {{ olympiad.tasks.aggregate.total_score }} {% trans 'баллов' %}</span>
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {% with completed=task_statuses.values|selectattr:"is_correct"|list|length %}
+                                    {{ completed }} / {{ tasks|length }} {% trans 'решено' %}
+                                    {% endwith %}
+                                </span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                                {% with completed=task_statuses.values|selectattr:"is_correct"|list|length %}
+                                {% if tasks|length > 0 %}
+                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ completed|mul:100|div:tasks|length }}%"></div>
+                                {% else %}
+                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                                {% endif %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{% trans 'Проходной балл' %}</h3>
+                        <p class="mt-1 text-sm text-gray-700 dark:text-gray-300">{{ olympiad.min_passing_score }} {% trans 'баллов' %}</p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{% trans 'Время начала' %}</h3>
+                        <p class="mt-1 text-sm text-gray-700 dark:text-gray-300">{{ participation.started_at|date:"d.m.Y H:i" }}</p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{% trans 'Время окончания' %}</h3>
+                        <p class="mt-1 text-sm text-gray-700 dark:text-gray-300">
+                            {% if olympiad.time_limit_minutes > 0 %}
+                                {{ participation.started_at|add:olympiad.time_limit_minutes|date:"d.m.Y H:i" }}
+                            {% else %}
+                                {{ olympiad.end_datetime|date:"d.m.Y H:i" }}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Примечания и правила -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">{% trans 'Правила олимпиады' %}</h2>
+                
+                <div class="space-y-3 text-sm text-gray-600 dark:text-gray-300">
+                    <p>• {% trans 'Не используйте сторонние ресурсы или общение с другими участниками во время решения задач.' %}</p>
+                    <p>• {% trans 'Решения заданий можно отправлять повторно, но учитывается только последнее отправленное решение.' %}</p>
+                    <p>• {% trans 'После завершения олимпиады вы не сможете отправлять новые решения.' %}</p>
+                    <p>• {% trans 'За каждое правильно решенное задание вы получаете баллы, указанные в задании.' %}</p>
+                    <p>• {% trans 'Для получения сертификата необходимо набрать проходной балл.' %}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/olympiad_timer.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Инициализация синтаксической подсветки для блоков кода
+        document.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightBlock(block);
+        });
+    });
+</script>
+{% endblock %}
