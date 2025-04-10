@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .format_code_view import format_code_view
 
 app_name = 'olympiads'
 
@@ -25,6 +26,7 @@ urlpatterns = [
     path('<int:olympiad_id>/tasks/<int:task_id>/execute_code/', views.execute_code, name='execute_code'),
     path('<int:olympiad_id>/tasks/<int:task_id>/save_code/', views.save_code, name='save_code'),
     path('<int:olympiad_id>/tasks/<int:task_id>/test_code/', views.test_code, name='test_code'),
+    path('api/format_code/', format_code_view, name='format_code'),
     
     # Управление олимпиадами (для преподавателей и администраторов)
     path('manage/', views.olympiad_manage_list, name='olympiad_manage_list'),

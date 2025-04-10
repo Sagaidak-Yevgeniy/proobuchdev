@@ -1,341 +1,397 @@
+"""
+Модуль для запуска и проверки программного кода для олимпиадных заданий
+"""
+
 import os
-import tempfile
 import subprocess
+import tempfile
+import uuid
 import time
-import resource
-import signal
+import json
 from django.conf import settings
-import logging
 
-logger = logging.getLogger(__name__)
+# Максимальное время выполнения кода (в секундах)
+DEFAULT_TIMEOUT = 5
 
-# Ограничения по умолчанию
-DEFAULT_TIME_LIMIT = 5  # секунд
-DEFAULT_MEMORY_LIMIT = 512  # МБ
+# Максимальный объем памяти (в мегабайтах)
+DEFAULT_MEMORY_LIMIT = 100
 
-# Поддерживаемые языки
+# Поддерживаемые языки программирования и их компиляторы/интерпретаторы
 SUPPORTED_LANGUAGES = {
     'python': {
-        'extension': '.py',
-        'compile_cmd': None,
-        'run_cmd': 'python3 {filename}',
-    },
-    'cpp': {
-        'extension': '.cpp',
-        'compile_cmd': 'g++ -std=c++17 -O2 -o {executable} {filename}',
-        'run_cmd': './{executable}',
-    },
-    'java': {
-        'extension': '.java',
-        'compile_cmd': 'javac {filename}',
-        'run_cmd': 'java -cp {directory} Main',
+        'extension': 'py',
+        'compile': None,
+        'run': ['python', '{file}'],
+        'version_cmd': ['python', '--version'],
+        'name': 'Python',
     },
     'javascript': {
-        'extension': '.js',
-        'compile_cmd': None,
-        'run_cmd': 'node {filename}',
+        'extension': 'js',
+        'compile': None,
+        'run': ['node', '{file}'],
+        'version_cmd': ['node', '--version'],
+        'name': 'JavaScript (Node.js)',
+    },
+    'java': {
+        'extension': 'java',
+        'compile': ['javac', '{file}'],
+        'run': ['java', '-cp', '{dir}', 'Main'],
+        'version_cmd': ['java', '--version'],
+        'name': 'Java',
+        'main_class': 'Main',
+    },
+    'cpp': {
+        'extension': 'cpp',
+        'compile': ['g++', '-std=c++17', '{file}', '-o', '{dir}/a.out'],
+        'run': ['{dir}/a.out'],
+        'version_cmd': ['g++', '--version'],
+        'name': 'C++',
+    },
+    'csharp': {
+        'extension': 'cs',
+        'compile': ['csc', '{file}', '-out:{dir}/program.exe'],
+        'run': ['mono', '{dir}/program.exe'],
+        'version_cmd': ['csc', '--version'],
+        'name': 'C#',
+    },
+    'ruby': {
+        'extension': 'rb',
+        'compile': None,
+        'run': ['ruby', '{file}'],
+        'version_cmd': ['ruby', '--version'],
+        'name': 'Ruby',
+    },
+    'php': {
+        'extension': 'php',
+        'compile': None,
+        'run': ['php', '{file}'],
+        'version_cmd': ['php', '--version'],
+        'name': 'PHP',
     },
 }
 
+# Рабочая директория для временных файлов
+WORK_DIR = os.path.join(settings.BASE_DIR, 'tmp', 'code_runner')
+os.makedirs(WORK_DIR, exist_ok=True)
 
-class ExecutionTimeLimitExceeded(Exception):
-    """Превышено ограничение по времени выполнения"""
-    pass
-
-
-class ExecutionMemoryLimitExceeded(Exception):
-    """Превышено ограничение по памяти"""
-    pass
-
-
-class ExecutionRuntimeError(Exception):
-    """Ошибка выполнения"""
-    pass
-
-
-class CompilationError(Exception):
-    """Ошибка компиляции"""
-    pass
-
-
-def timeout_handler(signum, frame):
-    """Обработчик сигнала для ограничения времени выполнения"""
-    raise ExecutionTimeLimitExceeded("Превышено ограничение по времени выполнения")
-
-
-def compile_code(code, language):
+def get_language_config(language):
     """
-    Компилирует исходный код, если требуется для языка.
+    Получает конфигурацию для указанного языка программирования
     
     Args:
-        code (str): Исходный код
+        language (str): Идентификатор языка программирования
+    
+    Returns:
+        dict: Конфигурация языка или None, если язык не поддерживается
+    """
+    language = language.lower()
+    return SUPPORTED_LANGUAGES.get(language)
+
+def run_code(code, language, input_data=None, timeout=DEFAULT_TIMEOUT, memory_limit=DEFAULT_MEMORY_LIMIT):
+    """
+    Запускает код на указанном языке программирования
+    
+    Args:
+        code (str): Код для запуска
         language (str): Язык программирования
-        
+        input_data (str, optional): Входные данные для программы
+        timeout (int, optional): Максимальное время выполнения в секундах
+        memory_limit (int, optional): Максимальный объем памяти в мегабайтах
+    
     Returns:
-        tuple: (temp_dir, filename, executable) - директория, имя файла и исполняемый файл
-        
-    Raises:
-        CompilationError: Если компиляция завершилась с ошибкой
+        dict: Результат выполнения кода
     """
-    if language not in SUPPORTED_LANGUAGES:
-        raise ValueError(f"Неподдерживаемый язык программирования: {language}")
+    # Получаем конфигурацию языка
+    lang_config = get_language_config(language)
+    if not lang_config:
+        return {
+            'status': 'error',
+            'error': f'Язык "{language}" не поддерживается'
+        }
     
-    lang_config = SUPPORTED_LANGUAGES[language]
-    extension = lang_config['extension']
-    compile_cmd = lang_config['compile_cmd']
-    
-    # Создаем временную директорию для файлов
-    temp_dir = tempfile.mkdtemp()
-    
-    # Для Java создаем файл Main.java
-    if language == 'java':
-        filename = os.path.join(temp_dir, 'Main' + extension)
-    else:
-        filename = os.path.join(temp_dir, 'solution' + extension)
-    
-    # Создаем файл с исходным кодом
-    with open(filename, 'w') as f:
-        f.write(code)
-    
-    # Если компиляция не требуется, просто возвращаем имя файла
-    if compile_cmd is None:
-        return temp_dir, filename, filename
-    
-    # Для компилируемых языков
-    if language == 'cpp':
-        executable = os.path.join(temp_dir, 'solution')
-    elif language == 'java':
-        executable = os.path.join(temp_dir, 'Main.class')
-    else:
-        executable = filename
-    
-    # Компилируем код
-    cmd = compile_cmd.format(
-        filename=filename,
-        executable=executable,
-        directory=temp_dir
-    )
+    # Создаем временный файл для кода
+    uid = uuid.uuid4().hex
+    temp_dir = os.path.join(WORK_DIR, uid)
+    os.makedirs(temp_dir, exist_ok=True)
     
     try:
-        process = subprocess.run(
-            cmd,
-            shell=True,
-            cwd=temp_dir,
-            capture_output=True,
-            text=True,
-            timeout=30  # Ограничиваем время компиляции 30 секундами
-        )
+        # Формируем имя файла
+        file_name = f"main.{lang_config['extension']}"
+        file_path = os.path.join(temp_dir, file_name)
         
-        if process.returncode != 0:
-            raise CompilationError(
-                f"Ошибка компиляции:\n{process.stderr or process.stdout}"
+        # Если это Java, нужно использовать имя класса Main
+        if language == 'java':
+            code = code.replace('public class', 'class')
+            code = f"public class {lang_config['main_class']} {{\n{code.strip()}\n}}"
+        
+        # Записываем код во временный файл
+        with open(file_path, 'w') as f:
+            f.write(code)
+        
+        # Компилируем код, если нужно
+        if lang_config['compile']:
+            compile_cmd = [
+                cmd.format(file=file_path, dir=temp_dir)
+                for cmd in lang_config['compile']
+            ]
+            
+            compile_process = subprocess.run(
+                compile_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=timeout,
+                text=True
             )
+            
+            if compile_process.returncode != 0:
+                return {
+                    'status': 'error',
+                    'error': f'Ошибка компиляции:\n{compile_process.stderr}'
+                }
         
-        return temp_dir, filename, executable
-    
-    except subprocess.TimeoutExpired:
-        raise CompilationError("Превышено время компиляции")
-
-
-def run_code_with_input(executable, language, input_data, time_limit=DEFAULT_TIME_LIMIT, memory_limit=DEFAULT_MEMORY_LIMIT):
-    """
-    Выполняет программу с заданными входными данными и ограничениями.
-    
-    Args:
-        executable: Путь к исполняемому файлу или скрипту
-        language: Язык программирования
-        input_data: Входные данные для программы
-        time_limit: Ограничение по времени в секундах
-        memory_limit: Ограничение по памяти в МБ
+        # Запускаем программу
+        run_cmd = [
+            cmd.format(file=file_path, dir=temp_dir)
+            for cmd in lang_config['run']
+        ]
         
-    Returns:
-        tuple: (output, execution_time, memory_usage) - вывод, время выполнения, использованная память
+        # Если есть входные данные, записываем их во временный файл
+        input_file = None
+        if input_data:
+            input_file = os.path.join(temp_dir, 'input.txt')
+            with open(input_file, 'w') as f:
+                f.write(input_data)
         
-    Raises:
-        ExecutionTimeLimitExceeded: Если превышено ограничение по времени
-        ExecutionMemoryLimitExceeded: Если превышено ограничение по памяти
-        ExecutionRuntimeError: Если произошла ошибка во время выполнения
-    """
-    if language not in SUPPORTED_LANGUAGES:
-        raise ValueError(f"Неподдерживаемый язык программирования: {language}")
-    
-    lang_config = SUPPORTED_LANGUAGES[language]
-    run_cmd = lang_config['run_cmd']
-    
-    if language == 'java':
-        directory = os.path.dirname(executable)
-    else:
-        directory = os.path.dirname(executable)
-    
-    # Формируем команду для запуска
-    cmd = run_cmd.format(
-        filename=executable,
-        executable=executable,
-        directory=directory
-    )
-    
-    # Создаем временный файл для входных данных
-    input_file = tempfile.NamedTemporaryFile(mode='w+', delete=False)
-    input_file.write(input_data)
-    input_file.close()
-    
-    # Устанавливаем обработчик для ограничения времени выполнения
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(time_limit)
-    
-    start_time = time.time()
-    max_memory = 0
-    
-    try:
         # Запускаем процесс
-        process = subprocess.Popen(
-            cmd,
-            shell=True,
-            cwd=directory,
-            stdin=open(input_file.name, 'r'),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            preexec_fn=lambda: resource.setrlimit(
-                resource.RLIMIT_AS, 
-                (memory_limit * 1024 * 1024, memory_limit * 1024 * 1024)
-            )
-        )
+        start_time = time.time()
         
-        # Отслеживаем использование памяти
-        while process.poll() is None:
+        with open(input_file, 'r') if input_file else None as inp:
             try:
-                # Получаем информацию о процессе
-                with open(f'/proc/{process.pid}/status', 'r') as f:
-                    stats = f.read()
-                    
-                # Ищем строку с VmPeak (максимальное использование памяти)
-                for line in stats.splitlines():
-                    if line.startswith('VmPeak:'):
-                        kb = int(line.split()[1])
-                        mb = kb / 1024
-                        max_memory = max(max_memory, mb)
-                        
-                        # Проверяем превышение лимита памяти
-                        if mb > memory_limit:
-                            process.kill()
-                            raise ExecutionMemoryLimitExceeded(
-                                f"Превышено ограничение по памяти: {mb:.2f} МБ > {memory_limit} МБ"
-                            )
-                
-                time.sleep(0.1)
-                
-            except (FileNotFoundError, IOError, ProcessLookupError):
-                # Процесс мог уже завершиться
-                break
-        
-        stdout, stderr = process.communicate()
-        
-        # Отключаем таймер
-        signal.alarm(0)
-        
-        execution_time = time.time() - start_time
-        
-        if execution_time > time_limit:
-            raise ExecutionTimeLimitExceeded(
-                f"Превышено ограничение по времени: {execution_time:.2f} сек > {time_limit} сек"
-            )
-        
-        if process.returncode != 0:
-            raise ExecutionRuntimeError(f"Ошибка выполнения:\n{stderr}")
-        
-        return stdout.strip(), execution_time, max_memory
-    
-    except (OSError, subprocess.SubprocessError) as e:
-        signal.alarm(0)
-        raise ExecutionRuntimeError(f"Ошибка запуска процесса: {str(e)}")
-    
-    finally:
-        signal.alarm(0)
-        # Удаляем временный файл входных данных
-        os.unlink(input_file.name)
-
-
-def check_solution(code, language, test_cases, time_limit=DEFAULT_TIME_LIMIT, memory_limit=DEFAULT_MEMORY_LIMIT):
-    """
-    Проверяет решение по набору тестовых случаев.
-    
-    Args:
-        code (str): Исходный код решения
-        language (str): Язык программирования
-        test_cases (list): Список тестовых случаев вида [(input, expected_output), ...]
-        time_limit (int): Ограничение по времени в секундах
-        memory_limit (int): Ограничение по памяти в МБ
-        
-    Returns:
-        tuple: (results, passed_count, total_count) - результаты, количество пройденных тестов, общее количество тестов
-        где results - список кортежей (test_case_id, passed, output, expected, error, time, memory)
-    """
-    results = []
-    passed_count = 0
-    total_count = len(test_cases)
-    
-    try:
-        # Компилируем код если нужно
-        temp_dir, filename, executable = compile_code(code, language)
-        
-        # Выполняем проверку на каждом тестовом случае
-        for i, (input_data, expected_output) in enumerate(test_cases):
-            try:
-                output, execution_time, memory_usage = run_code_with_input(
-                    executable, language, input_data, time_limit, memory_limit
+                process = subprocess.run(
+                    run_cmd,
+                    stdin=inp,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=timeout,
+                    text=True
                 )
                 
-                # Нормализуем вывод для сравнения (убираем лишние пробелы и переводы строк)
-                normalized_output = output.strip()
-                normalized_expected = expected_output.strip()
+                execution_time = time.time() - start_time
                 
-                # Сравниваем результаты
-                passed = normalized_output == normalized_expected
-                if passed:
-                    passed_count += 1
+                if process.returncode != 0:
+                    return {
+                        'status': 'error',
+                        'error': f'Ошибка выполнения:\n{process.stderr}',
+                        'output': process.stdout,
+                        'execution_time': execution_time
+                    }
                 
-                results.append({
-                    'test_case_id': i + 1,
-                    'passed': passed,
-                    'output': output,
-                    'expected': expected_output,
-                    'error': None,
+                return {
+                    'status': 'success',
+                    'output': process.stdout,
                     'execution_time': execution_time,
-                    'memory_usage': memory_usage
-                })
+                    'memory_usage': 0  # В простой версии не измеряем использование памяти
+                }
                 
-            except (ExecutionTimeLimitExceeded, ExecutionMemoryLimitExceeded, ExecutionRuntimeError) as e:
-                results.append({
-                    'test_case_id': i + 1,
-                    'passed': False,
-                    'output': None,
-                    'expected': expected_output,
-                    'error': str(e),
-                    'execution_time': 0,
-                    'memory_usage': 0
-                })
-        
-    except CompilationError as e:
-        # Все тестовые случаи не проходят при ошибке компиляции
-        for i in range(total_count):
-            results.append({
-                'test_case_id': i + 1,
-                'passed': False,
-                'output': None,
-                'expected': test_cases[i][1],
-                'error': str(e),
-                'execution_time': 0,
-                'memory_usage': 0
-            })
+            except subprocess.TimeoutExpired:
+                return {
+                    'status': 'error',
+                    'error': f'Превышено ограничение по времени ({timeout} сек)'
+                }
+            
+    except Exception as e:
+        return {
+            'status': 'error',
+            'error': f'Произошла ошибка: {str(e)}'
+        }
     
     finally:
-        # Удаляем временную директорию с кодом
-        import shutil
-        if 'temp_dir' in locals():
-            try:
-                shutil.rmtree(temp_dir)
-            except OSError:
-                pass
+        # Удаляем временные файлы
+        cleanup_temp_files(temp_dir)
+
+def run_test_case(code, language, test_case, timeout=DEFAULT_TIMEOUT, memory_limit=DEFAULT_MEMORY_LIMIT):
+    """
+    Запускает код на указанном языке программирования с тестовым случаем
     
-    return results, passed_count, total_count
+    Args:
+        code (str): Код для запуска
+        language (str): Язык программирования
+        test_case (dict): Тестовый случай с входными данными и ожидаемым результатом
+        timeout (int, optional): Максимальное время выполнения в секундах
+        memory_limit (int, optional): Максимальный объем памяти в мегабайтах
+    
+    Returns:
+        dict: Результат прохождения теста
+    """
+    # Получаем входные данные и ожидаемый результат
+    input_data = test_case.get('input_data', '')
+    expected_output = test_case.get('expected_output', '').strip()
+    
+    # Запускаем код
+    result = run_code(code, language, input_data, timeout, memory_limit)
+    
+    # Если произошла ошибка, возвращаем её
+    if result['status'] == 'error':
+        return {
+            'status': 'error',
+            'error': result['error'],
+            'passed': False,
+            'test_id': test_case.get('id')
+        }
+    
+    # Получаем выходные данные
+    actual_output = result['output'].strip()
+    
+    # Сравниваем выходные данные с ожидаемым результатом
+    passed = actual_output == expected_output
+    
+    return {
+        'status': 'success',
+        'passed': passed,
+        'expected_output': expected_output,
+        'actual_output': actual_output,
+        'execution_time': result['execution_time'],
+        'memory_usage': result.get('memory_usage', 0),
+        'test_id': test_case.get('id')
+    }
+
+def format_code(code, language):
+    """
+    Форматирует код на указанном языке программирования
+    
+    Args:
+        code (str): Код для форматирования
+        language (str): Язык программирования
+    
+    Returns:
+        dict: Результат форматирования
+    """
+    # Получаем конфигурацию языка
+    lang_config = get_language_config(language)
+    if not lang_config:
+        return {
+            'status': 'error',
+            'error': f'Язык "{language}" не поддерживается'
+        }
+    
+    # Создаем временный файл для кода
+    with tempfile.TemporaryDirectory() as temp_dir:
+        try:
+            # Формируем имя файла
+            file_name = f"main.{lang_config['extension']}"
+            file_path = os.path.join(temp_dir, file_name)
+            
+            # Записываем код во временный файл
+            with open(file_path, 'w') as f:
+                f.write(code)
+            
+            # Форматируем код в зависимости от языка
+            if language == 'python':
+                # Используем black для Python
+                try:
+                    subprocess.run(
+                        ['black', '-q', file_path],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        timeout=5,
+                        text=True
+                    )
+                except (subprocess.SubprocessError, FileNotFoundError):
+                    # Если black не установлен, пропускаем форматирование
+                    pass
+                
+            elif language == 'javascript':
+                # Используем prettier для JavaScript
+                try:
+                    subprocess.run(
+                        ['prettier', '--write', file_path],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        timeout=5,
+                        text=True
+                    )
+                except (subprocess.SubprocessError, FileNotFoundError):
+                    # Если prettier не установлен, пропускаем форматирование
+                    pass
+                
+            elif language in ['java', 'cpp', 'csharp']:
+                # Используем clang-format для C-подобных языков
+                try:
+                    subprocess.run(
+                        ['clang-format', '-i', file_path],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        timeout=5,
+                        text=True
+                    )
+                except (subprocess.SubprocessError, FileNotFoundError):
+                    # Если clang-format не установлен, пропускаем форматирование
+                    pass
+            
+            # Считываем отформатированный код
+            with open(file_path, 'r') as f:
+                formatted_code = f.read()
+            
+            return {
+                'status': 'success',
+                'formatted_code': formatted_code
+            }
+            
+        except Exception as e:
+            return {
+                'status': 'error',
+                'error': f'Произошла ошибка при форматировании: {str(e)}'
+            }
+
+def cleanup_temp_files(directory):
+    """
+    Удаляет временные файлы
+    
+    Args:
+        directory (str): Путь к директории с временными файлами
+    """
+    try:
+        # Рекурсивно удаляем все файлы в директории
+        for root, dirs, files in os.walk(directory, topdown=False):
+            for file in files:
+                os.remove(os.path.join(root, file))
+            for dir in dirs:
+                os.rmdir(os.path.join(root, dir))
+        
+        # Удаляем саму директорию
+        os.rmdir(directory)
+    except Exception as e:
+        print(f"Ошибка при удалении временных файлов: {e}")
+
+def get_available_languages():
+    """
+    Возвращает список доступных языков программирования
+    
+    Returns:
+        list: Список доступных языков
+    """
+    languages = []
+    
+    for lang_id, config in SUPPORTED_LANGUAGES.items():
+        # Проверяем, установлен ли компилятор/интерпретатор
+        try:
+            subprocess.run(
+                config['version_cmd'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=2
+            )
+            
+            languages.append({
+                'id': lang_id,
+                'name': config['name'],
+                'available': True
+            })
+        except (subprocess.SubprocessError, FileNotFoundError):
+            languages.append({
+                'id': lang_id,
+                'name': config['name'],
+                'available': False
+            })
+    
+    return languages

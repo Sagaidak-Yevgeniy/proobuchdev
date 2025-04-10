@@ -8,6 +8,8 @@ from django.utils.translation import gettext_lazy as _
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import csrf_exempt
+
+from .code_runner import format_code as format_code_function
 import json
 import datetime
 
