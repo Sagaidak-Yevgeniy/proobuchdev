@@ -367,9 +367,12 @@
                     <button id="mobile-menu-button" class="lg:hidden order-3 relative flex-none w-10 h-10 rounded-full bg-blue-700/40 hover:bg-blue-700/60 text-white focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200 shadow-md">
                         <span class="sr-only">Меню</span>
                         <div class="absolute inset-0 flex flex-col justify-center items-center w-full h-full">
-                            <span class="absolute transform transition-all duration-300 ease-in-out menu-line menu-line-1 w-5 h-0.5 bg-white rounded-full -translate-y-1.5"></span>
-                            <span class="absolute transform transition-all duration-300 ease-in-out menu-line menu-line-2 w-5 h-0.5 bg-white rounded-full"></span>
-                            <span class="absolute transform transition-all duration-300 ease-in-out menu-line menu-line-3 w-5 h-0.5 bg-white rounded-full translate-y-1.5"></span>
+                            <!-- Полностью переделанная структура бургер-меню -->
+                            <div class="relative w-5 h-4"> <!-- Контейнер фиксированной высоты -->
+                                <span class="absolute top-0 left-0 transform transition-all duration-300 ease-in-out menu-line menu-line-1 w-5 h-0.5 bg-white rounded-full"></span>
+                                <span class="absolute top-1/2 -mt-px left-0 transform transition-all duration-300 ease-in-out menu-line menu-line-2 w-5 h-0.5 bg-white rounded-full"></span>
+                                <span class="absolute bottom-0 left-0 transform transition-all duration-300 ease-in-out menu-line menu-line-3 w-5 h-0.5 bg-white rounded-full"></span>
+                            </div>
                         </div>
                     </button>
                 </div>
@@ -552,10 +555,16 @@
                     const line3 = document.querySelector('.menu-line-3');
                     
                     if (line1 && line2 && line3) {
-                        // Перемещаем линии в центр и поворачиваем на 45 градусов
-                        line1.style.transform = 'translateY(0) rotate(45deg)';
+                        // Перемещаем все линии к центру и делаем крестик
+                        line1.style.top = '50%';
+                        line1.style.marginTop = '-1px';
+                        line1.style.transform = 'rotate(45deg)';
+                        
                         line2.style.opacity = '0';
-                        line3.style.transform = 'translateY(0) rotate(-45deg)';
+                        
+                        line3.style.top = '50%';
+                        line3.style.marginTop = '-1px';
+                        line3.style.transform = 'rotate(-45deg)';
                     }
                 }
                 
@@ -566,11 +575,16 @@
                     const line3 = document.querySelector('.menu-line-3');
                     
                     if (line1 && line2 && line3) {
-                        // Полностью сбрасываем трансформацию до исходных значений
-                        line1.style.transform = 'translateY(-1.5px)';
+                        // Возвращаем линии в исходное положение бургера
+                        line1.style.top = '0';
+                        line1.style.marginTop = '0';
+                        line1.style.transform = '';
+                        
                         line2.style.opacity = '1';
-                        line2.style.transform = '';
-                        line3.style.transform = 'translateY(1.5px)';
+                        
+                        line3.style.top = '100%';
+                        line3.style.marginTop = '-2px'; // Компенсация толщины линии
+                        line3.style.transform = '';
                     }
                 }
             });
