@@ -256,8 +256,7 @@ class SystemTester:
             LessonContent.objects.create(
                 lesson=lesson,
                 content_type='text',
-                content=f'Текстовое содержимое для урока {lesson.title}',
-                order=1
+                content=f'Текстовое содержимое для урока {lesson.title}'
             )
             
             # Создаем задание для урока
@@ -289,21 +288,18 @@ class SystemTester:
         olympiad_data = [
             {
                 'title': 'Олимпиада по Python',
-                'slug': 'olimpiada-po-python',
                 'description': 'Соревнование по программированию на языке Python',
                 'course_index': 0,
                 'status': Olympiad.OlympiadStatus.ACTIVE
             },
             {
                 'title': 'Веб-разработка: HTML и CSS',
-                'slug': 'web-razrabotka-html-i-css',
                 'description': 'Олимпиада по вёрстке и стилизации',
                 'course_index': 1,
                 'status': Olympiad.OlympiadStatus.PUBLISHED
             },
             {
                 'title': 'Алгоритмическая олимпиада',
-                'slug': 'algoritmicheskaya-olimpiada',
                 'description': 'Соревнование по алгоритмам и структурам данных',
                 'course_index': 2,
                 'status': Olympiad.OlympiadStatus.DRAFT
@@ -313,16 +309,15 @@ class SystemTester:
         for data in olympiad_data:
             now = timezone.now()
             
-            # Проверяем, существует ли олимпиада с таким названием или slug
+            # Проверяем, существует ли олимпиада с таким названием
             olympiad = Olympiad.objects.filter(
-                models.Q(title=data['title']) | models.Q(slug=data['slug'])
+                title=data['title']
             ).first()
             
             if not olympiad:
                 # Создаем новую олимпиаду
                 olympiad = Olympiad.objects.create(
                     title=data['title'],
-                    slug=data['slug'],
                     description=data['description'],
                     short_description=data['description'][:100],
                     start_datetime=now - datetime.timedelta(days=1),
