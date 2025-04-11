@@ -27,11 +27,13 @@
         top: 16px;
         right: 16px;
     }
+    /* Скрываем все секции по умолчанию */
     .content-section {
-        display: none;
+        display: none !important;
     }
+    /* Показываем только активную секцию */
     .content-section.active {
-        display: block;
+        display: block !important;
     }
     .nav-link {
         position: relative;
@@ -58,6 +60,11 @@
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Скрываем все секции при загрузке страницы
+    document.querySelectorAll('.content-section').forEach(function(section) {
+        section.style.display = 'none';
+    });
+    
     // Показываем обзор по умолчанию
     showSection('overview');
     
@@ -90,10 +97,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function showSection(sectionId) {
+        console.log('Переключение на раздел:', sectionId);
+        
         // Скрываем все секции и деактивируем все ссылки
         document.querySelectorAll('.content-section').forEach(function(section) {
             section.classList.remove('active');
+            section.style.display = 'none';
         });
+        
         document.querySelectorAll('.olympiad-nav-link').forEach(function(link) {
             link.classList.remove('active');
         });
@@ -103,14 +114,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const linkElement = document.querySelector('.olympiad-nav-link[data-section="' + sectionId + '"]');
         
         if (sectionElement) {
+            console.log('Активируем секцию:', sectionId);
             sectionElement.classList.add('active');
+            sectionElement.style.display = 'block';
+        } else {
+            console.warn('Секция не найдена:', sectionId);
         }
+        
         if (linkElement) {
             linkElement.classList.add('active');
+        } else {
+            console.warn('Ссылка навигации не найдена:', sectionId);
         }
         
         // Обновляем хлебные крошки
         updateBreadcrumbs(sectionId);
+        
+        // Прокручиваем к началу контента
+        window.scrollTo({
+            top: document.querySelector('.container').offsetTop,
+            behavior: 'smooth'
+        });
     }
     
     function updateBreadcrumbs(sectionId) {
