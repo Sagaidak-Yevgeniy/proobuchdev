@@ -975,16 +975,24 @@ def olympiad_task_create(request, olympiad_id):
         return redirect('olympiads:olympiad_list')
     
     if request.method == 'POST':
+        # Проверка, если это быстрое добавление задания
+        quick_add = 'quick_add' in request.POST
+        
         # Основные поля
         title = request.POST.get('title')
         if not title:
             messages.error(request, _('Название задания не может быть пустым'))
+            if quick_add:
+                # Перенаправляем на страницу управления, если это быстрое добавление
+                return redirect('olympiads:olympiad_actions', olympiad_id=olympiad.id)
             return redirect('olympiads:olympiad_task_create', olympiad_id=olympiad.id)
             
         description = request.POST.get('description', '')
         task_type = request.POST.get('task_type')
         if not task_type:
             messages.error(request, _('Тип задания не может быть пустым'))
+            if quick_add:
+                return redirect('olympiads:olympiad_actions', olympiad_id=olympiad.id)
             return redirect('olympiads:olympiad_task_create', olympiad_id=olympiad.id)
             
         points = int(request.POST.get('points', 1))
@@ -1045,6 +1053,16 @@ def olympiad_task_create(request, olympiad_id):
         task = OlympiadTask.objects.create(**task_data)
         
         messages.success(request, _('Задание успешно создано!'))
+        
+        # Если это быстрое добавление, возвращаемся на страницу управления олимпиадой
+        if quick_add:
+            messages.success(request, _('Задание "{}" добавлено! Вы можете продолжить добавление заданий.').format(title))
+            # Перенаправляем на страницу управления олимпиадой с активной вкладкой заданий
+            return redirect('{}#tasks'.format(
+                reverse('olympiads:olympiad_actions', kwargs={'olympiad_id': olympiad.id})
+            ))
+        
+        # Иначе перенаправляем на страницу редактирования задания
         return redirect('olympiads:olympiad_task_edit', olympiad_id=olympiad.id, task_id=task.id)
     
     # Получаем список доступных курсов для выбора
