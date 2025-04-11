@@ -197,6 +197,36 @@
     @apply relative flex-1 flex flex-col max-w-xs w-full bg-white;
 }
 
+/* Улучшенные стили для выпадающих меню */
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    z-index: 100;
+    margin-top: 0.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+@media (max-width: 1024px) {
+    .dropdown-menu {
+        position: fixed;
+        max-width: 300px;
+        right: 0.5rem;
+    }
+}
+
+/* Корректное отображение выпадающих меню для мобильных устройств */
+@media (max-width: 640px) {
+    .dropdown-menu {
+        width: calc(100vw - 2rem);
+        max-width: 100%;
+        left: 0.5rem;
+        right: 0.5rem;
+    }
+}
+
 /* Стили для прогресс-бара */
 .progress-bar {
     @apply w-full bg-gray-200 rounded-full h-2.5 mb-4;
