@@ -1971,13 +1971,12 @@ def olympiad_invitation_qr(request, olympiad_id):
         messages.error(request, _('У вас нет прав для выполнения этого действия'))
         return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
     
-    # Проверяем наличие кода приглашения
-    if not olympiad.invitation_code:
-        return HttpResponse(_('Код приглашения не сгенерирован'), status=404)
+    # Получаем или создаем приглашение с помощью нового метода
+    invitation = olympiad.get_or_create_invitation()
     
     # Создаем URL для приглашения
     invitation_url = request.build_absolute_uri(
-        reverse('olympiads:olympiad_join_by_invitation', kwargs={'code': olympiad.invitation_code})
+        reverse('olympiads:olympiad_join_by_invitation', kwargs={'code': invitation.code})
     )
     
     # Генерируем QR-код

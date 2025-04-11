@@ -71,6 +71,25 @@ class Olympiad(models.Model):
         """Проверяет, началась ли олимпиада (но не обязательно активна)"""
         return self.start_datetime <= timezone.now()
     
+    def get_or_create_invitation(self):
+        """Получает или создает приглашение на олимпиаду на основе invitation_code"""
+        # Если код приглашения не задан, генерируем его
+        if not self.invitation_code:
+            self.invitation_code = str(uuid.uuid4()).replace('-', '')[:20]
+            self.save(update_fields=['invitation_code'])
+        
+        # Ищем или создаем приглашение
+        invitation, created = OlympiadInvitation.objects.get_or_create(
+            olympiad=self,
+            code=self.invitation_code,
+            defaults={
+                'description': f'Основное приглашение для {self.title}',
+                'is_active': True
+            }
+        )
+        
+        return invitation
+        
     def can_participate(self, user):
         """Определяет, может ли пользователь участвовать в олимпиаде"""
         # Проверяем, что олимпиада активна
