@@ -528,9 +528,9 @@ def olympiad_task_detail(request, olympiad_id, task_id):
         
         # Настройка URL для редактора кода
         urls = {
-            'execute': reverse('olympiads:olympiad_task_execute', args=[olympiad.id, task.id]),
-            'save': reverse('olympiads:olympiad_task_save', args=[olympiad.id, task.id]),
-            'test': reverse('olympiads:olympiad_task_test', args=[olympiad.id, task.id]),
+            'execute': reverse('olympiads:execute_code', args=[olympiad.id, task.id]),
+            'save': reverse('olympiads:save_code', args=[olympiad.id, task.id]),
+            'test': reverse('olympiads:test_code', args=[olympiad.id, task.id]),
         }
     else:
         urls = {}

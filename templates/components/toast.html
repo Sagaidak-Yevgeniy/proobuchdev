@@ -52,8 +52,13 @@
                     break;
             }
             
-            // Добавляем классы
-            toast.classList.add(bgClass, textClass);
+            // Добавляем классы (по одному, чтобы избежать ошибок с пробелами)
+            bgClass.split(' ').forEach(cls => {
+                if (cls) toast.classList.add(cls);
+            });
+            textClass.split(' ').forEach(cls => {
+                if (cls) toast.classList.add(cls);
+            });
             
             // Заполняем содержимое
             toast.innerHTML = `
@@ -63,10 +68,16 @@
                 <div class="flex-1">
                     ${message}
                 </div>
-                <button class="ml-4 text-lg focus:outline-none ${textClass} hover:opacity-75 transition-opacity">
+                <button class="ml-4 text-lg focus:outline-none hover:opacity-75 transition-opacity">
                     <i class="fas fa-times"></i>
                 </button>
             `;
+            
+            // Добавляем классы к кнопке закрытия (вместо инлайн-вставки)
+            const closeBtn = toast.querySelector('button');
+            textClass.split(' ').forEach(cls => {
+                if (cls) closeBtn.classList.add(cls);
+            });
             
             // Добавляем уведомление в контейнер
             toastContainer.appendChild(toast);
