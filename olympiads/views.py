@@ -9,6 +9,12 @@ from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
+import qrcode
+from io import BytesIO
+from PIL import Image
+import uuid
+import string
+import random
 
 from .code_runner import format_code as format_code_function
 from .forms import OlympiadForm, ProblemForm, TestCaseForm, SubmissionForm
@@ -1929,3 +1935,67 @@ def olympiad_reports(request, olympiad_id):
     }
     
     return render(request, 'olympiads/manage/olympiad_reports.html', context)
+
+
+@login_required
+@require_POST
+def olympiad_generate_invitation(request, olympiad_id):
+    """Генерирует код приглашения для олимпиады"""
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    
+    # Проверка прав доступа
+    if not request.user.is_staff and olympiad.created_by != request.user:
+        messages.error(request, _('У вас нет прав для выполнения этого действия'))
+        return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
+    
+    # Генерация уникального кода приглашения
+    code = generate_random_code(length=8)
+    while Olympiad.objects.filter(invitation_code=code).exists():
+        code = generate_random_code(length=8)
+    
+    # Сохраняем код приглашения
+    olympiad.invitation_code = code
+    olympiad.save(update_fields=['invitation_code'])
+    
+    messages.success(request, _('Код приглашения успешно сгенерирован'))
+    return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
+
+
+@login_required
+def olympiad_invitation_qr(request, olympiad_id):
+    """Генерирует QR-код для ссылки-приглашения на олимпиаду"""
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    
+    # Проверка прав доступа
+    if not request.user.is_staff and olympiad.created_by != request.user:
+        messages.error(request, _('У вас нет прав для выполнения этого действия'))
+        return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
+    
+    # Проверяем наличие кода приглашения
+    if not olympiad.invitation_code:
+        return HttpResponse(_('Код приглашения не сгенерирован'), status=404)
+    
+    # Создаем URL для приглашения
+    invitation_url = request.build_absolute_uri(
+        reverse('olympiads:olympiad_join_by_invitation', kwargs={'code': olympiad.invitation_code})
+    )
+    
+    # Генерируем QR-код
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(invitation_url)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Сохраняем изображение в буфер
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+    
+    # Возвращаем изображение
+    return HttpResponse(buffer.getvalue(), content_type='image/png')

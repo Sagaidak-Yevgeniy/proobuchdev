@@ -30,6 +30,7 @@ class Olympiad(models.Model):
                                                    default=0, 
                                                    help_text=_('0 означает без ограничения'))
     min_passing_score = models.PositiveIntegerField(_('Минимальный проходной балл'), default=0)
+    invitation_code = models.CharField(_('Код приглашения'), max_length=20, blank=True, null=True, unique=True)
     
     status = models.CharField(_('Статус'), max_length=20, choices=OlympiadStatus.choices, default=OlympiadStatus.DRAFT)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, 

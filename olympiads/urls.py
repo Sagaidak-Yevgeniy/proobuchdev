@@ -47,4 +47,6 @@ urlpatterns = [
     path('manage/<int:olympiad_id>/invitations/', views.olympiad_invitations, name='olympiad_invitations'),
     path('manage/<int:olympiad_id>/statistics/', views.olympiad_statistics, name='olympiad_statistics'),
     path('manage/<int:olympiad_id>/reports/', views.olympiad_reports, name='olympiad_reports'),
+    path('manage/<int:olympiad_id>/generate_invitation/', views.olympiad_generate_invitation, name='olympiad_generate_invitation'),
+    path('manage/<int:olympiad_id>/invitation_qr/', views.olympiad_invitation_qr, name='olympiad_invitation_qr'),
 ]

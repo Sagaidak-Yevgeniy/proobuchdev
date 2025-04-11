@@ -960,6 +960,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/29/e6/273de1f5cda537b00bc2947082be747f1d76358db8b945f3a60837bcd0f6/qrcode-8.1-py3-none-any.whl", hash = "sha256:9beba317d793ab8b3838c52af72e603b8ad2599c4e9bbd5c3da37c7dcc13c5cf", size = 45711 },
 ]
 
+[package.optional-dependencies]
+pil = [
+    { name = "pillow" },
+]
+
 [[package]]
 name = "regex"
 version = "2024.11.6"
@@ -1026,7 +1031,7 @@ dependencies = [
     { name = "psycopg2-binary" },
     { name = "python-dotenv" },
     { name = "python-markdown-math" },
-    { name = "qrcode" },
+    { name = "qrcode", extra = ["pil"] },
     { name = "sendgrid" },
     { name = "trafilatura" },
     { name = "xhtml2pdf" },
@@ -1042,7 +1047,7 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "python-dotenv", specifier = ">=1.1.0" },
     { name = "python-markdown-math", specifier = ">=0.9" },
-    { name = "qrcode", specifier = ">=8.1" },
+    { name = "qrcode", extras = ["pil"], specifier = ">=8.1" },
     { name = "sendgrid", specifier = ">=6.11.0" },
     { name = "trafilatura", specifier = ">=2.0.0" },
     { name = "xhtml2pdf", specifier = ">=0.2.17" },
