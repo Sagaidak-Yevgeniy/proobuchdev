@@ -1,95 +1,88 @@
-{% load i18n %}
-
+<!-- Компонент навигации для олимпиады -->
 <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden mb-6">
-    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-        <h2 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
-            <i class="fas fa-map-signs text-indigo-500 mr-2"></i>
-            {% trans 'Навигация' %}
-        </h2>
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+        <div class="flex items-center space-x-2">
+            <div class="flex items-center justify-center rounded-full w-10 h-10 bg-white/20 backdrop-blur-sm">
+                <i class="fas fa-medal text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold">{{ olympiad.title }}</h2>
+                <p class="text-xs text-white/70">
+                    {% if olympiad.start_date %}
+                    {{ olympiad.start_date|date:"d.m.Y" }}
+                    {% if olympiad.end_date %} - {{ olympiad.end_date|date:"d.m.Y" }}{% endif %}
+                    {% else %}
+                    Постоянная олимпиада
+                    {% endif %}
+                </p>
+            </div>
+        </div>
     </div>
     
-    <div class="p-4">
-        <ul class="space-y-2">
-            <!-- Основная информация о олимпиаде -->
+    <!-- Навигационные ссылки -->
+    <div class="p-3">
+        <ul class="space-y-1">
+            <!-- Общие ссылки для всех -->
             <li>
                 <a href="{% url 'olympiads:olympiad_detail' olympiad_id=olympiad.id %}" 
-                   class="flex items-center p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 {% if current_section == 'detail' %}bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300{% else %}text-gray-700 dark:text-gray-300{% endif %}">
-                    <i class="fas fa-info-circle w-5 text-center mr-2"></i>
-                    <span>{% trans 'Информация' %}</span>
+                   class="flex items-center p-2.5 rounded-lg transition-colors {% if current_section == 'overview' %}bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">
+                    <i class="fas fa-info-circle w-5 mr-3 text-gray-500 dark:text-gray-400 {% if current_section == 'overview' %}text-blue-600 dark:text-blue-400{% endif %}"></i>
+                    <span>Обзор</span>
                 </a>
             </li>
             
-            <!-- Задания олимпиады (для участников) -->
+            <!-- Ссылки для участников -->
             {% if is_participant %}
             <li>
-                <a href="{% url 'olympiads:olympiad_tasks' olympiad_id=olympiad.id %}" 
-                   class="flex items-center p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 {% if current_section == 'tasks' %}bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300{% else %}text-gray-700 dark:text-gray-300{% endif %}">
-                    <i class="fas fa-tasks w-5 text-center mr-2"></i>
-                    <span>{% trans 'Задания' %}</span>
+                <a href="{% url 'olympiads:olympiad_tasks_list' olympiad_id=olympiad.id %}" 
+                   class="flex items-center p-2.5 rounded-lg transition-colors {% if current_section == 'tasks' %}bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">
+                    <i class="fas fa-tasks w-5 mr-3 text-gray-500 dark:text-gray-400 {% if current_section == 'tasks' %}text-blue-600 dark:text-blue-400{% endif %}"></i>
+                    <span>Задания</span>
                 </a>
             </li>
             
-            <!-- Результаты олимпиады (если олимпиада завершена или пользователь завершил участие) -->
             {% if has_results %}
             <li>
                 <a href="{% url 'olympiads:olympiad_results' olympiad_id=olympiad.id %}" 
-                   class="flex items-center p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 {% if current_section == 'results' %}bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300{% else %}text-gray-700 dark:text-gray-300{% endif %}">
-                    <i class="fas fa-poll w-5 text-center mr-2"></i>
-                    <span>{% trans 'Мои результаты' %}</span>
+                   class="flex items-center p-2.5 rounded-lg transition-colors {% if current_section == 'results' %}bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">
+                    <i class="fas fa-chart-bar w-5 mr-3 text-gray-500 dark:text-gray-400 {% if current_section == 'results' %}text-blue-600 dark:text-blue-400{% endif %}"></i>
+                    <span>Результаты</span>
                 </a>
             </li>
             {% endif %}
+            {% endif %}
             
-            <!-- Сертификат (если олимпиада завершена и у пользователя проходной балл) -->
-            {% if has_certificate %}
+            <!-- Ссылки для организаторов -->
+            {% if is_organizer or user.is_staff %}
+            <li class="pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
+                <p class="px-2.5 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Управление</p>
+            </li>
             <li>
-                <a href="{% url 'olympiads:olympiad_certificate' olympiad_id=olympiad.id %}" 
-                   class="flex items-center p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 {% if current_section == 'certificate' %}bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300{% else %}text-gray-700 dark:text-gray-300{% endif %}">
-                    <i class="fas fa-certificate w-5 text-center mr-2"></i>
-                    <span>{% trans 'Сертификат' %}</span>
-                </a>
-            </li>
-            {% endif %}
-            {% endif %}
-            
-            <!-- Таблица лидеров -->
-            {% if olympiad.status == 'completed' %}
-            <li>
-                <a href="{% url 'olympiads:olympiad_leaderboard' olympiad_id=olympiad.id %}" 
-                   class="flex items-center p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 {% if current_section == 'leaderboard' %}bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300{% else %}text-gray-700 dark:text-gray-300{% endif %}">
-                    <i class="fas fa-trophy w-5 text-center mr-2"></i>
-                    <span>{% trans 'Таблица лидеров' %}</span>
-                </a>
-            </li>
-            {% endif %}
-            
-            <!-- Дополнительные опции для организаторов олимпиады -->
-            {% if is_organizer %}
-            <li class="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 block px-2 mb-2">{% trans 'Управление олимпиадой' %}</span>
-                
                 <a href="{% url 'olympiads:olympiad_edit' olympiad_id=olympiad.id %}" 
-                   class="flex items-center p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 {% if current_section == 'edit' %}bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300{% else %}text-gray-700 dark:text-gray-300{% endif %}">
-                    <i class="fas fa-edit w-5 text-center mr-2"></i>
-                    <span>{% trans 'Редактировать' %}</span>
+                   class="flex items-center p-2.5 rounded-lg transition-colors {% if current_section == 'edit' %}bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">
+                    <i class="fas fa-edit w-5 mr-3 text-gray-500 dark:text-gray-400 {% if current_section == 'edit' %}text-blue-600 dark:text-blue-400{% endif %}"></i>
+                    <span>Редактировать олимпиаду</span>
                 </a>
-                
+            </li>
+            <li>
+                <a href="{% url 'olympiads:olympiad_tasks_manage' olympiad_id=olympiad.id %}" 
+                   class="flex items-center p-2.5 rounded-lg transition-colors {% if current_section == 'tasks_manage' %}bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">
+                    <i class="fas fa-list-ul w-5 mr-3 text-gray-500 dark:text-gray-400 {% if current_section == 'tasks_manage' %}text-blue-600 dark:text-blue-400{% endif %}"></i>
+                    <span>Управление заданиями</span>
+                </a>
+            </li>
+            <li>
                 <a href="{% url 'olympiads:olympiad_participants' olympiad_id=olympiad.id %}" 
-                   class="flex items-center p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 {% if current_section == 'participants' %}bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300{% else %}text-gray-700 dark:text-gray-300{% endif %}">
-                    <i class="fas fa-users w-5 text-center mr-2"></i>
-                    <span>{% trans 'Участники' %}</span>
+                   class="flex items-center p-2.5 rounded-lg transition-colors {% if current_section == 'participants' %}bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">
+                    <i class="fas fa-users w-5 mr-3 text-gray-500 dark:text-gray-400 {% if current_section == 'participants' %}text-blue-600 dark:text-blue-400{% endif %}"></i>
+                    <span>Участники</span>
                 </a>
-                
-                <a href="{% url 'olympiads:olympiad_invitations' olympiad_id=olympiad.id %}" 
-                   class="flex items-center p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 {% if current_section == 'invitations' %}bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300{% else %}text-gray-700 dark:text-gray-300{% endif %}">
-                    <i class="fas fa-envelope w-5 text-center mr-2"></i>
-                    <span>{% trans 'Приглашения' %}</span>
-                </a>
-                
+            </li>
+            <li>
                 <a href="{% url 'olympiads:olympiad_statistics' olympiad_id=olympiad.id %}" 
-                   class="flex items-center p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 {% if current_section == 'statistics' %}bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300{% else %}text-gray-700 dark:text-gray-300{% endif %}">
-                    <i class="fas fa-chart-bar w-5 text-center mr-2"></i>
-                    <span>{% trans 'Статистика' %}</span>
+                   class="flex items-center p-2.5 rounded-lg transition-colors {% if current_section == 'statistics' %}bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">
+                    <i class="fas fa-chart-line w-5 mr-3 text-gray-500 dark:text-gray-400 {% if current_section == 'statistics' %}text-blue-600 dark:text-blue-400{% endif %}"></i>
+                    <span>Статистика</span>
                 </a>
             </li>
             {% endif %}
