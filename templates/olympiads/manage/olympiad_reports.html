@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans 'Отчеты по олимпиаде' %} | {{ olympiad.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .report-card {
+        transition: all 0.3s ease;
+    }
+    .report-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    .dark .report-card:hover {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    }
+    .report-btn {
+        transition: all 0.2s ease;
+    }
+    .report-btn:hover {
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Хлебные крошки -->
+    {% include "components/olympiad_breadcrumbs.html" with olympiad=olympiad current="reports" section_name="Отчеты" %}
+    
+    <!-- Шапка страницы с навигацией -->
+    <div class="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-xl shadow-xl mb-6 overflow-hidden">
+        <div class="p-6 text-white">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center w-12 h-12 bg-white/20 rounded-lg mr-3">
+                        <i class="fas fa-file-export text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">{% trans 'Отчеты по олимпиаде' %}</h1>
+                        <p class="mt-1 text-violet-100">{{ olympiad.title }}</p>
+                    </div>
+                </div>
+                
+                <nav class="flex flex-wrap items-center gap-2">
+                    <a href="{% url 'olympiads:olympiad_actions' olympiad_id=olympiad.id %}" class="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white shadow-md transition-all flex items-center">
+                        <i class="fas fa-cogs mr-2"></i> Управление олимпиадой
+                    </a>
+                    <a href="{% url 'olympiads:olympiad_statistics' olympiad_id=olympiad.id %}" class="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white shadow-md transition-all flex items-center">
+                        <i class="fas fa-chart-line mr-2"></i> Статистика
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Левая колонка с боковой навигацией -->
+        <div class="lg:col-span-1">
+            {% include "components/olympiad_navigation.html" with olympiad=olympiad current_section="reports" is_organizer=True %}
+            
+            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden mb-6">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Информация об отчетах' %}</h3>
+                </div>
+                <div class="p-4">
+                    <div class="mb-4 text-gray-700 dark:text-gray-300">
+                        <p>{% trans 'Здесь вы можете сформировать различные отчеты по вашей олимпиаде:' %}</p>
+                        <ul class="list-disc list-inside mt-2 space-y-1">
+                            <li>{% trans 'Общие результаты участников' %}</li>
+                            <li>{% trans 'Статистика по каждому заданию' %}</li>
+                            <li>{% trans 'Сертификаты участников' %}</li>
+                            <li>{% trans 'Подробная аналитика' %}</li>
+                        </ul>
+                    </div>
+                    <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 dark:border-blue-700 text-sm text-blue-700 dark:text-blue-300">
+                        <p>{% trans 'Все отчеты доступны в форматах PDF и Excel.' %}</p>
+                    </div>
+                    <div class="mt-4 flex justify-center">
+                        <a href="{% url 'olympiads:olympiad_actions' olympiad_id=olympiad.id %}" class="inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 focus:ring-4 focus:ring-violet-300 dark:focus:ring-violet-800 report-btn">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            {% trans 'Вернуться к действиям' %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Правая колонка с действиями -->
+        <div class="lg:col-span-2">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Карточка с полным отчетом -->
+                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden report-card">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white">
+                        <div class="flex items-center">
+                            <i class="fas fa-file-alt text-lg mr-2"></i>
+                            <h2 class="text-lg font-medium">{% trans 'Полный отчет' %}</h2>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-gray-700 dark:text-gray-300 mb-4">{% trans 'Полный отчет о ходе проведения олимпиады, включая данные об участниках, задачах, общих результатах и статистике.' %}</p>
+                        <div class="flex gap-3">
+                            <button class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-800 report-btn">
+                                <i class="fas fa-file-pdf mr-2"></i>
+                                {% trans 'PDF' %}
+                            </button>
+                            <button class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 report-btn">
+                                <i class="fas fa-file-excel mr-2"></i>
+                                {% trans 'Excel' %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Карточка с отчетом по участникам -->
+                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden report-card">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                        <div class="flex items-center">
+                            <i class="fas fa-users text-lg mr-2"></i>
+                            <h2 class="text-lg font-medium">{% trans 'Отчет по участникам' %}</h2>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-gray-700 dark:text-gray-300 mb-4">{% trans 'Детальная информация о результатах каждого участника, включая баллы за задания, время выполнения и общий рейтинг.' %}</p>
+                        <div class="flex gap-3">
+                            <button class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 report-btn">
+                                <i class="fas fa-file-pdf mr-2"></i>
+                                {% trans 'PDF' %}
+                            </button>
+                            <button class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 report-btn">
+                                <i class="fas fa-file-excel mr-2"></i>
+                                {% trans 'Excel' %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Карточка с отчетом по заданиям -->
+                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden report-card">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+                        <div class="flex items-center">
+                            <i class="fas fa-tasks text-lg mr-2"></i>
+                            <h2 class="text-lg font-medium">{% trans 'Отчет по заданиям' %}</h2>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-gray-700 dark:text-gray-300 mb-4">{% trans 'Статистика по заданиям олимпиады - количество правильных решений, процент успешности, среднее время выполнения каждого задания.' %}</p>
+                        <div class="flex gap-3">
+                            <button class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-800 report-btn">
+                                <i class="fas fa-file-pdf mr-2"></i>
+                                {% trans 'PDF' %}
+                            </button>
+                            <button class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 report-btn">
+                                <i class="fas fa-file-excel mr-2"></i>
+                                {% trans 'Excel' %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Карточка с сертификатами -->
+                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden report-card">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-amber-500 to-amber-600 text-white">
+                        <div class="flex items-center">
+                            <i class="fas fa-certificate text-lg mr-2"></i>
+                            <h2 class="text-lg font-medium">{% trans 'Сертификаты' %}</h2>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-gray-700 dark:text-gray-300 mb-4">{% trans 'Генерация сертификатов участия и дипломов победителей для участников олимпиады. Возможность массовой печати или отправки по электронной почте.' %}</p>
+                        <div class="flex gap-3">
+                            <button class="inline-flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 focus:ring-4 focus:ring-amber-300 dark:focus:ring-amber-800 report-btn">
+                                <i class="fas fa-file-pdf mr-2"></i>
+                                {% trans 'Все сертификаты' %}
+                            </button>
+                            <button class="inline-flex items-center px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 focus:ring-4 focus:ring-amber-300 dark:focus:ring-amber-800 report-btn">
+                                <i class="fas fa-medal mr-2"></i>
+                                {% trans 'Только победители' %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Карточка с подробной аналитикой -->
+                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden report-card col-span-1 md:col-span-2">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-teal-500 to-teal-600 text-white">
+                        <div class="flex items-center">
+                            <i class="fas fa-chart-bar text-lg mr-2"></i>
+                            <h2 class="text-lg font-medium">{% trans 'Подробная аналитика' %}</h2>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-gray-700 dark:text-gray-300 mb-4">{% trans 'Детальный анализ результатов олимпиады с графиками, диаграммами и сравнительной статистикой. Выявление тенденций и закономерностей в решениях участников.' %}</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                <h3 class="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">{% trans 'Топ-5 лучших участников' %}</h3>
+                                <ul class="space-y-2">
+                                    {% for i in "12345" %}
+                                    <li class="flex items-center justify-between">
+                                        <span class="text-gray-700 dark:text-gray-300 flex items-center">
+                                            <span class="w-6 h-6 inline-flex items-center justify-center bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-300 rounded-full mr-2 text-xs font-medium">{{ forloop.counter }}</span>
+                                            Участник {{ forloop.counter }}
+                                        </span>
+                                        <span class="text-teal-600 dark:text-teal-400 font-medium">{{ forloop.counter0|add:95 }} баллов</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                <h3 class="text-md font-medium text-gray-800 dark:text-gray-200 mb-2">{% trans 'Статистика по сложности' %}</h3>
+                                <ul class="space-y-2">
+                                    <li class="flex items-center justify-between">
+                                        <span class="text-gray-700 dark:text-gray-300">Лёгкие задания:</span>
+                                        <span class="text-green-600 dark:text-green-400 font-medium">86% успешных решений</span>
+                                    </li>
+                                    <li class="flex items-center justify-between">
+                                        <span class="text-gray-700 dark:text-gray-300">Средние задания:</span>
+                                        <span class="text-amber-600 dark:text-amber-400 font-medium">63% успешных решений</span>
+                                    </li>
+                                    <li class="flex items-center justify-between">
+                                        <span class="text-gray-700 dark:text-gray-300">Сложные задания:</span>
+                                        <span class="text-red-600 dark:text-red-400 font-medium">42% успешных решений</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-center">
+                            <button class="inline-flex items-center px-5 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 focus:ring-4 focus:ring-teal-300 dark:focus:ring-teal-800 report-btn">
+                                <i class="fas fa-chart-line mr-2"></i>
+                                {% trans 'Полный аналитический отчет' %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

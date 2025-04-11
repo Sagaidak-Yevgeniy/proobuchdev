@@ -1856,3 +1856,76 @@ def olympiad_join_by_invitation(request, code):
         return redirect('olympiads:olympiad_tasks', olympiad_id=olympiad.id)
     
     return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
+
+# Переключение статуса активности олимпиады
+@login_required
+def olympiad_toggle_active(request, olympiad_id):
+    # Проверяем права доступа
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    
+    if not (request.user.is_staff or request.user == olympiad.created_by):
+        messages.error(request, _('У вас нет прав для управления этой олимпиадой'))
+        return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
+    
+    # Переключаем статус
+    if olympiad.status == Olympiad.OlympiadStatus.ACTIVE:
+        olympiad.status = Olympiad.OlympiadStatus.PUBLISHED
+        messages.success(request, _('Олимпиада успешно деактивирована!'))
+    else:
+        olympiad.status = Olympiad.OlympiadStatus.ACTIVE
+        messages.success(request, _('Олимпиада успешно активирована!'))
+        
+    olympiad.save()
+    
+    # Возвращаемся к странице действий, если она существует
+    if 'HTTP_REFERER' in request.META and 'actions' in request.META['HTTP_REFERER']:
+        return redirect('olympiads:olympiad_actions', olympiad_id=olympiad.id)
+    else:
+        return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
+
+# Страница с действиями для олимпиады
+@login_required
+def olympiad_actions(request, olympiad_id):
+    # Проверяем права доступа
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    
+    if not (request.user.is_staff or request.user == olympiad.created_by):
+        messages.error(request, _('У вас нет прав для управления этой олимпиадой'))
+        return redirect('olympiads:olympiad_list')
+    
+    context = {
+        'olympiad': olympiad,
+    }
+    
+    return render(request, 'olympiads/manage/olympiad_actions.html', context)
+
+# Страница с отчетами олимпиады
+@login_required
+def olympiad_reports(request, olympiad_id):
+    # Проверяем права доступа
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    
+    if not (request.user.is_staff or request.user == olympiad.created_by):
+        messages.error(request, _('У вас нет прав для просмотра отчетов этой олимпиады'))
+        return redirect('olympiads:olympiad_list')
+    
+    # Здесь будет код для генерации отчетов
+    participations = OlympiadParticipation.objects.filter(olympiad=olympiad)
+    
+    # Статистика по заданиям
+    task_stats = {}
+    tasks = olympiad.tasks.all()
+    for task in tasks:
+        task_stats[task.id] = {
+            'title': task.title,
+            'total_attempts': OlympiadTaskSubmission.objects.filter(task=task).count(),
+            'correct_attempts': OlympiadTaskSubmission.objects.filter(task=task, is_correct=True).count(),
+        }
+    
+    context = {
+        'olympiad': olympiad,
+        'participations': participations,
+        'task_stats': task_stats,
+    }
+    
+    return render(request, 'olympiads/manage/olympiad_reports.html', context)
