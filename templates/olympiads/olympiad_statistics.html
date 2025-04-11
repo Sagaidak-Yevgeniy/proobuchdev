@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans 'Статистика олимпиады' %} | {{ olympiad.title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Хлебные крошки -->
+    {% include "components/olympiad_breadcrumbs.html" with olympiad=olympiad section_name="Статистика" is_management=True %}
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Боковая навигация -->
+        <div class="md:col-span-1">
+            {% include "components/olympiad_navigation.html" with olympiad=olympiad current_section="statistics" is_organizer=True %}
+        </div>
+        
+        <!-- Основной контент -->
+        <div class="md:col-span-2">
+            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+                <div class="p-6">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                        {% trans 'Статистика олимпиады' %}
+                    </h1>
+                    
+                    <!-- Карточки с основными показателями -->
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl shadow-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-white/70 text-sm font-medium">{% trans 'Участников' %}</p>
+                                    <p class="text-3xl font-bold">{{ participant_count }}</p>
+                                </div>
+                                <div class="w-10 h-10 flex items-center justify-center bg-white/20 rounded-lg">
+                                    <i class="fas fa-users text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl shadow-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-white/70 text-sm font-medium">{% trans 'Завершили' %}</p>
+                                    <p class="text-3xl font-bold">{{ completed_count }}</p>
+                                </div>
+                                <div class="w-10 h-10 flex items-center justify-center bg-white/20 rounded-lg">
+                                    <i class="fas fa-check-circle text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl shadow-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-white/70 text-sm font-medium">{% trans 'Ср. балл' %}</p>
+                                    <p class="text-3xl font-bold">{{ avg_score|default:"0" }}</p>
+                                </div>
+                                <div class="w-10 h-10 flex items-center justify-center bg-white/20 rounded-lg">
+                                    <i class="fas fa-chart-line text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Таблица с детальной информацией по участникам -->
+                    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden mb-6">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <h2 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Детальная статистика участников' %}</h2>
+                        </div>
+                        
+                        {% if participants %}
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            {% trans 'Участник' %}
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            {% trans 'Статус' %}
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            {% trans 'Баллы' %}
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            {% trans 'Завершено заданий' %}
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            {% trans 'Время начала' %}
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    {% for participant in participants %}
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-3">
+                                                    <span class="text-sm font-semibold">{{ participant.user.username|first|upper }}</span>
+                                                </div>
+                                                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                    {{ participant.user.get_full_name|default:participant.user.username }}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            {% if participant.is_completed %}
+                                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                                                {% trans 'Завершено' %}
+                                            </span>
+                                            {% else %}
+                                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100">
+                                                {% trans 'В процессе' %}
+                                            </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                            {{ participant.score|default:"0" }} / {{ olympiad.total_points }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                            {{ participant.completed_tasks_count }} / {{ olympiad.tasks.count }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {{ participant.started_at|date:"d.m.Y H:i" }}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="py-8 text-center">
+                            <p class="text-gray-500 dark:text-gray-400">{% trans 'В олимпиаде пока нет участников' %}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Статистика по заданиям -->
+                    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <h2 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Статистика по заданиям' %}</h2>
+                        </div>
+                        
+                        {% if tasks_stats %}
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            {% trans 'Задание' %}
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            {% trans 'Тип' %}
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            {% trans 'Ср. попыток' %}
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            {% trans 'Успешность' %}
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    {% for task_stat in tasks_stats %}
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                {{ task_stat.title }}
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                            {% if task_stat.task_type == 'multiple_choice' %}
+                                                bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100
+                                            {% elif task_stat.task_type == 'programming' %}
+                                                bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100
+                                            {% elif task_stat.task_type == 'text_answer' %}
+                                                bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100
+                                            {% elif task_stat.task_type == 'file_upload' %}
+                                                bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100
+                                            {% else %}
+                                                bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100
+                                            {% endif %}
+                                            ">
+                                                {{ task_stat.get_task_type_display }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                            {{ task_stat.avg_attempts|floatformat:1 }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="relative w-full h-4 bg-gray-200 dark:bg-gray-700 rounded-full">
+                                                <div class="absolute top-0 left-0 h-full bg-green-500 rounded-full" style="width: {{ task_stat.success_rate }}%;"></div>
+                                                <div class="absolute inset-0 flex items-center justify-center text-xs font-semibold">
+                                                    {{ task_stat.success_rate }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="py-8 text-center">
+                            <p class="text-gray-500 dark:text-gray-400">{% trans 'В олимпиаде нет заданий или никто еще не выполнял их' %}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
