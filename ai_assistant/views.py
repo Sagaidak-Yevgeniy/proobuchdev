@@ -28,6 +28,16 @@ def chat_history(request):
 
 
 @login_required
+@require_POST
+def chat_delete(request, session_id):
+    """Удаляет чат с AI-ассистентом"""
+    session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+    session.delete()
+    messages.success(request, "Чат успешно удален")
+    return redirect('chat_history')
+
+
+@login_required
 def chat_detail(request, session_id):
     """Отображает детали чата"""
     session = get_object_or_404(ChatSession, id=session_id, user=request.user)
