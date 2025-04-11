@@ -1822,8 +1822,14 @@ def test_code(request, olympiad_id, task_id):
 @login_required
 def olympiad_join_by_invitation(request, code):
     # Ищем приглашение по коду
-    invitation = get_object_or_404(OlympiadInvitation, code=code)
-    olympiad = invitation.olympiad
+    try:
+        invitation = get_object_or_404(OlympiadInvitation, code=code)
+        olympiad = invitation.olympiad
+    except:
+        # Проверяем, есть ли олимпиада с таким invitation_code напрямую
+        olympiad = get_object_or_404(Olympiad, invitation_code=code)
+        # Получаем или создаем приглашение
+        invitation = olympiad.get_or_create_invitation()
     
     # Проверяем действительность приглашения
     if not invitation.is_valid():
