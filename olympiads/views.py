@@ -1058,7 +1058,7 @@ def olympiad_task_create(request, olympiad_id):
         if quick_add:
             messages.success(request, _('Задание "{}" добавлено! Вы можете продолжить добавление заданий.').format(title))
             # Перенаправляем на страницу управления олимпиадой с активной вкладкой заданий
-            return redirect('{}#tasks'.format(
+            return redirect('{}#section-tasks'.format(
                 reverse('olympiads:olympiad_actions', kwargs={'olympiad_id': olympiad.id})
             ))
         
@@ -1074,7 +1074,7 @@ def olympiad_task_create(request, olympiad_id):
         'courses': courses
     }
     
-    return render(request, 'olympiads/manage/olympiad_actions.html', context)
+    return render(request, 'olympiads/manage/task_create.html', context)
 
 # Редактирование задания
 @login_required
@@ -2012,8 +2012,14 @@ def olympiad_actions(request, olympiad_id):
         messages.error(request, _('У вас нет прав для управления этой олимпиадой'))
         return redirect('olympiads:olympiad_list')
     
+    # Получаем список доступных курсов для выбора в форме быстрого добавления задания
+    courses = Course.objects.all()
+    task_types = OlympiadTask.TaskType.choices
+    
     context = {
         'olympiad': olympiad,
+        'courses': courses,
+        'task_types': task_types
     }
     
     return render(request, 'olympiads/manage/olympiad_actions.html', context)
