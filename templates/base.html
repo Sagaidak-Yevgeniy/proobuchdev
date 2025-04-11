@@ -104,6 +104,20 @@
             transform-origin: top right;
             border-radius: 0.75rem;
         }
+        
+        /* Улучшенные стили для выпадающих меню */
+        .group:hover .group-hover\:block {
+            display: block !important;
+        }
+        
+        /* Стили для корректного отображения на стандартных ноутбуках */
+        .absolute.group-hover\:block {
+            position: fixed;
+            margin-top: 8px;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+            z-index: 100;
+        }
             .dark .text-gray-300 { --tw-text-opacity: 1; color: rgba(255, 255, 255, var(--tw-text-opacity)); }
             
             {% if not user.interface.enable_animations %}
@@ -260,7 +274,7 @@
                             <button class="px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors flex items-center">
                                 <i class="fas fa-graduation-cap mr-1"></i>Обучение<i class="fas fa-chevron-down ml-1 text-xs"></i>
                             </button>
-                            <div class="absolute left-0 top-full hidden group-hover:block bg-white shadow-lg rounded-md py-2 w-48 z-50 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                            <div class="absolute left-0 hidden group-hover:block bg-white shadow-lg rounded-md py-2 w-48 z-50 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
                                 <a href="{% url 'my_courses' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
                                     <i class="fas fa-user-graduate mr-2 text-blue-600 dark:text-blue-400"></i>Мои курсы
                                 </a>
@@ -281,7 +295,7 @@
                             <button class="px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors flex items-center">
                                 <i class="fas fa-chart-line mr-1"></i>Дашборд<i class="fas fa-chevron-down ml-1 text-xs"></i>
                             </button>
-                            <div class="absolute left-0 top-full hidden group-hover:block bg-white shadow-lg rounded-md py-2 w-48 z-50 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                            <div class="absolute left-0 hidden group-hover:block bg-white shadow-lg rounded-md py-2 w-48 z-50 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
                                 <a href="{% url 'dashboard:index' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
                                     <i class="fas fa-chart-line mr-2 text-blue-600 dark:text-blue-400"></i>Аналитика
                                 </a>
@@ -303,7 +317,7 @@
                             <button class="px-3 py-2 rounded-md text-white font-medium hover:bg-blue-700 transition-colors flex items-center">
                                 <i class="fas fa-plus-circle mr-1"></i>Создать<i class="fas fa-chevron-down ml-1 text-xs"></i>
                             </button>
-                            <div class="absolute left-0 top-full hidden group-hover:block bg-white shadow-lg rounded-md py-2 w-48 z-50 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                            <div class="absolute left-0 hidden group-hover:block bg-white shadow-lg rounded-md py-2 w-48 z-50 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
                                 <a href="{% url 'course_create' %}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
                                     <i class="fas fa-book mr-2 text-blue-600 dark:text-blue-400"></i>Новый курс
                                 </a>
