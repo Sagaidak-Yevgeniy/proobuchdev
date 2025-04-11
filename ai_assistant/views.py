@@ -140,6 +140,16 @@ def chat_send_message(request, session_id):
     
     # Обновляем время последнего сообщения в сессии
     session.updated_at = timezone.now()
+    
+    # Проверяем, если это первое сообщение пользователя, обновляем название чата
+    user_messages = session.messages.filter(role='user').count()
+    if user_messages == 1:
+        # Ограничиваем длину вопроса для названия
+        short_question = message_text[:50] + ('...' if len(message_text) > 50 else '')
+        current_time = timezone.now().strftime('%d.%m.%Y %H:%M')
+        # Обновляем название чата с первым вопросом и временем
+        session.title = f"{short_question} ({current_time})"
+    
     session.save()
     
     # Извлекаем сниппеты кода из сообщения
