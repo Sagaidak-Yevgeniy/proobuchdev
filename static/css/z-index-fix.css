@@ -12,13 +12,31 @@
 }
 
 /* Фиксы для анимации выпадающих меню */
+.group {
+    position: relative;
+}
+
 .group-hover\:block {
     opacity: 0;
     transform: translateY(-10px) scale(0.95);
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
     visibility: hidden;
     display: block !important;
     pointer-events: none;
+    position: absolute;
+    top: 100%;
+    margin-top: 5px;
+}
+
+/* Добавляем невидимую область для плавного перехода */
+.group-hover\:block:before {
+    content: '';
+    position: absolute;
+    top: -15px;
+    left: 0;
+    width: 100%;
+    height: 15px;
+    background: transparent;
 }
 
 .group:hover .group-hover\:block {
@@ -26,6 +44,15 @@
     transform: translateY(0) scale(1);
     visibility: visible;
     pointer-events: auto;
+}
+
+/* Увеличенная задержка при выходе для более удобного перехода */
+.group {
+    transition-delay: 0s;
+}
+
+.group:hover {
+    transition-delay: 0.3s;
 }
 
 /* Перемещаем выпадающее меню на передний план */
