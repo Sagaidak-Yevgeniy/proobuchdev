@@ -201,7 +201,7 @@
 .dropdown-menu {
     position: absolute;
     top: 100%;
-    z-index: 2000; /* Увеличен z-index для отображения поверх содержимого */
+    z-index: 10000; /* Значительно увеличен z-index, чтобы гарантировать отображение поверх всего содержимого */
     margin-top: 0.5rem;
     border-radius: 0.5rem;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -209,6 +209,7 @@
     overflow-y: auto;
     transform-origin: top right;
     animation: dropdown-scale 0.2s ease-out;
+    backdrop-filter: blur(5px); /* Добавлен эффект размытия фона */
 }
 
 /* Анимация для плавного появления выпадающих меню */
@@ -223,12 +224,25 @@
     }
 }
 
+/* Фиксируем позицию выпадающего меню для контента, который имеет transform */
+.main-content {
+    transform: translate3d(0, 0, 0);
+    position: relative;
+    z-index: 1;
+}
+
+/* Стили для основных навигационных меню */
+#navigation-menu, #desktopUserDropdown, #notification-dropdown-desktop, #notification-dropdown-mobile {
+    z-index: 10050 !important; /* Еще более высокий z-index для навигации */
+}
+
 @media (max-width: 1024px) {
     .dropdown-menu {
         position: fixed;
         max-width: 300px;
         right: 0.5rem;
         top: 70px; /* Фиксированное положение ниже header */
+        z-index: 10100; /* Увеличенное значение для мобильных */
     }
 }
 

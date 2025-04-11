@@ -1,0 +1,129 @@
+<!-- Компонент для отображения уведомлений -->
+<div id="toast-container" class="fixed top-4 right-4 z-[20000] flex flex-col items-end space-y-4"></div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const toastContainer = document.getElementById('toast-container');
+        
+        // Функция для создания уведомления (тоста)
+        window.showToast = function(message, type = 'info', duration = 5000) {
+            // Создаем элемент уведомления
+            const toast = document.createElement('div');
+            toast.className = 'flex items-center p-4 rounded-lg shadow-lg transform transition-all duration-300 opacity-0 translate-x-4 max-w-md w-full';
+            
+            // Определяем классы и иконку в зависимости от типа уведомления
+            let iconClass, bgClass, textClass, icon;
+            
+            switch (type) {
+                case 'success':
+                    bgClass = 'bg-green-100 dark:bg-green-800/30';
+                    textClass = 'text-green-800 dark:text-green-200';
+                    iconClass = 'text-green-500 dark:text-green-300';
+                    icon = 'fas fa-check-circle';
+                    // Воспроизводим звук успеха
+                    playSound('success');
+                    break;
+                case 'error':
+                    bgClass = 'bg-red-100 dark:bg-red-800/30';
+                    textClass = 'text-red-800 dark:text-red-200';
+                    iconClass = 'text-red-500 dark:text-red-300';
+                    icon = 'fas fa-times-circle';
+                    // Воспроизводим звук ошибки
+                    playSound('error');
+                    break;
+                case 'warning':
+                    bgClass = 'bg-yellow-100 dark:bg-yellow-800/30';
+                    textClass = 'text-yellow-800 dark:text-yellow-200';
+                    iconClass = 'text-yellow-500 dark:text-yellow-300';
+                    icon = 'fas fa-exclamation-circle';
+                    // Воспроизводим звук предупреждения
+                    playSound('warning');
+                    break;
+                case 'info':
+                default:
+                    bgClass = 'bg-blue-100 dark:bg-blue-800/30';
+                    textClass = 'text-blue-800 dark:text-blue-200';
+                    iconClass = 'text-blue-500 dark:text-blue-300';
+                    icon = 'fas fa-info-circle';
+                    // Воспроизводим звук информации
+                    playSound('info');
+                    break;
+            }
+            
+            // Добавляем классы
+            toast.classList.add(bgClass, textClass);
+            
+            // Заполняем содержимое
+            toast.innerHTML = `
+                <div class="${iconClass} text-xl mr-3">
+                    <i class="${icon}"></i>
+                </div>
+                <div class="flex-1">
+                    ${message}
+                </div>
+                <button class="ml-4 text-lg focus:outline-none ${textClass} hover:opacity-75 transition-opacity">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            // Добавляем уведомление в контейнер
+            toastContainer.appendChild(toast);
+            
+            // Анимируем появление
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-x-4');
+            }, 10);
+            
+            // Обработчик для кнопки закрытия
+            const closeButton = toast.querySelector('button');
+            closeButton.addEventListener('click', () => {
+                removeToast(toast);
+            });
+            
+            // Автоматически скрываем уведомление через указанное время
+            if (duration > 0) {
+                setTimeout(() => {
+                    removeToast(toast);
+                }, duration);
+            }
+            
+            // Возвращаем DOM элемент уведомления (может пригодиться)
+            return toast;
+        };
+        
+        // Функция для удаления уведомления
+        function removeToast(toast) {
+            toast.classList.add('opacity-0', 'translate-x-4');
+            
+            setTimeout(() => {
+                toastContainer.removeChild(toast);
+            }, 300);
+        }
+        
+        // Функция для воспроизведения звука
+        function playSound(type) {
+            const sound = new Audio(`/static/sounds/${type}.mp3`);
+            sound.volume = 0.5; // Устанавливаем громкость
+            sound.play().catch(err => {
+                // Игнорируем ошибки воспроизведения (чаще всего из-за политики браузера)
+                console.log('Не удалось воспроизвести звук:', err);
+            });
+        }
+        
+        // Перехватываем сообщения Django
+        document.addEventListener('DOMContentLoaded', function() {
+            const djangoMessages = document.querySelectorAll('.django-message');
+            
+            djangoMessages.forEach(message => {
+                const text = message.textContent.trim();
+                const type = message.dataset.type || 'info';
+                
+                // Показываем сообщение
+                showToast(text, type);
+                
+                // Удаляем исходный элемент
+                message.remove();
+            });
+        });
+    });
+</script>

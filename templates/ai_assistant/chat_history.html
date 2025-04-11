@@ -10,6 +10,17 @@
     .delete-chat-form button:hover {
         transform: scale(1.05);
     }
+    
+    /* Анимация для появления модального окна */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes scaleUp {
+        from { transform: scale(0.95); }
+        to { transform: scale(1); }
+    }
 </style>
 {% endblock %}
 
@@ -113,6 +124,9 @@
     </div>
 </div>
 
+<!-- Подключаем компонент модального окна -->
+{% include 'components/modal.html' %}
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Обработчик для форм удаления чата
@@ -122,11 +136,20 @@
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
-                const confirmed = confirm('Вы уверены, что хотите удалить этот чат? Это действие нельзя отменить.');
+                const chatTitle = this.closest('div.border').querySelector('h3').textContent.trim();
                 
-                if (confirmed) {
-                    this.submit();
-                }
+                // Используем модальное окно вместо стандартного confirm
+                showModal(
+                    'Удаление чата',
+                    `<p>Вы уверены, что хотите удалить чат <strong>"${chatTitle}"</strong>?</p>
+                    <p class="mt-2 text-sm text-red-500">Это действие нельзя отменить.</p>`,
+                    'Удалить',
+                    'Отмена',
+                    () => {
+                        this.submit();
+                    },
+                    'bg-red-600 hover:bg-red-700'
+                );
             });
         });
     });

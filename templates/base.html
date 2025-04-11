@@ -703,13 +703,15 @@
     });
     </script>
     
-    <!-- Сообщения -->
+    <!-- Подключаем компонент уведомлений -->
+    {% include 'components/toast.html' %}
+    
+    <!-- Преобразованные сообщения Django в скрытые элементы для JS -->
     {% if messages %}
-    <div class="container mx-auto px-4 mt-4">
+    <div style="display: none;">
         {% for message in messages %}
-        <div class="{% if message.tags == 'error' %}bg-red-100 border-red-300 text-red-700{% elif message.tags == 'success' %}bg-green-100 border-green-300 text-green-700{% elif message.tags == 'warning' %}bg-yellow-100 border-yellow-300 text-yellow-700{% else %}bg-blue-100 border-blue-300 text-blue-700{% endif %} border-l-4 p-4 mb-3 rounded">
+        <div class="django-message" data-type="{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}">
             {{ message }}
-            <button class="float-right" onclick="this.parentElement.style.display='none'">&times;</button>
         </div>
         {% endfor %}
     </div>

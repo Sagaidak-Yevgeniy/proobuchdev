@@ -1,0 +1,96 @@
+<!-- Модальное окно -->
+<div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-[15000] hidden items-center justify-center backdrop-blur-sm transition-opacity duration-300 opacity-0">
+    <div id="modal-container" class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-transform duration-300 scale-95 dark:border dark:border-gray-700">
+        <!-- Заголовок модального окна -->
+        <div class="p-5 border-b dark:border-gray-700">
+            <h3 id="modal-title" class="text-xl font-semibold text-gray-800 dark:text-gray-200"></h3>
+        </div>
+        
+        <!-- Содержимое модального окна -->
+        <div id="modal-content" class="p-5 text-gray-600 dark:text-gray-300"></div>
+        
+        <!-- Кнопки модального окна -->
+        <div class="p-5 border-t dark:border-gray-700 flex justify-end space-x-3">
+            <button id="modal-cancel" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors text-gray-800 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
+                Отмена
+            </button>
+            <button id="modal-confirm" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-white">
+                Подтвердить
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalContainer = document.getElementById('modal-container');
+        const modalTitle = document.getElementById('modal-title');
+        const modalContent = document.getElementById('modal-content');
+        const modalCancel = document.getElementById('modal-cancel');
+        const modalConfirm = document.getElementById('modal-confirm');
+        
+        // Функция для открытия модального окна
+        window.showModal = function(title, content, confirmText, cancelText, confirmCallback, confirmButtonClass) {
+            // Устанавливаем содержимое
+            modalTitle.textContent = title || 'Подтверждение';
+            modalContent.innerHTML = content || '';
+            modalConfirm.textContent = confirmText || 'Подтвердить';
+            modalCancel.textContent = cancelText || 'Отмена';
+            
+            // Устанавливаем класс кнопки подтверждения
+            modalConfirm.className = 'px-4 py-2 rounded-lg transition-colors text-white ' + 
+                (confirmButtonClass || 'bg-blue-600 hover:bg-blue-700');
+                
+            // Отображаем модальное окно
+            modalOverlay.classList.remove('hidden');
+            modalOverlay.classList.add('flex');
+            
+            // Анимация появления
+            setTimeout(() => {
+                modalOverlay.classList.add('opacity-100');
+                modalContainer.classList.add('scale-100');
+                modalContainer.classList.remove('scale-95');
+            }, 10);
+            
+            // Устанавливаем обработчики событий
+            modalCancel.onclick = function() {
+                closeModal();
+            };
+            
+            modalConfirm.onclick = function() {
+                if (typeof confirmCallback === 'function') {
+                    confirmCallback();
+                }
+                closeModal();
+            };
+            
+            // Закрытие по клику на оверлей
+            modalOverlay.onclick = function(e) {
+                if (e.target === modalOverlay) {
+                    closeModal();
+                }
+            };
+            
+            // Закрытие по ESC
+            document.addEventListener('keydown', function escHandler(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                    document.removeEventListener('keydown', escHandler);
+                }
+            });
+        };
+        
+        // Функция для закрытия модального окна
+        function closeModal() {
+            modalOverlay.classList.remove('opacity-100');
+            modalContainer.classList.remove('scale-100');
+            modalContainer.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modalOverlay.classList.add('hidden');
+                modalOverlay.classList.remove('flex');
+            }, 300);
+        }
+    });
+</script>
