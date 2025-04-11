@@ -888,8 +888,8 @@
                                     <h3 class="ml-3 text-lg font-medium text-gray-900 dark:text-white">{% trans 'Рейтинг участников' %}</h3>
                                 </div>
                                 <p class="text-gray-600 dark:text-gray-300 mb-4">{% trans 'Скачайте полный список участников олимпиады с их результатами, отсортированный по набранным баллам.' %}</p>
-                                <a href="{% url 'olympiads:olympiad_report_rankings' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors">
-                                    <i class="fas fa-download mr-2"></i> {% trans 'Скачать рейтинг (.xlsx)' %}
+                                <a href="{% url 'olympiads:olympiad_reports' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors">
+                                    <i class="fas fa-download mr-2"></i> {% trans 'Открыть отчеты' %}
                                 </a>
                             </div>
                             
@@ -901,8 +901,8 @@
                                     <h3 class="ml-3 text-lg font-medium text-gray-900 dark:text-white">{% trans 'Статистика заданий' %}</h3>
                                 </div>
                                 <p class="text-gray-600 dark:text-gray-300 mb-4">{% trans 'Скачайте детальную статистику по каждому заданию: процент решаемости, среднее количество баллов, распределение оценок.' %}</p>
-                                <a href="{% url 'olympiads:olympiad_report_tasks' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                                    <i class="fas fa-download mr-2"></i> {% trans 'Скачать статистику (.xlsx)' %}
+                                <a href="{% url 'olympiads:olympiad_reports' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                                    <i class="fas fa-chart-bar mr-2"></i> {% trans 'Открыть статистику' %}
                                 </a>
                             </div>
                             
@@ -914,8 +914,8 @@
                                     <h3 class="ml-3 text-lg font-medium text-gray-900 dark:text-white">{% trans 'Сертификаты' %}</h3>
                                 </div>
                                 <p class="text-gray-600 dark:text-gray-300 mb-4">{% trans 'Сгенерируйте и скачайте сертификаты участников олимпиады с их результатами для дальнейшего распространения.' %}</p>
-                                <a href="{% url 'olympiads:olympiad_certificates' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors">
-                                    <i class="fas fa-download mr-2"></i> {% trans 'Сгенерировать сертификаты (.zip)' %}
+                                <a href="{% url 'olympiads:olympiad_statistics' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors">
+                                    <i class="fas fa-certificate mr-2"></i> {% trans 'Сертификаты участников' %}
                                 </a>
                             </div>
                             
