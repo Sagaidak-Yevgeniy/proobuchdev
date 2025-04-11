@@ -4,10 +4,57 @@
 
 {% block title %}{% trans 'Статистика олимпиады' %} | {{ olympiad.title }}{% endblock %}
 
+{% block extra_head %}
+<style>
+    .stat-card {
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    .dark .stat-card:hover {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    }
+    .stat-btn {
+        transition: all 0.2s ease;
+    }
+    .stat-btn:hover {
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mx-auto px-4 py-8">
     <!-- Хлебные крошки -->
     {% include "components/olympiad_breadcrumbs.html" with olympiad=olympiad current="statistics" %}
+    
+    <!-- Шапка страницы с навигацией -->
+    <div class="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-xl shadow-xl mb-6 overflow-hidden">
+        <div class="p-6 text-white">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center w-12 h-12 bg-white/20 rounded-lg mr-3">
+                        <i class="fas fa-chart-line text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">{% trans 'Статистика олимпиады' %}</h1>
+                        <p class="mt-1 text-blue-100">{{ olympiad.title }}</p>
+                    </div>
+                </div>
+                
+                <nav class="flex flex-wrap items-center gap-2">
+                    <a href="{% url 'olympiads:olympiad_actions' olympiad_id=olympiad.id %}" class="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white shadow-md transition-all flex items-center">
+                        <i class="fas fa-cogs mr-2"></i> Управление олимпиадой
+                    </a>
+                    <a href="{% url 'olympiads:olympiad_reports' olympiad_id=olympiad.id %}" class="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white shadow-md transition-all flex items-center">
+                        <i class="fas fa-file-export mr-2"></i> Отчеты
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Боковая навигация -->
@@ -19,9 +66,6 @@
         <div class="md:col-span-2">
             <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
                 <div class="p-6">
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                        {% trans 'Статистика олимпиады' %}
-                    </h1>
                     
                     <!-- Карточки с основными показателями -->
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
