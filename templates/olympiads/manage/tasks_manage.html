@@ -2,33 +2,40 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}{{ title }} - {{ olympiad.title }}{% endblock %}
+{% block title %}{% trans "Управление заданиями" %} - {{ olympiad.title }}{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-lg p-6 mb-6">
-        <div class="flex flex-col md:flex-row justify-between items-center">
-            <div>
-                <h1 class="text-2xl md:text-3xl font-bold mb-2 md:mb-0">{{ title }}</h1>
-                <p class="text-blue-100">{{ olympiad.title }}</p>
-            </div>
-            <div class="flex flex-wrap gap-2 justify-center mt-4 md:mt-0">
-                <a href="{% url 'olympiads:olympiad_detail' olympiad_id=olympiad.id %}" class="btn btn-secondary">
-                    <i class="fas fa-eye mr-2"></i>{% trans "Просмотр олимпиады" %}
-                </a>
-                <a href="{% url 'olympiads:olympiad_edit' olympiad_id=olympiad.id %}" class="btn btn-secondary">
-                    <i class="fas fa-edit mr-2"></i>{% trans "Редактировать олимпиаду" %}
-                </a>
-                <a href="{% url 'olympiads:olympiad_task_create' olympiad_id=olympiad.id %}" class="btn btn-primary">
-                    <i class="fas fa-plus mr-2"></i>{% trans "Добавить задание" %}
-                </a>
+    <!-- Хлебные крошки -->
+    {% include "components/olympiad_breadcrumbs.html" with olympiad=olympiad current="tasks_manage" %}
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Боковая навигация -->
+        <div class="md:col-span-1">
+            {% include "components/olympiad_navigation.html" with olympiad=olympiad current_section="tasks_manage" is_organizer=True %}
+            
+            <!-- Действия с заданиями -->
+            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 mt-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{% trans "Действия" %}</h3>
+                <div class="flex flex-col space-y-3">
+                    <a href="{% url 'olympiads:olympiad_task_create' olympiad_id=olympiad.id %}" class="btn btn-primary flex items-center justify-center">
+                        <i class="fas fa-plus mr-2"></i>{% trans "Добавить задание" %}
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
-
-    {% include "components/olympiad_breadcrumbs.html" with olympiad=olympiad current="manage_tasks" %}
-    
-    {% include "components/olympiad_navigation.html" with olympiad=olympiad active="tasks" %}
+        
+        <!-- Основной контент -->
+        <div class="md:col-span-2">
+            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+                        {% trans "Управление заданиями" %}
+                    </h1>
+                    <p class="text-gray-500 dark:text-gray-400 mt-2">
+                        {% trans "Добавляйте, редактируйте и упорядочивайте задания для олимпиады" %}
+                    </p>
+                </div>
 
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-6">
         <div class="overflow-x-auto">

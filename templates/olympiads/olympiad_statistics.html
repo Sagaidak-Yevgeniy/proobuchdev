@@ -7,7 +7,7 @@
 {% block content %}
 <div class="container mx-auto px-4 py-8">
     <!-- Хлебные крошки -->
-    {% include "components/olympiad_breadcrumbs.html" with olympiad=olympiad section_name="Статистика" is_management=True %}
+    {% include "components/olympiad_breadcrumbs.html" with olympiad=olympiad current="statistics" %}
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Боковая навигация -->
