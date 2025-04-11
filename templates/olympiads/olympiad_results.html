@@ -499,37 +499,3 @@
     </div>
 </div>
 {% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Создание конфетти, если пользователь прошел олимпиаду
-    {% if participation.passed %}
-    createConfetti();
-    {% endif %}
-    
-    function createConfetti() {
-        const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#00bcd4', '#4caf50', '#8bc34a', '#ffeb3b', '#ffc107', '#ff9800'];
-        const confettiCount = 100;
-        
-        for (let i = 0; i < confettiCount; i++) {
-            const confetti = document.createElement('div');
-            confetti.className = 'confetti';
-            confetti.style.left = Math.random() * 100 + 'vw';
-            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            confetti.style.width = Math.random() * 10 + 5 + 'px';
-            confetti.style.height = Math.random() * 10 + 5 + 'px';
-            confetti.style.opacity = Math.random() + 0.5;
-            confetti.style.animationDuration = Math.random() * 3 + 2 + 's';
-            confetti.style.animationDelay = Math.random() * 3 + 's';
-            document.body.appendChild(confetti);
-            
-            // Удаляем конфетти после окончания анимации
-            setTimeout(() => {
-                confetti.remove();
-            }, 5000 + Math.random() * 3000);
-        }
-    }
-});
-</script>
-{% endblock %}
