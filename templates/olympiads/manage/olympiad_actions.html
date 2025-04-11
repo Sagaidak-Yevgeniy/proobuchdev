@@ -427,11 +427,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <i class="fas fa-copy mr-2"></i>
                                     {% trans 'Создать копию' %}
                                 </a>
-                                <a href="{% url 'olympiads:olympiad_archive' olympiad_id=olympiad.id %}" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-800 action-btn">
+                                <a href="#" onclick="alert('{% trans 'Функция архивации олимпиады в разработке' %}')" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-800 action-btn">
                                     <i class="fas fa-archive mr-2"></i>
                                     {% trans 'Архивировать' %}
                                 </a>
-                                <a href="{% url 'olympiads:olympiad_delete' olympiad_id=olympiad.id %}" onclick="return confirm('{% trans 'Вы уверены, что хотите удалить эту олимпиаду? Это действие невозможно отменить.' %}');" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-4 focus:ring-red-300 dark:focus:ring-red-800 action-btn">
+                                <a href="#" onclick="if(confirm('{% trans 'Вы уверены, что хотите удалить эту олимпиаду? Это действие невозможно отменить.' %}')) { alert('{% trans 'Функция удаления олимпиады в разработке' %}'); }" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-4 focus:ring-red-300 dark:focus:ring-red-800 action-btn">
                                     <i class="fas fa-trash-alt mr-2"></i>
                                     {% trans 'Удалить' %}
                                 </a>
@@ -528,10 +528,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                     <div class="p-6">
-                        <iframe src="{% url 'olympiads:olympiad_statistics' olympiad_id=olympiad.id %}" 
-                                class="w-full h-screen border-0 rounded-lg overflow-hidden" 
-                                onload="this.height=this.contentWindow.document.body.scrollHeight+50+'px'">
-                        </iframe>
+                        <div class="p-4 text-center bg-gray-100 dark:bg-gray-700 rounded-lg">
+                            <p class="mb-2">{% trans 'Статистика олимпиады загружается здесь' %}</p>
+                            <div class="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{% trans 'Функция в разработке' %}</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -546,10 +547,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                     <div class="p-6">
-                        <iframe src="{% url 'olympiads:olympiad_reports' olympiad_id=olympiad.id %}" 
-                                class="w-full h-screen border-0 rounded-lg overflow-hidden" 
-                                onload="this.height=this.contentWindow.document.body.scrollHeight+50+'px'">
-                        </iframe>
+                        <div class="p-4 text-center bg-gray-100 dark:bg-gray-700 rounded-lg">
+                            <p class="mb-2">{% trans 'Отчеты олимпиады загружаются здесь' %}</p>
+                            <div class="animate-spin w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full mx-auto"></div>
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{% trans 'Функция в разработке' %}</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -597,66 +599,48 @@ document.addEventListener('DOMContentLoaded', function() {
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {% if olympiad.status == 'draft' %}
-                                    <form action="{% url 'olympiads:olympiad_publish' olympiad_id=olympiad.id %}" method="post" class="w-full">
-                                        {% csrf_token %}
-                                        <button type="submit" class="w-full flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow transition-all action-btn">
-                                            <i class="fas fa-check-circle mr-2"></i> {% trans 'Опубликовать' %}
-                                        </button>
-                                    </form>
+                                    <button type="button" onclick="alert('{% trans 'Функция публикации олимпиады в разработке' %}')" class="w-full flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow transition-all action-btn">
+                                        <i class="fas fa-check-circle mr-2"></i> {% trans 'Опубликовать' %}
+                                    </button>
                                     <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                                         <p class="text-sm text-gray-700 dark:text-gray-300">
                                             {% trans 'Публикация сделает олимпиаду видимой для всех пользователей, но они не смогут участвовать, пока вы не активируете её.' %}
                                         </p>
                                     </div>
                                 {% elif olympiad.status == 'published' %}
-                                    <form action="{% url 'olympiads:olympiad_activate' olympiad_id=olympiad.id %}" method="post" class="w-full">
-                                        {% csrf_token %}
-                                        <button type="submit" class="w-full flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition-all action-btn">
-                                            <i class="fas fa-play-circle mr-2"></i> {% trans 'Активировать' %}
-                                        </button>
-                                    </form>
+                                    <button type="button" onclick="alert('{% trans 'Функция активации олимпиады в разработке' %}')" class="w-full flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition-all action-btn">
+                                        <i class="fas fa-play-circle mr-2"></i> {% trans 'Активировать' %}
+                                    </button>
                                     <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                                         <p class="text-sm text-gray-700 dark:text-gray-300">
                                             {% trans 'Активация позволит участникам начать решать задания и получать баллы. Убедитесь, что все настройки и задания готовы.' %}
                                         </p>
                                     </div>
                                 {% elif olympiad.status == 'active' %}
-                                    <form action="{% url 'olympiads:olympiad_deactivate' olympiad_id=olympiad.id %}" method="post" class="w-full">
-                                        {% csrf_token %}
-                                        <button type="submit" class="w-full flex items-center justify-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg shadow transition-all action-btn">
-                                            <i class="fas fa-pause-circle mr-2"></i> {% trans 'Деактивировать' %}
-                                        </button>
-                                    </form>
-                                    <form action="{% url 'olympiads:olympiad_complete' olympiad_id=olympiad.id %}" method="post" class="w-full">
-                                        {% csrf_token %}
-                                        <button type="submit" class="w-full flex items-center justify-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow transition-all action-btn">
-                                            <i class="fas fa-flag-checkered mr-2"></i> {% trans 'Завершить' %}
-                                        </button>
-                                    </form>
+                                    <button type="button" onclick="alert('{% trans 'Функция деактивации олимпиады в разработке' %}')" class="w-full flex items-center justify-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg shadow transition-all action-btn">
+                                        <i class="fas fa-pause-circle mr-2"></i> {% trans 'Деактивировать' %}
+                                    </button>
+                                    <button type="button" onclick="alert('{% trans 'Функция завершения олимпиады в разработке' %}')" class="w-full flex items-center justify-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow transition-all action-btn">
+                                        <i class="fas fa-flag-checkered mr-2"></i> {% trans 'Завершить' %}
+                                    </button>
                                     <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 md:col-span-2">
                                         <p class="text-sm text-gray-700 dark:text-gray-300">
                                             {% trans 'Деактивация временно приостановит возможность участия в олимпиаде. Завершение закроет олимпиаду навсегда - это действие нельзя отменить.' %}
                                         </p>
                                     </div>
                                 {% elif olympiad.status == 'completed' %}
-                                    <form action="{% url 'olympiads:olympiad_archive' olympiad_id=olympiad.id %}" method="post" class="w-full">
-                                        {% csrf_token %}
-                                        <button type="submit" class="w-full flex items-center justify-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg shadow transition-all action-btn">
-                                            <i class="fas fa-archive mr-2"></i> {% trans 'Архивировать' %}
-                                        </button>
-                                    </form>
+                                    <button type="button" onclick="alert('{% trans 'Функция архивации олимпиады в разработке' %}')" class="w-full flex items-center justify-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg shadow transition-all action-btn">
+                                        <i class="fas fa-archive mr-2"></i> {% trans 'Архивировать' %}
+                                    </button>
                                     <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                                         <p class="text-sm text-gray-700 dark:text-gray-300">
                                             {% trans 'Архивирование скроет олимпиаду из общих списков, но она останется доступна через прямую ссылку для просмотра результатов.' %}
                                         </p>
                                     </div>
                                 {% elif olympiad.status == 'archived' %}
-                                    <form action="{% url 'olympiads:olympiad_restore' olympiad_id=olympiad.id %}" method="post" class="w-full">
-                                        {% csrf_token %}
-                                        <button type="submit" class="w-full flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow transition-all action-btn">
-                                            <i class="fas fa-undo mr-2"></i> {% trans 'Восстановить' %}
-                                        </button>
-                                    </form>
+                                    <button type="button" onclick="alert('{% trans 'Функция восстановления олимпиады в разработке' %}')" class="w-full flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow transition-all action-btn">
+                                        <i class="fas fa-undo mr-2"></i> {% trans 'Восстановить' %}
+                                    </button>
                                     <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                                         <p class="text-sm text-gray-700 dark:text-gray-300">
                                             {% trans 'Восстановление вернет олимпиаду из архива в статус "Завершена" и сделает её снова видимой в списках завершенных олимпиад.' %}
@@ -692,7 +676,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
             </div>
-        </div> включая название, описание, даты проведения и правила.' %}</p>
+        </div>
                         <a href="{% url 'olympiads:olympiad_edit' olympiad_id=olympiad.id %}" class="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 action-btn">
                             <i class="fas fa-cog mr-2"></i>
                             {% trans 'Изменить настройки' %}
@@ -733,9 +717,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             {% trans 'Олимпиада не активна. Активируйте её, чтобы сделать доступной для участников.' %}
                         {% endif %}
                         </p>
-                        <form method="post" action="{% url 'olympiads:olympiad_toggle_active' olympiad_id=olympiad.id %}">
-                            {% csrf_token %}
-                            <button type="submit" class="inline-flex items-center px-5 py-2.5 
+                        <button type="button" onclick="alert('{% trans 'Функция переключения статуса олимпиады в разработке' %}')" class="inline-flex items-center px-5 py-2.5 
                             {% if olympiad.status == 'active' %}
                                 bg-amber-600 text-white rounded-lg hover:bg-amber-700 focus:ring-4 focus:ring-amber-300 dark:focus:ring-amber-800
                             {% else %}
@@ -747,8 +729,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 {% else %}
                                     {% trans 'Активировать' %}
                                 {% endif %}
-                            </button>
-                        </form>
+                        </button>
                     </div>
                 </div>
                 
@@ -809,14 +790,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="p-6">
                         <p class="text-gray-700 dark:text-gray-300 mb-4">{% trans 'Завершение олимпиады и перевод её в архив. Результаты останутся доступны для просмотра.' %}</p>
                         <div class="grid grid-cols-2 gap-3">
-                            <a href="{% url 'olympiads:olympiad_complete' olympiad_id=olympiad.id %}" class="inline-flex items-center justify-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-800 action-btn">
+                            <button type="button" onclick="alert('{% trans 'Функция завершения олимпиады в разработке' %}')" class="inline-flex items-center justify-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-800 action-btn">
                                 <i class="fas fa-flag-checkered mr-2"></i>
                                 {% trans 'Завершить' %}
-                            </a>
-                            <a href="{% url 'olympiads:olympiad_archive' olympiad_id=olympiad.id %}" class="inline-flex items-center justify-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-800 action-btn">
+                            </button>
+                            <button type="button" onclick="alert('{% trans 'Функция архивации олимпиады в разработке' %}')" class="inline-flex items-center justify-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-800 action-btn">
                                 <i class="fas fa-archive mr-2"></i>
                                 {% trans 'Архивировать' %}
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </div>
