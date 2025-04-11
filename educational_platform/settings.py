@@ -4,34 +4,52 @@ Django settings for educational_platform project.
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Загрузка переменных из .env файла
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-u^e$!+nyn%n(c3%*=f09#k(0!g#82xm*8_rw=0&!g9lk5pbs(5'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-u^e$!+nyn%n(c3%*=f09#k(0!g#82xm*8_rw=0&!g9lk5pbs(5')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1', 'testserver', 'dd7133e5-0784-467d-88f8-1237e43ae485-00-2c1y8rxcc28wd.worf.replit.dev', '.replit.dev', '.repl.co']
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '0.0.0.0,localhost,127.0.0.1,testserver').split(',')
 
 # Base URL для генерации абсолютных ссылок
-BASE_URL = 'https://dd7133e5-0784-467d-88f8-1237e43ae485-00-2c1y8rxcc28wd.worf.replit.dev'
+BASE_URL = os.environ.get('BASE_URL', 'http://localhost:8000')
 
 # CSRF protection settings
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SAMESITE = None
 SESSION_COOKIE_SAMESITE = None
-CSRF_TRUSTED_ORIGINS = [
-    'https://dd7133e5-0784-467d-88f8-1237e43ae485-00-2c1y8rxcc28wd.worf.replit.dev',
-    'https://*.replit.dev',
-    'https://*.repl.co',
-    'http://dd7133e5-0784-467d-88f8-1237e43ae485-00-2c1y8rxcc28wd.worf.replit.dev',
-    'http://*.replit.dev',
-    'http://*.repl.co',
-]
+
+# Формируем CSRF_TRUSTED_ORIGINS из BASE_URL
+base_url = BASE_URL.strip()
+if base_url:
+    CSRF_TRUSTED_ORIGINS = [
+        f"https://{base_url.replace('https://', '').replace('http://', '')}",
+        f"http://{base_url.replace('https://', '').replace('http://', '')}"
+    ]
+    # Добавляем общие домены
+    CSRF_TRUSTED_ORIGINS.extend([
+        'https://*.replit.dev',
+        'https://*.repl.co',
+        'http://*.replit.dev',
+        'http://*.repl.co',
+    ])
+else:
+    CSRF_TRUSTED_ORIGINS = [
+        'https://*.replit.dev',
+        'https://*.repl.co',
+        'http://*.replit.dev',
+        'http://*.repl.co',
+    ]
 
 # Application definition
 INSTALLED_APPS = [
@@ -116,7 +134,6 @@ WSGI_APPLICATION = 'educational_platform.wsgi.application'
 
 # Database
 # PostgreSQL configuration
-import os
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
