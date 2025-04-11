@@ -1,0 +1,31 @@
+/* Исправления для z-index выпадающих меню */
+.group:hover .group-hover\:block {
+    z-index: 2000 !important;
+}
+
+/* Фиксы для анимации выпадающих меню */
+.group-hover\:block {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    visibility: hidden;
+    display: block !important;
+    pointer-events: none;
+}
+
+.group:hover .group-hover\:block {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    visibility: visible;
+    pointer-events: auto;
+}
+
+/* Фиксы для размещения на мобильных */
+@media (max-width: 768px) {
+    .group-hover\:block {
+        position: absolute;
+        width: 90vw;
+        max-width: 300px;
+        right: 0;
+    }
+}
