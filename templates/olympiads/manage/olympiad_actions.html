@@ -927,8 +927,8 @@
                                     <h3 class="ml-3 text-lg font-medium text-gray-900 dark:text-white">{% trans 'Полный архив' %}</h3>
                                 </div>
                                 <p class="text-gray-600 dark:text-gray-300 mb-4">{% trans 'Скачайте полный архив олимпиады, включающий все решения участников, задания и результаты в едином архиве.' %}</p>
-                                <a href="{% url 'olympiads:olympiad_export_all' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                    <i class="fas fa-download mr-2"></i> {% trans 'Скачать архив (.zip)' %}
+                                <a href="{% url 'olympiads:olympiad_statistics' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-file-archive mr-2"></i> {% trans 'Просмотр файлов' %}
                                 </a>
                             </div>
                         </div>
@@ -1011,19 +1011,20 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <div>
                                 <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">{% trans 'Изменить статус' %}</h3>
-                                <form method="post" action="{% url 'olympiads:olympiad_change_status' olympiad_id=olympiad.id %}">
-                                    {% csrf_token %}
-                                    <select name="status" class="form-input block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-blue-500 focus:border-blue-500 mb-4">
-                                        <option value="draft" {% if olympiad.status == 'draft' %}selected{% endif %}>{% trans 'Черновик' %}</option>
-                                        <option value="published" {% if olympiad.status == 'published' %}selected{% endif %}>{% trans 'Опубликована' %}</option>
-                                        <option value="active" {% if olympiad.status == 'active' %}selected{% endif %}>{% trans 'Активна' %}</option>
-                                        <option value="completed" {% if olympiad.status == 'completed' %}selected{% endif %}>{% trans 'Завершена' %}</option>
-                                        <option value="archived" {% if olympiad.status == 'archived' %}selected{% endif %}>{% trans 'Архивирована' %}</option>
-                                    </select>
-                                    <button type="submit" class="btn-action inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                        <i class="fas fa-sync-alt mr-2"></i> {% trans 'Обновить статус' %}
-                                    </button>
-                                </form>
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    <a href="{% url 'olympiads:olympiad_publish' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                        <i class="fas fa-paper-plane mr-1"></i> {% trans 'Опубликовать' %}
+                                    </a>
+                                    <a href="{% url 'olympiads:olympiad_activate' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                        <i class="fas fa-play mr-1"></i> {% trans 'Активировать' %}
+                                    </a>
+                                    <a href="{% url 'olympiads:olympiad_complete' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                                        <i class="fas fa-check mr-1"></i> {% trans 'Завершить' %}
+                                    </a>
+                                    <a href="{% url 'olympiads:olympiad_archive' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                                        <i class="fas fa-archive mr-1"></i> {% trans 'Архивировать' %}
+                                    </a>
+                                </div>
                             </div>
                             
                             <div>
@@ -1043,12 +1044,9 @@
                                         </div>
                                     </div>
                                 </div>
-                                <form method="post" action="{% url 'olympiads:olympiad_delete' olympiad_id=olympiad.id %}" onsubmit="return confirm('{% trans 'Вы уверены, что хотите удалить эту олимпиаду? Это действие нельзя отменить.' %}');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn-action inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                                        <i class="fas fa-trash-alt mr-2"></i> {% trans 'Удалить олимпиаду' %}
-                                    </button>
-                                </form>
+                                <a href="#" onclick="if(confirm('{% trans 'Вы уверены, что хотите удалить эту олимпиаду? Это действие нельзя отменить.' %}')) { window.location.href='{% url 'olympiads:olympiad_edit' olympiad_id=olympiad.id %}'; } return false;" class="btn-action inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                                    <i class="fas fa-trash-alt mr-2"></i> {% trans 'Удалить олимпиаду' %}
+                                </a>
                             </div>
                         </div>
                     </div>
