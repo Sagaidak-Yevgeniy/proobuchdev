@@ -6,48 +6,50 @@
 
 {% block extra_head %}
 <style>
-    .action-card {
-        transition: all 0.3s ease;
+    /* Основные стили */
+    .sidebar {
+        height: calc(100vh - 80px);
+        position: sticky;
+        top: 80px;
     }
-    .action-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    }
-    .dark .action-card:hover {
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
-    }
-    .action-btn {
+    
+    /* Стили для навигации */
+    .sidebar-nav-item {
+        border-radius: 8px;
+        margin-bottom: 4px;
         transition: all 0.2s ease;
-    }
-    .action-btn:hover {
-        transform: scale(1.05);
-    }
-    .status-badge {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-    }
-    /* Скрываем все секции по умолчанию */
-    .content-section {
-        display: none !important;
-    }
-    /* Показываем только активную секцию */
-    .content-section.active {
-        display: block !important;
-    }
-    .nav-link {
+        display: flex;
+        align-items: center;
+        padding: 10px 16px;
+        color: #4b5563;
         position: relative;
-        transition: all 0.3s ease;
+        overflow: hidden;
     }
-    .olympiad-nav-link.active {
-        background-color: rgba(239, 246, 255, 0.7);
-        color: rgb(59, 130, 246);
+    
+    .dark .sidebar-nav-item {
+        color: #e5e7eb;
     }
-    .dark .olympiad-nav-link.active {
+    
+    .sidebar-nav-item:hover {
+        background-color: rgba(243, 244, 246, 0.8);
+    }
+    
+    .dark .sidebar-nav-item:hover {
+        background-color: rgba(55, 65, 81, 0.5);
+    }
+    
+    .sidebar-nav-item.active {
+        background-color: rgba(219, 234, 254, 0.6);
+        color: #3b82f6;
+        font-weight: 500;
+    }
+    
+    .dark .sidebar-nav-item.active {
         background-color: rgba(30, 58, 138, 0.3);
-        color: rgb(96, 165, 250);
+        color: #93c5fd;
     }
-    .olympiad-nav-link.active::before {
+    
+    .sidebar-nav-item.active::before {
         content: "";
         position: absolute;
         left: 0;
@@ -57,135 +59,112 @@
         background: linear-gradient(to bottom, #3b82f6, #6366f1);
         border-radius: 0 2px 2px 0;
     }
+    
+    .sidebar-nav-item i {
+        font-size: 1.1rem;
+        margin-right: 12px;
+        width: 24px;
+        text-align: center;
+        opacity: 0.8;
+    }
+    
+    /* Стили для разделов */
+    .content-section {
+        display: none !important;
+    }
+    
+    .content-section.active {
+        display: block !important;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Стили для уведомлений */
+    .notification-toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        display: flex;
+        align-items: center;
+        animation: slideIn 0.3s ease, slideOut 0.3s ease 2.7s forwards;
+    }
+    
+    @keyframes slideIn {
+        from { transform: translateY(100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    
+    @keyframes slideOut {
+        from { transform: translateY(0); opacity: 1; }
+        to { transform: translateY(100%); opacity: 0; }
+    }
+    
+    /* Стили для карточек */
+    .olympiad-card {
+        border-radius: 10px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .olympiad-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    /* Стили для кнопок */
+    .btn-action {
+        transition: all 0.2s ease;
+    }
+    
+    .btn-action:hover {
+        transform: scale(1.05);
+    }
+    
+    /* Иконки состояний */
+    .status-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+    
+    /* Дизайн форм */
+    .form-input {
+        transition: border-color 0.2s ease;
+    }
+    
+    .form-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    /* Индикаторы статуса */
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+    }
+    
+    .status-draft { background-color: #fbbf24; }
+    .status-published { background-color: #3b82f6; }
+    .status-active { background-color: #10b981; }
+    .status-completed { background-color: #8b5cf6; }
+    .status-archived { background-color: #9ca3af; }
 </style>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Скрываем все секции при загрузке страницы
-    document.querySelectorAll('.content-section').forEach(function(section) {
-        section.style.display = 'none';
-    });
-    
-    // Показываем обзор по умолчанию
-    showSection('overview');
-    
-    // Назначаем обработчики событий для навигационных ссылок
-    document.querySelectorAll('.olympiad-nav-link').forEach(function(link) {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const section = this.getAttribute('data-section');
-            showSection(section);
-            
-            // Обновляем URL для сохранения истории навигации без перезагрузки страницы
-            const baseUrl = window.location.href.split('#')[0];
-            window.history.pushState({section: section}, "", baseUrl + "#" + section);
-        });
-    });
-    
-    // Обработчик для кнопки "Назад" в браузере
-    window.addEventListener('popstate', function(e) {
-        if (e.state && e.state.section) {
-            showSection(e.state.section);
-        } else {
-            showSection('overview');
-        }
-    });
-    
-    // Проверяем хеш в URL при загрузке
-    if (window.location.hash) {
-        const section = window.location.hash.substring(1);
-        showSection(section);
-    }
-    
-    function showSection(sectionId) {
-        console.log('Переключение на раздел:', sectionId);
-        
-        // Скрываем все секции и деактивируем все ссылки
-        document.querySelectorAll('.content-section').forEach(function(section) {
-            section.classList.remove('active');
-            section.style.display = 'none';
-        });
-        
-        document.querySelectorAll('.olympiad-nav-link').forEach(function(link) {
-            link.classList.remove('active');
-        });
-        
-        // Показываем выбранную секцию и активируем соответствующую ссылку
-        const sectionElement = document.getElementById('section-' + sectionId);
-        const linkElement = document.querySelector('.olympiad-nav-link[data-section="' + sectionId + '"]');
-        
-        if (sectionElement) {
-            console.log('Активируем секцию:', sectionId);
-            sectionElement.classList.add('active');
-            sectionElement.style.display = 'block';
-        } else {
-            console.warn('Секция не найдена:', sectionId);
-        }
-        
-        if (linkElement) {
-            linkElement.classList.add('active');
-        } else {
-            console.warn('Ссылка навигации не найдена:', sectionId);
-        }
-        
-        // Обновляем хлебные крошки
-        updateBreadcrumbs(sectionId);
-        
-        // Прокручиваем к началу контента
-        window.scrollTo({
-            top: document.querySelector('.container').offsetTop,
-            behavior: 'smooth'
-        });
-    }
-    
-    function updateBreadcrumbs(sectionId) {
-        const sectionName = document.querySelector('.olympiad-nav-link[data-section="' + sectionId + '"]')?.innerText || 'Управление';
-        const currentElement = document.getElementById('breadcrumb-current');
-        if (currentElement) {
-            currentElement.innerText = sectionName.trim();
-        }
-    }
-});
-
-// Функция для копирования ссылки-приглашения в буфер обмена
-function copyInvitationLink() {
-    const invitationLink = document.getElementById('invitation-link');
-    if (invitationLink) {
-        invitationLink.select();
-        document.execCommand('copy');
-        
-        // Создаем временное уведомление
-        const notification = document.createElement('div');
-        notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in-out';
-        notification.innerHTML = '<i class="fas fa-check mr-2"></i> Ссылка скопирована в буфер обмена';
-        document.body.appendChild(notification);
-        
-        // Удаляем уведомление через 2 секунды
-        setTimeout(() => {
-            notification.remove();
-        }, 2000);
-    }
-}
-
-// Добавляем CSS-анимацию для уведомления
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes fadeInOut {
-        0% { opacity: 0; transform: translateY(20px); }
-        10% { opacity: 1; transform: translateY(0); }
-        90% { opacity: 1; transform: translateY(0); }
-        100% { opacity: 0; transform: translateY(-20px); }
-    }
-    .animate-fade-in-out {
-        animation: fadeInOut 2s ease-in-out forwards;
-    }
-`;
-document.head.appendChild(style);
-</script>
 {% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <!-- Хлебные крошки с динамическим обновлением текущего раздела -->
+<div class="container mx-auto px-4 py-6">
+    <!-- Хлебные крошки -->
     <nav class="flex mb-6 text-sm text-gray-500 dark:text-gray-400">
         <ol class="inline-flex items-center space-x-1 md:space-x-3">
             <li class="inline-flex items-center">
@@ -229,258 +208,227 @@ document.head.appendChild(style);
         </ol>
     </nav>
     
-    <!-- Шапка страницы с навигацией -->
-    <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-xl mb-6 overflow-hidden">
+    <!-- Шапка страницы -->
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-xl mb-8 overflow-hidden">
         <div class="p-6 text-white">
-            <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-4">
                 <div class="flex items-center">
-                    <div class="flex items-center justify-center w-12 h-12 bg-white/20 rounded-lg mr-3">
-                        <i class="fas fa-cogs text-2xl"></i>
+                    <div class="flex items-center justify-center w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl mr-4 shadow-inner">
+                        <i class="fas fa-shield-alt text-2xl"></i>
                     </div>
                     <div>
                         <h1 class="text-2xl font-bold">{% trans 'Управление олимпиадой' %}</h1>
-                        <p class="mt-1 text-purple-100">{{ olympiad.title }}</p>
+                        <div class="flex items-center mt-1">
+                            <div class="status-indicator 
+                                {% if olympiad.status == 'draft' %}status-draft
+                                {% elif olympiad.status == 'published' %}status-published
+                                {% elif olympiad.status == 'active' %}status-active
+                                {% elif olympiad.status == 'completed' %}status-completed
+                                {% elif olympiad.status == 'archived' %}status-archived
+                                {% endif %}"></div>
+                            <p class="text-purple-100">{{ olympiad.title }} <span class="opacity-70">&middot; {{ olympiad.get_status_display }}</span></p>
+                        </div>
                     </div>
                 </div>
                 
-                <nav class="flex flex-wrap items-center gap-2">
-                    <a href="{% url 'olympiads:olympiad_detail' olympiad_id=olympiad.id %}" class="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white shadow-md transition-all flex items-center">
-                        <i class="fas fa-eye mr-2"></i> {% trans 'Просмотр олимпиады' %}
+                <div class="flex flex-wrap items-center gap-3">
+                    <a href="{% url 'olympiads:olympiad_detail' olympiad_id=olympiad.id %}" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white shadow-md transition-all flex items-center">
+                        <i class="fas fa-eye mr-2"></i> {% trans 'Просмотр' %}
                     </a>
-                    <a href="{% url 'olympiads:olympiad_manage_list' %}" class="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white shadow-md transition-all flex items-center">
+                    <a href="{% url 'olympiads:olympiad_manage_list' %}" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white shadow-md transition-all flex items-center">
                         <i class="fas fa-list mr-2"></i> {% trans 'Все олимпиады' %}
                     </a>
-                </nav>
+                </div>
             </div>
         </div>
     </div>
     
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <!-- Левая колонка с боковой навигацией -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+        <!-- Левая колонка с навигацией -->
         <div class="lg:col-span-1">
-            <!-- Навигационная панель для управления олимпиадой -->
-            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden mb-6">
-                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Навигация' %}</h3>
-                </div>
-                <div class="p-2">
-                    <ul class="space-y-1">
-                        <li>
-                            <a href="#" data-section="overview" class="olympiad-nav-link flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-gray-800 dark:text-gray-200 transition-all">
-                                <i class="fas fa-th-large w-5 text-center text-purple-500"></i>
+            <div class="sidebar space-y-6">
+                <!-- Навигация по разделам -->
+                <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Навигация' %}</h3>
+                    </div>
+                    <div class="p-3">
+                        <nav>
+                            <a href="#overview" data-section="overview" class="sidebar-nav-item">
+                                <i class="fas fa-th-large text-purple-500"></i>
                                 <span>{% trans 'Обзор' %}</span>
                             </a>
-                        </li>
-                        <li>
-                            <a href="#" data-section="edit" class="olympiad-nav-link flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-gray-800 dark:text-gray-200 transition-all">
-                                <i class="fas fa-edit w-5 text-center text-blue-500"></i>
+                            <a href="#edit" data-section="edit" class="sidebar-nav-item">
+                                <i class="fas fa-edit text-blue-500"></i>
                                 <span>{% trans 'Редактирование' %}</span>
                             </a>
-                        </li>
-                        <li>
-                            <a href="#" data-section="tasks" class="olympiad-nav-link flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-gray-800 dark:text-gray-200 transition-all">
-                                <i class="fas fa-tasks w-5 text-center text-purple-500"></i>
+                            <a href="#tasks" data-section="tasks" class="sidebar-nav-item">
+                                <i class="fas fa-tasks text-emerald-500"></i>
                                 <span>{% trans 'Задания' %}</span>
                             </a>
-                        </li>
-                        <li>
-                            <a href="#" data-section="participants" class="olympiad-nav-link flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-gray-800 dark:text-gray-200 transition-all">
-                                <i class="fas fa-users w-5 text-center text-cyan-500"></i>
+                            <a href="#participants" data-section="participants" class="sidebar-nav-item">
+                                <i class="fas fa-users text-cyan-500"></i>
                                 <span>{% trans 'Участники' %}</span>
                             </a>
-                        </li>
-                        <li>
-                            <a href="#" data-section="invitations" class="olympiad-nav-link flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-gray-800 dark:text-gray-200 transition-all">
-                                <i class="fas fa-envelope-open-text w-5 text-center text-teal-500"></i>
+                            <a href="#invitations" data-section="invitations" class="sidebar-nav-item">
+                                <i class="fas fa-envelope-open-text text-teal-500"></i>
                                 <span>{% trans 'Приглашения' %}</span>
                             </a>
-                        </li>
-                        <li>
-                            <a href="#" data-section="statistics" class="olympiad-nav-link flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-gray-800 dark:text-gray-200 transition-all">
-                                <i class="fas fa-chart-line w-5 text-center text-indigo-500"></i>
+                            <a href="#statistics" data-section="statistics" class="sidebar-nav-item">
+                                <i class="fas fa-chart-line text-indigo-500"></i>
                                 <span>{% trans 'Статистика' %}</span>
                             </a>
-                        </li>
-                        <li>
-                            <a href="#" data-section="reports" class="olympiad-nav-link flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-gray-800 dark:text-gray-200 transition-all">
-                                <i class="fas fa-file-export w-5 text-center text-violet-500"></i>
+                            <a href="#reports" data-section="reports" class="sidebar-nav-item">
+                                <i class="fas fa-file-export text-violet-500"></i>
                                 <span>{% trans 'Отчеты' %}</span>
                             </a>
-                        </li>
-                        <li>
-                            <a href="#" data-section="status" class="olympiad-nav-link flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-gray-800 dark:text-gray-200 transition-all">
-                                <i class="fas fa-power-off w-5 text-center text-green-500"></i>
+                            <a href="#status" data-section="status" class="sidebar-nav-item">
+                                <i class="fas fa-power-off text-red-500"></i>
                                 <span>{% trans 'Статус' %}</span>
                             </a>
-                        </li>
-                    </ul>
+                        </nav>
+                    </div>
                 </div>
-            </div>
-            
-            <!-- Информация о статусе олимпиады -->
-            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden mb-6">
-                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Информация об олимпиаде' %}</h3>
-                </div>
-                <div class="p-4 space-y-3">
-                    <div class="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                        <span class="text-gray-700 dark:text-gray-300">{% trans 'Текущий статус:' %}</span>
-                        <span class="px-2 py-1 rounded-full text-xs font-medium
-                            {% if olympiad.status == 'draft' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300
-                            {% elif olympiad.status == 'published' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300
-                            {% elif olympiad.status == 'active' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300
-                            {% elif olympiad.status == 'completed' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300
-                            {% elif olympiad.status == 'archived' %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300
-                            {% endif %}">
-                            {{ olympiad.get_status_display }}
-                        </span>
+                
+                <!-- Информация об олимпиаде -->
+                <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Информация' %}</h3>
                     </div>
-                    <div class="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                        <span class="text-gray-700 dark:text-gray-300">{% trans 'Дата создания:' %}</span>
-                        <span class="text-gray-800 dark:text-gray-200">{{ olympiad.created_at|date:"d.m.Y" }}</span>
-                    </div>
-                    <div class="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                        <span class="text-gray-700 dark:text-gray-300">{% trans 'Дата начала:' %}</span>
-                        <span class="text-gray-800 dark:text-gray-200">{{ olympiad.start_datetime|date:"d.m.Y H:i" }}</span>
-                    </div>
-                    <div class="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                        <span class="text-gray-700 dark:text-gray-300">{% trans 'Дата окончания:' %}</span>
-                        <span class="text-gray-800 dark:text-gray-200">{{ olympiad.end_datetime|date:"d.m.Y H:i" }}</span>
-                    </div>
-                    <div class="flex items-center justify-between py-2">
-                        <span class="text-gray-700 dark:text-gray-300">{% trans 'Заданий:' %}</span>
-                        <span class="text-gray-800 dark:text-gray-200">{{ olympiad.tasks.count }}</span>
+                    <div class="p-4 space-y-3">
+                        <div class="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                            <span class="text-gray-700 dark:text-gray-300">{% trans 'Статус:' %}</span>
+                            <span class="px-2.5 py-1 rounded-full text-xs font-medium
+                                {% if olympiad.status == 'draft' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300
+                                {% elif olympiad.status == 'published' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300
+                                {% elif olympiad.status == 'active' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300
+                                {% elif olympiad.status == 'completed' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300
+                                {% elif olympiad.status == 'archived' %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300
+                                {% endif %}">
+                                {{ olympiad.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                            <span class="text-gray-700 dark:text-gray-300">{% trans 'Создана:' %}</span>
+                            <span class="text-gray-800 dark:text-gray-200">{{ olympiad.created_at|date:"d.m.Y" }}</span>
+                        </div>
+                        <div class="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                            <span class="text-gray-700 dark:text-gray-300">{% trans 'Начало:' %}</span>
+                            <span class="text-gray-800 dark:text-gray-200">{{ olympiad.start_datetime|date:"d.m.Y H:i" }}</span>
+                        </div>
+                        <div class="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                            <span class="text-gray-700 dark:text-gray-300">{% trans 'Окончание:' %}</span>
+                            <span class="text-gray-800 dark:text-gray-200">{{ olympiad.end_datetime|date:"d.m.Y H:i" }}</span>
+                        </div>
+                        <div class="flex items-center justify-between py-2">
+                            <span class="text-gray-700 dark:text-gray-300">{% trans 'Заданий:' %}</span>
+                            <span class="text-gray-800 dark:text-gray-200">{{ olympiad.tasks.count }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         
         <!-- Правая колонка с содержимым разделов -->
-        <div class="lg:col-span-3">
-            <!-- Секция: Обзор (Главная страница) -->
-            <div id="section-overview" class="content-section">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="lg:col-span-3 xl:col-span-4">
+            <!-- Секция: Обзор -->
+            <div id="section-overview" class="content-section active">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     <!-- Карточка редактирования олимпиады -->
-                    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden action-card relative">
+                    <div class="olympiad-card bg-white dark:bg-gray-800 shadow-lg relative">
                         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
                             <div class="flex items-center">
-                                <i class="fas fa-edit text-lg mr-2"></i>
+                                <i class="fas fa-edit text-xl mr-3"></i>
                                 <h2 class="text-lg font-medium">{% trans 'Настройки олимпиады' %}</h2>
                             </div>
                         </div>
                         <div class="p-6">
-                            <p class="text-gray-700 dark:text-gray-300 mb-4">{% trans 'Редактирование основной информации об олимпиаде, включая название, описание, даты проведения и правила.' %}</p>
-                            <a href="#" data-section="edit" class="olympiad-nav-link inline-flex items-center px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 action-btn">
-                                <i class="fas fa-cog mr-2"></i>
-                                {% trans 'Изменить настройки' %}
+                            <p class="text-gray-700 dark:text-gray-300 mb-5">{% trans 'Редактирование информации об олимпиаде, включая название, описание и даты проведения.' %}</p>
+                            <a href="#edit" data-section="edit" class="btn-action inline-flex items-center px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full justify-center">
+                                <i class="fas fa-pen-to-square mr-2"></i> {% trans 'Редактировать' %}
                             </a>
                         </div>
                     </div>
                     
                     <!-- Карточка управления заданиями -->
-                    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden action-card relative">
-                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+                    <div class="olympiad-card bg-white dark:bg-gray-800 shadow-lg relative">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white">
                             <div class="flex items-center">
-                                <i class="fas fa-tasks text-lg mr-2"></i>
-                                <h2 class="text-lg font-medium">{% trans 'Задания олимпиады' %}</h2>
+                                <i class="fas fa-tasks text-xl mr-3"></i>
+                                <h2 class="text-lg font-medium">{% trans 'Задания' %}</h2>
                             </div>
                         </div>
                         <div class="p-6">
-                            <p class="text-gray-700 dark:text-gray-300 mb-4">{% trans 'Добавление, редактирование и управление заданиями олимпиады. Настройка тестовых случаев для проверки решений.' %}</p>
-                            <a href="#" data-section="tasks" class="olympiad-nav-link inline-flex items-center px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-800 action-btn">
-                                <i class="fas fa-list-alt mr-2"></i>
-                                {% trans 'Управлять заданиями' %}
+                            <p class="text-gray-700 dark:text-gray-300 mb-5">{% trans 'Управление заданиями олимпиады, добавление новых, редактирование существующих.' %}</p>
+                            <a href="#tasks" data-section="tasks" class="btn-action inline-flex items-center px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors w-full justify-center">
+                                <i class="fas fa-list-check mr-2"></i> {% trans 'Управление заданиями' %}
                             </a>
                         </div>
                     </div>
                     
-                    <!-- Карточка активации/деактивации -->
-                    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden action-card relative">
-                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-500 to-green-600 text-white">
-                            <div class="flex items-center">
-                                <i class="fas fa-power-off text-lg mr-2"></i>
-                                <h2 class="text-lg font-medium">{% trans 'Статус олимпиады' %}</h2>
-                            </div>
-                        </div>
-                        <div class="p-6">
-                            <p class="text-gray-700 dark:text-gray-300 mb-4">
-                            {% if olympiad.status == 'active' %}
-                                {% trans 'Олимпиада активна и доступна участникам. Вы можете деактивировать её.' %}
-                            {% else %}
-                                {% trans 'Олимпиада не активна. Активируйте её, чтобы сделать доступной для участников.' %}
-                            {% endif %}
-                            </p>
-                            <a href="#" data-section="status" class="olympiad-nav-link inline-flex items-center px-5 py-2.5 
-                                {% if olympiad.status == 'active' %}
-                                    bg-amber-600 text-white rounded-lg hover:bg-amber-700 focus:ring-4 focus:ring-amber-300 dark:focus:ring-amber-800
-                                {% else %}
-                                    bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800
-                                {% endif %} action-btn">
-                                    <i class="fas {% if olympiad.status == 'active' %}fa-power-off{% else %}fa-play{% endif %} mr-2"></i>
-                                    {% trans 'Управление статусом' %}
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <!-- Карточка участников -->
-                    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden action-card relative">
+                    <!-- Карточка управления участниками -->
+                    <div class="olympiad-card bg-white dark:bg-gray-800 shadow-lg relative">
                         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white">
                             <div class="flex items-center">
-                                <i class="fas fa-users text-lg mr-2"></i>
-                                <h2 class="text-lg font-medium">{% trans 'Участники и приглашения' %}</h2>
+                                <i class="fas fa-users text-xl mr-3"></i>
+                                <h2 class="text-lg font-medium">{% trans 'Участники' %}</h2>
+                            </div>
+                            <div class="absolute top-4 right-4 bg-white/20 backdrop-blur-sm rounded-full px-2.5 py-1 text-xs font-medium">
+                                {{ olympiad.participants.count }}
                             </div>
                         </div>
                         <div class="p-6">
-                            <p class="text-gray-700 dark:text-gray-300 mb-4">{% trans 'Управление участниками олимпиады, просмотр статистики и создание пригласительных кодов.' %}</p>
-                            <div class="flex flex-wrap gap-3">
-                                <a href="#" data-section="participants" class="olympiad-nav-link inline-flex items-center px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:ring-4 focus:ring-cyan-300 dark:focus:ring-cyan-800 action-btn">
-                                    <i class="fas fa-user-friends mr-2"></i>
-                                    {% trans 'Участники' %}
-                                </a>
-                                <a href="#" data-section="invitations" class="olympiad-nav-link inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 focus:ring-4 focus:ring-teal-300 dark:focus:ring-teal-800 action-btn">
-                                    <i class="fas fa-envelope-open-text mr-2"></i>
-                                    {% trans 'Приглашения' %}
-                                </a>
+                            <p class="text-gray-700 dark:text-gray-300 mb-5">{% trans 'Просмотр и управление списком участников олимпиады.' %}</p>
+                            <a href="#participants" data-section="participants" class="btn-action inline-flex items-center px-4 py-2.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors w-full justify-center">
+                                <i class="fas fa-user-group mr-2"></i> {% trans 'Просмотр участников' %}
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Карточка приглашений -->
+                    <div class="olympiad-card bg-white dark:bg-gray-800 shadow-lg relative">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-teal-500 to-teal-600 text-white">
+                            <div class="flex items-center">
+                                <i class="fas fa-envelope-open-text text-xl mr-3"></i>
+                                <h2 class="text-lg font-medium">{% trans 'Приглашения' %}</h2>
                             </div>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-gray-700 dark:text-gray-300 mb-5">{% trans 'Управление приглашениями, создание и распространение ссылок на олимпиаду.' %}</p>
+                            <a href="#invitations" data-section="invitations" class="btn-action inline-flex items-center px-4 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors w-full justify-center">
+                                <i class="fas fa-link mr-2"></i> {% trans 'Управление приглашениями' %}
+                            </a>
                         </div>
                     </div>
                     
                     <!-- Карточка статистики -->
-                    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden action-card relative">
+                    <div class="olympiad-card bg-white dark:bg-gray-800 shadow-lg relative">
                         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white">
                             <div class="flex items-center">
-                                <i class="fas fa-chart-pie text-lg mr-2"></i>
-                                <h2 class="text-lg font-medium">{% trans 'Статистика и отчеты' %}</h2>
+                                <i class="fas fa-chart-line text-xl mr-3"></i>
+                                <h2 class="text-lg font-medium">{% trans 'Статистика' %}</h2>
                             </div>
                         </div>
                         <div class="p-6">
-                            <p class="text-gray-700 dark:text-gray-300 mb-4">{% trans 'Просмотр подробной статистики по олимпиаде, экспорт отчетов о результатах и активности участников.' %}</p>
-                            <div class="flex flex-wrap gap-3">
-                                <a href="#" data-section="statistics" class="olympiad-nav-link inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-800 action-btn">
-                                    <i class="fas fa-chart-line mr-2"></i>
-                                    {% trans 'Статистика' %}
-                                </a>
-                                <a href="#" data-section="reports" class="olympiad-nav-link inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 focus:ring-4 focus:ring-violet-300 dark:focus:ring-violet-800 action-btn">
-                                    <i class="fas fa-file-export mr-2"></i>
-                                    {% trans 'Отчеты' %}
-                                </a>
-                            </div>
+                            <p class="text-gray-700 dark:text-gray-300 mb-5">{% trans 'Просмотр статистики по участникам, выполненным заданиям и результатам.' %}</p>
+                            <a href="#statistics" data-section="statistics" class="btn-action inline-flex items-center px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors w-full justify-center">
+                                <i class="fas fa-chart-bar mr-2"></i> {% trans 'Просмотр статистики' %}
+                            </a>
                         </div>
                     </div>
                     
-                    <!-- Карточка завершения/архивации -->
-                    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden action-card relative">
-                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-500 to-gray-600 text-white">
+                    <!-- Карточка отчетов -->
+                    <div class="olympiad-card bg-white dark:bg-gray-800 shadow-lg relative">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-violet-500 to-violet-600 text-white">
                             <div class="flex items-center">
-                                <i class="fas fa-archive text-lg mr-2"></i>
-                                <h2 class="text-lg font-medium">{% trans 'Завершение олимпиады' %}</h2>
+                                <i class="fas fa-file-export text-xl mr-3"></i>
+                                <h2 class="text-lg font-medium">{% trans 'Отчеты' %}</h2>
                             </div>
                         </div>
                         <div class="p-6">
-                            <p class="text-gray-700 dark:text-gray-300 mb-4">{% trans 'Завершение олимпиады и перевод её в архив. Результаты останутся доступны для просмотра.' %}</p>
-                            <a href="#" data-section="status" class="olympiad-nav-link inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-800 action-btn">
-                                <i class="fas fa-flag-checkered mr-2"></i>
-                                {% trans 'Управление статусом' %}
+                            <p class="text-gray-700 dark:text-gray-300 mb-5">{% trans 'Генерация и выгрузка отчетов по результатам олимпиады, сертификатов.' %}</p>
+                            <a href="#reports" data-section="reports" class="btn-action inline-flex items-center px-4 py-2.5 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors w-full justify-center">
+                                <i class="fas fa-download mr-2"></i> {% trans 'Скачать отчеты' %}
                             </a>
                         </div>
                     </div>
@@ -489,426 +437,287 @@ document.head.appendChild(style);
             
             <!-- Секция: Редактирование -->
             <div id="section-edit" class="content-section">
-                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+                <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-                        <div class="flex items-center">
-                            <i class="fas fa-edit text-lg mr-2"></i>
-                            <h2 class="text-lg font-medium">{% trans 'Редактирование олимпиады' %}</h2>
-                        </div>
+                        <h2 class="text-xl font-semibold flex items-center">
+                            <i class="fas fa-edit mr-3"></i> {% trans 'Редактирование олимпиады' %}
+                        </h2>
                     </div>
                     <div class="p-6">
-                        <div class="p-4 text-center bg-gray-100 dark:bg-gray-700 rounded-lg">
-                            <p class="mb-4">{% trans 'Страница редактирования олимпиады загружается здесь' %}</p>
-                            <a href="{% url 'olympiads:olympiad_edit' olympiad_id=olympiad.id %}" class="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 action-btn">
-                                <i class="fas fa-external-link-alt mr-2"></i>
-                                {% trans 'Открыть страницу редактирования' %}
-                            </a>
-                        </div>
+                        <form method="post" action="{% url 'olympiads:olympiad_edit' olympiad_id=olympiad.id %}">
+                            {% csrf_token %}
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        {% trans 'Название олимпиады' %}
+                                    </label>
+                                    <input type="text" name="title" value="{{ olympiad.title }}" required 
+                                        class="form-input block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        {% trans 'Категория' %}
+                                    </label>
+                                    <select name="category" class="form-input block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                                        {% for category in categories %}
+                                            <option value="{{ category.id }}" {% if olympiad.category.id == category.id %}selected{% endif %}>
+                                                {{ category.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {% trans 'Описание' %}
+                                </label>
+                                <textarea name="description" rows="4" class="form-input block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-blue-500 focus:border-blue-500">{{ olympiad.description }}</textarea>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        {% trans 'Дата и время начала' %}
+                                    </label>
+                                    <input type="datetime-local" name="start_datetime" value="{{ olympiad.start_datetime|date:'Y-m-d\TH:i' }}" 
+                                        class="form-input block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        {% trans 'Дата и время окончания' %}
+                                    </label>
+                                    <input type="datetime-local" name="end_datetime" value="{{ olympiad.end_datetime|date:'Y-m-d\TH:i' }}" 
+                                        class="form-input block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {% trans 'Правила олимпиады' %}
+                                </label>
+                                <textarea name="rules" rows="6" class="form-input block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-blue-500 focus:border-blue-500">{{ olympiad.rules }}</textarea>
+                            </div>
+                            
+                            <div class="flex justify-end">
+                                <button type="submit" class="btn-action inline-flex items-center px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-save mr-2"></i> {% trans 'Сохранить изменения' %}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
             
             <!-- Секция: Задания -->
             <div id="section-tasks" class="content-section">
-                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-                        <div class="flex items-center">
-                            <i class="fas fa-tasks text-lg mr-2"></i>
-                            <h2 class="text-lg font-medium">{% trans 'Управление заданиями' %}</h2>
+                <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden mb-6">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-xl font-semibold flex items-center">
+                                <i class="fas fa-tasks mr-3"></i> {% trans 'Управление заданиями' %}
+                            </h2>
+                            <a href="{% url 'olympiads:task_create' olympiad_id=olympiad.id %}" class="inline-flex items-center px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-all">
+                                <i class="fas fa-plus mr-2"></i> {% trans 'Добавить задание' %}
+                            </a>
                         </div>
                     </div>
                     <div class="p-6">
-                        <p class="text-gray-500 dark:text-gray-400 mb-4">
-                            {% trans "Добавляйте, редактируйте и упорядочивайте задания для олимпиады" %}
-                        </p>
-                        
-                        <!-- Кнопки действий -->
-                        <div class="mb-6 flex justify-end">
-                            <a href="{% url 'olympiads:olympiad_task_create' olympiad_id=olympiad.id %}" class="btn btn-primary flex items-center justify-center">
-                                <i class="fas fa-plus mr-2"></i>{% trans "Добавить задание" %}
-                            </a>
-                        </div>
-                        
-                        <!-- Таблица заданий -->
-                        <div class="overflow-x-auto">
-                            {% if tasks %}
-                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead class="bg-gray-50 dark:bg-gray-700">
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            {% trans "Порядок" %}
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            {% trans "Название" %}
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            {% trans "Тип" %}
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            {% trans "Баллы" %}
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            {% trans "Сложность" %}
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            {% trans "Форматирование" %}
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            {% trans "Действия" %}
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    {% for task in tasks %}
-                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                            {{ task.order }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm font-medium text-gray-900 dark:text-white">{{ task.title }}</div>
-                                            <div class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs">
-                                                {{ task.description|striptags|truncatechars:80 }}
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                            {{ task.get_task_type_display }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                            {{ task.points }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                            <div class="flex items-center">
-                                                {% for i in "12345" %}
-                                                    {% if forloop.counter <= task.difficulty %}
-                                                        <i class="fas fa-star text-yellow-500"></i>
-                                                    {% else %}
-                                                        <i class="far fa-star text-gray-400"></i>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                            {% if task.use_markdown %}
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
-                                                <i class="fab fa-markdown mr-1"></i> Markdown
-                                            </span>
-                                            {% endif %}
-                                            
-                                            {% if task.use_latex %}
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 ml-1">
-                                                <i class="fas fa-square-root-alt mr-1"></i> LaTeX
-                                            </span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div class="flex justify-end space-x-2">
-                                                <a href="{% url 'olympiads:olympiad_task_edit' olympiad_id=olympiad.id task_id=task.id %}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300" title="{% trans 'Редактировать' %}">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <a href="#" onclick="confirmDelete('{% url 'olympiads:olympiad_task_delete' olympiad_id=olympiad.id task_id=task.id %}', '{{ task.title }}')" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300" title="{% trans 'Удалить' %}">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                            {% else %}
-                            <div class="text-center py-8">
-                                <div class="text-gray-500 dark:text-gray-400 mb-4">
-                                    <i class="fas fa-tasks fa-4x"></i>
+                        {% if olympiad.tasks.all %}
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                    <thead class="bg-gray-50 dark:bg-gray-700">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                {% trans 'Название' %}
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                {% trans 'Сложность' %}
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                {% trans 'Баллы' %}
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                {% trans 'Действия' %}
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                        {% for task in olympiad.tasks.all %}
+                                            <tr>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ task.title }}</div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                                        {% if task.difficulty == 'easy' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300
+                                                        {% elif task.difficulty == 'medium' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300
+                                                        {% elif task.difficulty == 'hard' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300
+                                                        {% endif %}">
+                                                        {{ task.get_difficulty_display }}
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="text-sm text-gray-900 dark:text-white">{{ task.max_score }}</div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <div class="flex justify-end space-x-2">
+                                                        <a href="{% url 'olympiads:task_edit' olympiad_id=olympiad.id task_id=task.id %}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <a href="{% url 'olympiads:task_preview' olympiad_id=olympiad.id task_id=task.id %}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        <a href="{% url 'olympiads:task_delete' olympiad_id=olympiad.id task_id=task.id %}" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300" onclick="return confirm('{% trans 'Вы уверены, что хотите удалить это задание?' %}');">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="flex flex-col items-center justify-center py-12 text-center">
+                                <div class="w-16 h-16 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+                                    <i class="fas fa-tasks text-gray-400 dark:text-gray-500 text-xl"></i>
                                 </div>
-                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{% trans "Нет заданий" %}</h3>
-                                <p class="text-gray-500 dark:text-gray-400 mb-4">{% trans "Добавьте первое задание для этой олимпиады" %}</p>
-                                <a href="{% url 'olympiads:olympiad_task_create' olympiad_id=olympiad.id %}" class="btn btn-primary">
-                                    <i class="fas fa-plus mr-2"></i>{% trans "Добавить задание" %}
+                                <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">{% trans 'Нет заданий' %}</h3>
+                                <p class="text-gray-500 dark:text-gray-400 mb-6">{% trans 'В этой олимпиаде пока нет заданий. Добавьте задания, чтобы участники могли приступить к их выполнению.' %}</p>
+                                <a href="{% url 'olympiads:task_create' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                                    <i class="fas fa-plus mr-2"></i> {% trans 'Добавить первое задание' %}
                                 </a>
                             </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Модальное окно подтверждения удаления -->
-                <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full p-6">
-                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4" id="deleteTitle">
-                            {% trans "Удаление задания" %}
-                        </h3>
-                        <p class="text-gray-700 dark:text-gray-300 mb-6" id="deleteMessage">
-                            {% trans "Вы уверены, что хотите удалить это задание?" %}
-                        </p>
-                        <div class="flex justify-end space-x-3">
-                            <button type="button" onclick="closeDeleteModal()" class="btn btn-secondary">
-                                {% trans "Отмена" %}
-                            </button>
-                            <a href="#" id="deleteLink" class="btn btn-danger">
-                                {% trans "Удалить" %}
-                            </a>
-                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
             
             <!-- Секция: Участники -->
             <div id="section-participants" class="content-section">
-                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+                <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white">
-                        <div class="flex items-center">
-                            <i class="fas fa-users text-lg mr-2"></i>
-                            <h2 class="text-lg font-medium">{% trans 'Участники олимпиады' %}</h2>
-                        </div>
+                        <h2 class="text-xl font-semibold flex items-center">
+                            <i class="fas fa-users mr-3"></i> {% trans 'Участники олимпиады' %}
+                        </h2>
                     </div>
                     <div class="p-6">
-                        <div class="mb-4 flex justify-between items-center">
-                            <p class="text-gray-500 dark:text-gray-400">
-                                {% trans 'Всего участников' %}: {{ participants|length }}
-                            </p>
-                            <div class="flex space-x-2">
-                                <button class="btn btn-outline-primary" onclick="alert('{% trans 'Функция экспорта будет доступна в будущих обновлениях' %}')">
-                                    <i class="fas fa-file-export mr-2"></i>
-                                    {% trans 'Экспорт участников' %}
-                                </button>
-                                <button class="btn btn-outline-primary" onclick="alert('{% trans 'Функция отправки уведомлений будет доступна в будущих обновлениях' %}')">
-                                    <i class="fas fa-envelope mr-2"></i>
-                                    {% trans 'Отправить уведомление' %}
-                                </button>
+                        {% if olympiad.participants.all %}
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                    <thead class="bg-gray-50 dark:bg-gray-700">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                {% trans 'Участник' %}
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                {% trans 'Дата регистрации' %}
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                {% trans 'Выполнено заданий' %}
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                {% trans 'Баллы' %}
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                        {% for participant in olympiad.participants.all %}
+                                            <tr>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="flex items-center">
+                                                        <div class="flex-shrink-0 h-10 w-10">
+                                                            {% if participant.profile_image %}
+                                                                <img class="h-10 w-10 rounded-full object-cover" src="{{ participant.profile_image.url }}" alt="{{ participant.username }}">
+                                                            {% else %}
+                                                                <div class="h-10 w-10 rounded-full flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                                                                    <i class="fas fa-user"></i>
+                                                                </div>
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="ml-4">
+                                                            <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                                {{ participant.get_full_name|default:participant.username }}
+                                                            </div>
+                                                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                                                                {{ participant.email }}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="text-sm text-gray-900 dark:text-white">
+                                                        {{ participant.olympiad_registrations.get.registered_at|date:"d.m.Y H:i" }}
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="text-sm text-gray-900 dark:text-white">
+                                                        {{ participant.olympiad_solutions.filter.count }} / {{ olympiad.tasks.count }}
+                                                    </div>
+                                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-1">
+                                                        <div class="bg-cyan-600 h-1.5 rounded-full" style="width: {% widthratio participant.olympiad_solutions.filter.count olympiad.tasks.count 100 %}%"></div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="text-sm text-gray-900 dark:text-white">
+                                                        {{ participant.olympiad_score }}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
                             </div>
-                        </div>
-                        
-                        <div class="overflow-x-auto">
-                            {% if participants %}
-                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead class="bg-gray-50 dark:bg-gray-700">
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            {% trans 'Пользователь' %}
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            {% trans 'Дата регистрации' %}
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            {% trans 'Статус' %}
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            {% trans 'Баллы' %}
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            {% trans 'Действия' %}
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    {% for participant in participants %}
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                                                    <span class="text-blue-800 dark:text-blue-300 font-semibold">{{ participant.user.username|first|upper }}</span>
-                                                </div>
-                                                <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                                        {{ participant.user.username }}
-                                                    </div>
-                                                    <div class="text-sm text-gray-500 dark:text-gray-400">
-                                                        {{ participant.user.email }}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                            {{ participant.registered_at|date:"d.m.Y H:i" }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if participant.is_finished %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300{% else %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300{% endif %}">
-                                                {% if participant.is_finished %}
-                                                    {% trans 'Завершил' %}
-                                                {% else %}
-                                                    {% trans 'Участвует' %}
-                                                {% endif %}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                            <span class="font-semibold">{{ participant.score }}</span> / {{ olympiad.max_score }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300" onclick="alert('{% trans 'Детали участника будут доступны в будущих обновлениях' %}')">
-                                                {% trans 'Детали' %}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                            {% else %}
-                            <div class="py-10 px-6 text-center">
-                                <div class="text-gray-500 dark:text-gray-400 mb-4">
-                                    <i class="fas fa-users fa-4x"></i>
+                        {% else %}
+                            <div class="flex flex-col items-center justify-center py-12 text-center">
+                                <div class="w-16 h-16 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+                                    <i class="fas fa-users text-gray-400 dark:text-gray-500 text-xl"></i>
                                 </div>
-                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{% trans 'Пока нет участников' %}</h3>
-                                <p class="text-gray-500 dark:text-gray-400 mb-4">{% trans 'Пригласите участников или разрешите самостоятельную регистрацию' %}</p>
-                                <button class="btn btn-primary" onclick="showSection('invitations')">
-                                    <i class="fas fa-envelope-open-text mr-2"></i>
-                                    {% trans 'Управление приглашениями' %}
-                                </button>
+                                <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">{% trans 'Нет участников' %}</h3>
+                                <p class="text-gray-500 dark:text-gray-400 mb-6">{% trans 'В этой олимпиаде пока нет зарегистрированных участников. Используйте раздел приглашений для привлечения участников.' %}</p>
+                                <a href="#invitations" data-section="invitations" class="btn-action inline-flex items-center px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors">
+                                    <i class="fas fa-link mr-2"></i> {% trans 'Управление приглашениями' %}
+                                </a>
                             </div>
-                            {% endif %}
-                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
             
             <!-- Секция: Приглашения -->
             <div id="section-invitations" class="content-section">
-                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+                <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden mb-6">
                     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-teal-500 to-teal-600 text-white">
-                        <div class="flex items-center">
-                            <i class="fas fa-envelope-open-text text-lg mr-2"></i>
-                            <h2 class="text-lg font-medium">{% trans 'Приглашения на олимпиаду' %}</h2>
-                        </div>
+                        <h2 class="text-xl font-semibold flex items-center">
+                            <i class="fas fa-envelope-open-text mr-3"></i> {% trans 'Приглашения' %}
+                        </h2>
                     </div>
                     <div class="p-6">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div class="md:col-span-1">
-                                <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg border border-gray-200 dark:border-gray-700">
-                                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
-                                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-                                            {% trans 'Пригласить пользователя' %}
-                                        </h3>
-                                    </div>
-                                    
-                                    <div class="px-4 py-5 sm:p-6">
-                                        <form method="post" action="{% url 'olympiads:olympiad_invitations' olympiad_id=olympiad.id %}" id="invitation-form">
-                                            {% csrf_token %}
-                                            
-                                            <div class="space-y-4">
-                                                <div>
-                                                    <label for="id_username" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Имя пользователя' %} *</label>
-                                                    <input type="text" name="username" id="id_username" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
-                                                </div>
-                                                
-                                                <div>
-                                                    <button type="button" onclick="alert('{% trans 'Эта функция будет реализована в рамках внедрения AJAX запросов' %}')" class="w-full px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:bg-teal-800 dark:hover:bg-teal-700">
-                                                        {% trans 'Пригласить' %}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                                
-                                <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg border border-gray-200 dark:border-gray-700 mt-6">
-                                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
-                                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-                                            {% trans 'Общая ссылка-приглашение' %}
-                                        </h3>
-                                    </div>
-                                    
-                                    <div class="px-4 py-5 sm:p-6">
-                                        <div class="space-y-4">
-                                            <p class="text-sm text-gray-600 dark:text-gray-400">{% trans 'Создайте ссылку, которую можно отправить неограниченному числу пользователей для приглашения на олимпиаду.' %}</p>
-                                            
-                                            {% if olympiad.invitation_code %}
-                                                <div class="flex items-center space-x-2">
-                                                    <input type="text" value="{{ request.scheme }}://{{ request.get_host }}{% url 'olympiads:olympiad_join_by_invitation' code=olympiad.invitation_code %}" id="invitation-link" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" readonly>
-                                                    <button type="button" onclick="copyInvitationLink()" class="inline-flex items-center p-2 border border-transparent rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
-                                                        <i class="fas fa-copy"></i>
-                                                    </button>
-                                                </div>
-                                                <div class="flex justify-end">
-                                                    <button type="button" onclick="alert('{% trans 'Функция сброса кода будет доступна в будущих обновлениях' %}')" class="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
-                                                        {% trans 'Сбросить код' %}
-                                                    </button>
-                                                </div>
-                                            {% else %}
-                                                <button type="button" onclick="alert('{% trans 'Функция создания кода будет доступна в будущих обновлениях' %}')" class="w-full px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:bg-teal-800 dark:hover:bg-teal-700">
-                                                    {% trans 'Создать ссылку-приглашение' %}
-                                                </button>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
+                        <div class="mb-8">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">{% trans 'Ссылка для приглашения' %}</h3>
+                            <p class="text-gray-600 dark:text-gray-300 mb-4">{% trans 'Скопируйте эту ссылку и отправьте ее потенциальным участникам для регистрации на олимпиаду.' %}</p>
+                            
+                            <div class="flex">
+                                <input type="text" value="{{ request.scheme }}://{{ request.get_host }}{% url 'olympiads:olympiad_join_by_invitation' code=olympiad.invitation_code %}" id="invitation-link" class="form-input block w-full rounded-l-lg border-r-0 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white" readonly>
+                                <button type="button" onclick="copyInvitationLink()" class="inline-flex items-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-r-lg focus:outline-none">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">{% trans 'QR-код для приглашения' %}</h3>
+                            <p class="text-gray-600 dark:text-gray-300 mb-4">{% trans 'Покажите этот QR-код участникам для быстрой регистрации на олимпиаду через мобильное устройство.' %}</p>
+                            
+                            <div class="flex justify-center py-4">
+                                <img src="{% url 'olympiads:olympiad_invitation_qr' olympiad_id=olympiad.id %}" class="border border-gray-200 dark:border-gray-700 rounded-lg h-48 w-48 bg-white p-3" alt="QR-код для приглашения">
                             </div>
                             
-                            <div class="md:col-span-2">
-                                <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg border border-gray-200 dark:border-gray-700">
-                                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
-                                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-                                            {% trans 'Список приглашений' %}
-                                        </h3>
-                                        <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
-                                            {% trans 'Всего приглашений' %}: {{ invitations|length|default:"0" }}
-                                        </p>
-                                    </div>
-                                    
-                                    <div class="overflow-x-auto">
-                                        {% if invitations and invitations|length > 0 %}
-                                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                            <thead class="bg-gray-50 dark:bg-gray-700">
-                                                <tr>
-                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                        {% trans 'Пользователь' %}
-                                                    </th>
-                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                        {% trans 'Дата приглашения' %}
-                                                    </th>
-                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                        {% trans 'Статус' %}
-                                                    </th>
-                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                        {% trans 'Кем приглашен' %}
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                                {% for invitation in invitations %}
-                                                <tr>
-                                                    <td class="px-6 py-4 whitespace-nowrap">
-                                                        <div class="flex items-center">
-                                                            <div class="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                                                                <span class="text-blue-800 dark:text-blue-300 font-semibold">{{ invitation.user.username|first|upper }}</span>
-                                                            </div>
-                                                            <div class="ml-4">
-                                                                <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                                                    {{ invitation.user.username }}
-                                                                </div>
-                                                                <div class="text-sm text-gray-500 dark:text-gray-400">
-                                                                    {{ invitation.user.email }}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                                        {{ invitation.created_at|date:"d.m.Y H:i" }}
-                                                    </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap">
-                                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if invitation.is_accepted %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300{% else %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300{% endif %}">
-                                                            {% if invitation.is_accepted %}
-                                                                {% trans 'Принято' %}
-                                                            {% else %}
-                                                                {% trans 'Ожидает' %}
-                                                            {% endif %}
-                                                        </span>
-                                                    </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                                        {{ invitation.invited_by.username }}
-                                                    </td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                        {% else %}
-                                        <div class="py-10 px-6 text-center">
-                                            <div class="text-gray-500 dark:text-gray-400 mb-4">
-                                                <i class="fas fa-envelope-open-text fa-4x"></i>
-                                            </div>
-                                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{% trans 'Пока нет приглашений' %}</h3>
-                                            <p class="text-gray-500 dark:text-gray-400 mb-4">{% trans 'Используйте форму слева, чтобы отправить приглашения пользователям' %}</p>
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
+                            <div class="flex justify-center mt-2">
+                                <a href="{% url 'olympiads:olympiad_invitation_qr' olympiad_id=olympiad.id %}" download="olympiad-invitation-qr.png" class="inline-flex items-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors">
+                                    <i class="fas fa-download mr-2"></i> {% trans 'Скачать QR-код' %}
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -917,152 +726,126 @@ document.head.appendChild(style);
             
             <!-- Секция: Статистика -->
             <div id="section-statistics" class="content-section">
-                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+                <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white">
-                        <div class="flex items-center">
-                            <i class="fas fa-chart-line text-lg mr-2"></i>
-                            <h2 class="text-lg font-medium">{% trans 'Статистика олимпиады' %}</h2>
-                        </div>
+                        <h2 class="text-xl font-semibold flex items-center">
+                            <i class="fas fa-chart-line mr-3"></i> {% trans 'Статистика олимпиады' %}
+                        </h2>
                     </div>
                     <div class="p-6">
-                        <!-- Карточки с основными показателями -->
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                            <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl shadow-lg p-4">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-white/70 text-sm font-medium">{% trans 'Участников' %}</p>
-                                        <p class="text-3xl font-bold">{{ participant_count|default:"0" }}</p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div class="bg-white dark:bg-gray-700 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-600">
+                                <div class="flex items-center">
+                                    <div class="flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-500 dark:text-indigo-300">
+                                        <i class="fas fa-users"></i>
                                     </div>
-                                    <div class="w-10 h-10 flex items-center justify-center bg-white/20 rounded-lg">
-                                        <i class="fas fa-users text-xl"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl shadow-lg p-4">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-white/70 text-sm font-medium">{% trans 'Завершили' %}</p>
-                                        <p class="text-3xl font-bold">{{ completed_count|default:"0" }}</p>
-                                    </div>
-                                    <div class="w-10 h-10 flex items-center justify-center bg-white/20 rounded-lg">
-                                        <i class="fas fa-check-circle text-xl"></i>
+                                    <div class="ml-4">
+                                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Участники' %}</h3>
+                                        <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ olympiad.participants.count }}</p>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl shadow-lg p-4">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-white/70 text-sm font-medium">{% trans 'Ср. балл' %}</p>
-                                        <p class="text-3xl font-bold">{{ avg_score|default:"0" }}</p>
+                            <div class="bg-white dark:bg-gray-700 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-600">
+                                <div class="flex items-center">
+                                    <div class="flex items-center justify-center h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-500 dark:text-emerald-300">
+                                        <i class="fas fa-tasks"></i>
                                     </div>
-                                    <div class="w-10 h-10 flex items-center justify-center bg-white/20 rounded-lg">
-                                        <i class="fas fa-chart-line text-xl"></i>
+                                    <div class="ml-4">
+                                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Задания' %}</h3>
+                                        <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ olympiad.tasks.count }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white dark:bg-gray-700 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-600">
+                                <div class="flex items-center">
+                                    <div class="flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-500 dark:text-blue-300">
+                                        <i class="fas fa-code"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Решения' %}</h3>
+                                        <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ solutions_count }}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Таблица с детальной информацией по участникам -->
-                        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden mb-6 border border-gray-200 dark:border-gray-700">
-                            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                                <h2 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Детальная статистика участников' %}</h2>
-                            </div>
-                            
-                            {% if participants %}
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                    <thead class="bg-gray-50 dark:bg-gray-700">
-                                        <tr>
-                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                {% trans 'Пользователь' %}
-                                            </th>
-                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                {% trans 'Прогресс' %}
-                                            </th>
-                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                {% trans 'Заданий решено' %}
-                                            </th>
-                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                {% trans 'Общий балл' %}
-                                            </th>
-                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                {% trans 'Время выполнения' %}
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                        {% for participant in participants %}
-                                        <tr>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <div class="flex items-center">
-                                                    <div class="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                                                        <span class="text-blue-800 dark:text-blue-300 font-semibold">{{ participant.user.username|first|upper }}</span>
-                                                    </div>
-                                                    <div class="ml-4">
-                                                        <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                                            {{ participant.user.username }}
+                        <div class="mb-8">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">{% trans 'Лидеры олимпиады' %}</h3>
+                            {% if leaders %}
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                        <thead class="bg-gray-50 dark:bg-gray-700">
+                                            <tr>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    {% trans 'Место' %}
+                                                </th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    {% trans 'Участник' %}
+                                                </th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    {% trans 'Баллы' %}
+                                                </th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    {% trans 'Решено задач' %}
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                            {% for leader in leaders %}
+                                                <tr>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="flex items-center justify-center w-8 h-8 rounded-full 
+                                                            {% if forloop.counter == 1 %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300
+                                                            {% elif forloop.counter == 2 %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300
+                                                            {% elif forloop.counter == 3 %}bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300
+                                                            {% else %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300
+                                                            {% endif %}">
+                                                            {{ forloop.counter }}
                                                         </div>
-                                                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                                                            {{ participant.user.email }}
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="flex items-center">
+                                                            <div class="flex-shrink-0 h-8 w-8">
+                                                                {% if leader.profile_image %}
+                                                                    <img class="h-8 w-8 rounded-full object-cover" src="{{ leader.profile_image.url }}" alt="{{ leader.username }}">
+                                                                {% else %}
+                                                                    <div class="h-8 w-8 rounded-full flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                                                                        <i class="fas fa-user text-sm"></i>
+                                                                    </div>
+                                                                {% endif %}
+                                                            </div>
+                                                            <div class="ml-3">
+                                                                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                                    {{ leader.get_full_name|default:leader.username }}
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                                    <div class="h-full {% if participant.is_finished %}bg-green-500{% else %}bg-blue-500{% endif %} rounded-full" style="width: {{ participant.progress_percent|default:'0' }}%;"></div>
-                                                </div>
-                                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
-                                                    {{ participant.progress_percent|default:'0' }}%
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                                {{ participant.tasks_completed|default:'0' }} / {{ olympiad.tasks.count }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                {{ participant.score|default:'0' }} / {{ olympiad.max_score|default:100 }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                                {% if participant.completion_time %}
-                                                    {{ participant.completion_time|time:"H:i:s" }}
-                                                {% else %}
-                                                    {% trans 'Не завершено' %}
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="text-sm font-semibold text-gray-900 dark:text-white">
+                                                            {{ leader.olympiad_score }}
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="text-sm text-gray-900 dark:text-white">
+                                                            {{ leader.olympiad_solutions.filter.count }} / {{ olympiad.tasks.count }}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
                             {% else %}
-                            <div class="py-10 px-6 text-center">
-                                <div class="text-gray-500 dark:text-gray-400 mb-4">
-                                    <i class="fas fa-chart-line fa-4x"></i>
+                                <div class="flex flex-col items-center justify-center py-8 text-center">
+                                    <div class="w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-full mb-3">
+                                        <i class="fas fa-chart-pie text-gray-400 dark:text-gray-500"></i>
+                                    </div>
+                                    <p class="text-gray-500 dark:text-gray-400">{% trans 'Нет данных для отображения статистики.' %}</p>
                                 </div>
-                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{% trans 'Нет данных для отображения' %}</h3>
-                                <p class="text-gray-500 dark:text-gray-400 mb-4">{% trans 'Статистика будет доступна, когда пользователи начнут участвовать в олимпиаде' %}</p>
-                                <button class="btn btn-primary" onclick="showSection('participants')">
-                                    <i class="fas fa-users mr-2"></i>
-                                    {% trans 'Управление участниками' %}
-                                </button>
-                            </div>
                             {% endif %}
-                        </div>
-                        
-                        <!-- Раздел для графиков -->
-                        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden mb-6 border border-gray-200 dark:border-gray-700">
-                            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                                <h2 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Графики и диаграммы' %}</h2>
-                            </div>
-                            <div class="p-6 text-center">
-                                <div class="text-gray-500 dark:text-gray-400 mb-4">
-                                    <i class="fas fa-chart-bar fa-4x"></i>
-                                </div>
-                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{% trans 'Графики в разработке' %}</h3>
-                                <p class="text-gray-500 dark:text-gray-400 mb-4">{% trans 'Визуализация данных будет доступна в следующих обновлениях' %}</p>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1070,126 +853,64 @@ document.head.appendChild(style);
             
             <!-- Секция: Отчеты -->
             <div id="section-reports" class="content-section">
-                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+                <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-violet-500 to-violet-600 text-white">
-                        <div class="flex items-center">
-                            <i class="fas fa-file-export text-lg mr-2"></i>
-                            <h2 class="text-lg font-medium">{% trans 'Отчеты' %}</h2>
-                        </div>
+                        <h2 class="text-xl font-semibold flex items-center">
+                            <i class="fas fa-file-export mr-3"></i> {% trans 'Отчеты олимпиады' %}
+                        </h2>
                     </div>
                     <div class="p-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Информация об отчетах -->
-                            <div class="md:col-span-2 bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden mb-6 border border-gray-200 dark:border-gray-700">
-                                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
-                                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">{% trans 'Информация об отчетах' %}</h3>
-                                </div>
-                                <div class="p-4">
-                                    <div class="mb-4 text-gray-700 dark:text-gray-300">
-                                        <p>{% trans 'Здесь вы можете сформировать различные отчеты по вашей олимпиаде:' %}</p>
-                                        <ul class="list-disc list-inside mt-2 space-y-1">
-                                            <li>{% trans 'Общие результаты участников' %}</li>
-                                            <li>{% trans 'Статистика по каждому заданию' %}</li>
-                                            <li>{% trans 'Сертификаты участников' %}</li>
-                                            <li>{% trans 'Подробная аналитика' %}</li>
-                                        </ul>
+                            <div class="bg-white dark:bg-gray-700 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-600">
+                                <div class="flex items-center mb-4">
+                                    <div class="flex items-center justify-center h-10 w-10 rounded-full bg-violet-100 dark:bg-violet-900 text-violet-500 dark:text-violet-300">
+                                        <i class="fas fa-list-ol"></i>
                                     </div>
-                                    <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 dark:border-blue-700 text-sm text-blue-700 dark:text-blue-300">
-                                        <p>{% trans 'Все отчеты доступны в форматах PDF и Excel.' %}</p>
-                                    </div>
+                                    <h3 class="ml-3 text-lg font-medium text-gray-900 dark:text-white">{% trans 'Рейтинг участников' %}</h3>
                                 </div>
-                            </div>
-                
-                            <!-- Карточка с полным отчетом -->
-                            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden report-card border border-gray-200 dark:border-gray-700">
-                                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-file-alt text-lg mr-2"></i>
-                                        <h2 class="text-lg font-medium">{% trans 'Полный отчет' %}</h2>
-                                    </div>
-                                </div>
-                                <div class="p-6">
-                                    <p class="text-gray-700 dark:text-gray-300 mb-4">{% trans 'Полный отчет о ходе проведения олимпиады, включая данные об участниках, задачах, общих результатах и статистике.' %}</p>
-                                    <div class="flex gap-3">
-                                        <button class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-800 report-btn">
-                                            <i class="fas fa-file-pdf mr-2"></i>
-                                            {% trans 'PDF' %}
-                                        </button>
-                                        <button class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 report-btn">
-                                            <i class="fas fa-file-excel mr-2"></i>
-                                            {% trans 'Excel' %}
-                                        </button>
-                                    </div>
-                                </div>
+                                <p class="text-gray-600 dark:text-gray-300 mb-4">{% trans 'Скачайте полный список участников олимпиады с их результатами, отсортированный по набранным баллам.' %}</p>
+                                <a href="{% url 'olympiads:olympiad_report_rankings' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors">
+                                    <i class="fas fa-download mr-2"></i> {% trans 'Скачать рейтинг (.xlsx)' %}
+                                </a>
                             </div>
                             
-                            <!-- Карточка с отчетом по участникам -->
-                            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden report-card border border-gray-200 dark:border-gray-700">
-                                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-users text-lg mr-2"></i>
-                                        <h2 class="text-lg font-medium">{% trans 'Отчет по участникам' %}</h2>
+                            <div class="bg-white dark:bg-gray-700 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-600">
+                                <div class="flex items-center mb-4">
+                                    <div class="flex items-center justify-center h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-500 dark:text-purple-300">
+                                        <i class="fas fa-chart-bar"></i>
                                     </div>
+                                    <h3 class="ml-3 text-lg font-medium text-gray-900 dark:text-white">{% trans 'Статистика заданий' %}</h3>
                                 </div>
-                                <div class="p-6">
-                                    <p class="text-gray-700 dark:text-gray-300 mb-4">{% trans 'Детальный отчет по каждому участнику олимпиады с индивидуальными результатами, ответами и статистикой.' %}</p>
-                                    <div class="flex gap-3">
-                                        <button class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 report-btn">
-                                            <i class="fas fa-file-pdf mr-2"></i>
-                                            {% trans 'PDF' %}
-                                        </button>
-                                        <button class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 report-btn">
-                                            <i class="fas fa-file-excel mr-2"></i>
-                                            {% trans 'Excel' %}
-                                        </button>
-                                    </div>
-                                </div>
+                                <p class="text-gray-600 dark:text-gray-300 mb-4">{% trans 'Скачайте детальную статистику по каждому заданию: процент решаемости, среднее количество баллов, распределение оценок.' %}</p>
+                                <a href="{% url 'olympiads:olympiad_report_tasks' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                                    <i class="fas fa-download mr-2"></i> {% trans 'Скачать статистику (.xlsx)' %}
+                                </a>
                             </div>
                             
-                            <!-- Карточка с отчетом по заданиям -->
-                            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden report-card border border-gray-200 dark:border-gray-700">
-                                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-tasks text-lg mr-2"></i>
-                                        <h2 class="text-lg font-medium">{% trans 'Отчет по заданиям' %}</h2>
+                            <div class="bg-white dark:bg-gray-700 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-600">
+                                <div class="flex items-center mb-4">
+                                    <div class="flex items-center justify-center h-10 w-10 rounded-full bg-pink-100 dark:bg-pink-900 text-pink-500 dark:text-pink-300">
+                                        <i class="fas fa-certificate"></i>
                                     </div>
+                                    <h3 class="ml-3 text-lg font-medium text-gray-900 dark:text-white">{% trans 'Сертификаты' %}</h3>
                                 </div>
-                                <div class="p-6">
-                                    <p class="text-gray-700 dark:text-gray-300 mb-4">{% trans 'Отчет по решаемости каждого задания, включая процент успешно выполненных решений, среднее время и типичные ошибки.' %}</p>
-                                    <div class="flex gap-3">
-                                        <button class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-800 report-btn">
-                                            <i class="fas fa-file-pdf mr-2"></i>
-                                            {% trans 'PDF' %}
-                                        </button>
-                                        <button class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 report-btn">
-                                            <i class="fas fa-file-excel mr-2"></i>
-                                            {% trans 'Excel' %}
-                                        </button>
-                                    </div>
-                                </div>
+                                <p class="text-gray-600 dark:text-gray-300 mb-4">{% trans 'Сгенерируйте и скачайте сертификаты участников олимпиады с их результатами для дальнейшего распространения.' %}</p>
+                                <a href="{% url 'olympiads:olympiad_certificates' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors">
+                                    <i class="fas fa-download mr-2"></i> {% trans 'Сгенерировать сертификаты (.zip)' %}
+                                </a>
                             </div>
                             
-                            <!-- Карточка с сертификатами -->
-                            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden report-card border border-gray-200 dark:border-gray-700">
-                                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-amber-500 to-amber-600 text-white">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-certificate text-lg mr-2"></i>
-                                        <h2 class="text-lg font-medium">{% trans 'Сертификаты' %}</h2>
+                            <div class="bg-white dark:bg-gray-700 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-600">
+                                <div class="flex items-center mb-4">
+                                    <div class="flex items-center justify-center h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-500 dark:text-blue-300">
+                                        <i class="fas fa-file-archive"></i>
                                     </div>
+                                    <h3 class="ml-3 text-lg font-medium text-gray-900 dark:text-white">{% trans 'Полный архив' %}</h3>
                                 </div>
-                                <div class="p-6">
-                                    <p class="text-gray-700 dark:text-gray-300 mb-4">{% trans 'Генерация сертификатов для участников олимпиады с возможностью загрузки единым архивом или индивидуально.' %}</p>
-                                    <div class="flex gap-3">
-                                        <button class="inline-flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 focus:ring-4 focus:ring-amber-300 dark:focus:ring-amber-800 report-btn">
-                                            <i class="fas fa-file-pdf mr-2"></i>
-                                            {% trans 'Все сертификаты (PDF)' %}
-                                        </button>
-                                        <button class="inline-flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 focus:ring-4 focus:ring-amber-300 dark:focus:ring-amber-800 report-btn">
-                                            <i class="fas fa-file-archive mr-2"></i>
-                                            {% trans 'Архив (ZIP)' %}
-                                        </button>
-                                    </div>
-                                </div>
+                                <p class="text-gray-600 dark:text-gray-300 mb-4">{% trans 'Скачайте полный архив олимпиады, включающий все решения участников, задания и результаты в едином архиве.' %}</p>
+                                <a href="{% url 'olympiads:olympiad_export_all' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-download mr-2"></i> {% trans 'Скачать архив (.zip)' %}
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -1198,119 +919,117 @@ document.head.appendChild(style);
             
             <!-- Секция: Статус -->
             <div id="section-status" class="content-section">
-                <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-500 to-green-600 text-white">
-                        <div class="flex items-center">
-                            <i class="fas fa-power-off text-lg mr-2"></i>
-                            <h2 class="text-lg font-medium">{% trans 'Управление статусом олимпиады' %}</h2>
-                        </div>
+                <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-red-500 to-red-600 text-white">
+                        <h2 class="text-xl font-semibold flex items-center">
+                            <i class="fas fa-power-off mr-3"></i> {% trans 'Управление статусом' %}
+                        </h2>
                     </div>
                     <div class="p-6">
-                        <div class="space-y-6">
-                            <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">{% trans 'Текущий статус' %}</h3>
-                                <div class="flex items-center">
-                                    <span class="px-3 py-1.5 inline-flex items-center justify-center rounded-full text-white font-medium 
-                                        {% if olympiad.status == 'draft' %}bg-yellow-500
-                                        {% elif olympiad.status == 'published' %}bg-blue-500
-                                        {% elif olympiad.status == 'active' %}bg-green-500
-                                        {% elif olympiad.status == 'completed' %}bg-purple-500
-                                        {% elif olympiad.status == 'archived' %}bg-gray-500
-                                        {% endif %}">
-                                        <i class="fas fa-circle mr-2 text-xs"></i>
-                                        {{ olympiad.get_status_display }}
-                                    </span>
+                        <div class="bg-white dark:bg-gray-700 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-600 mb-6">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">{% trans 'Текущий статус олимпиады' %}</h3>
+                            
+                            <div class="flex items-center my-6">
+                                <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                                    <div class="h-2.5 rounded-full
+                                        {% if olympiad.status == 'draft' %}bg-yellow-500 w-1/5
+                                        {% elif olympiad.status == 'published' %}bg-blue-500 w-2/5
+                                        {% elif olympiad.status == 'active' %}bg-green-500 w-3/5
+                                        {% elif olympiad.status == 'completed' %}bg-purple-500 w-4/5
+                                        {% elif olympiad.status == 'archived' %}bg-gray-500 w-full
+                                        {% endif %}"></div>
                                 </div>
-                                
-                                <p class="mt-3 text-gray-700 dark:text-gray-300">
-                                    {% if olympiad.status == 'draft' %}
-                                        {% trans 'Олимпиада находится в режиме черновика. Она недоступна для участников и видима только организаторам. Вы можете редактировать все параметры и задания.' %}
-                                    {% elif olympiad.status == 'published' %}
-                                        {% trans 'Олимпиада опубликована, но еще не активирована. Пользователи могут видеть информацию о ней и регистрироваться, но не могут участвовать.' %}
-                                    {% elif olympiad.status == 'active' %}
-                                        {% trans 'Олимпиада активна и доступна для участия. Зарегистрированные пользователи могут решать задания и получать баллы.' %}
-                                    {% elif olympiad.status == 'completed' %}
-                                        {% trans 'Олимпиада завершена. Участие больше невозможно, но результаты доступны для просмотра.' %}
-                                    {% elif olympiad.status == 'archived' %}
-                                        {% trans 'Олимпиада архивирована. Она сохранена в системе, но не отображается в общих списках.' %}
-                                    {% endif %}
-                                </p>
                             </div>
                             
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {% if olympiad.status == 'draft' %}
-                                    <button type="button" onclick="alert('{% trans 'Функция публикации олимпиады в разработке' %}')" class="w-full flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow transition-all action-btn">
-                                        <i class="fas fa-check-circle mr-2"></i> {% trans 'Опубликовать' %}
-                                    </button>
-                                    <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                                        <p class="text-sm text-gray-700 dark:text-gray-300">
-                                            {% trans 'Публикация сделает олимпиаду видимой для всех пользователей, но они не смогут участвовать, пока вы не активируете её.' %}
-                                        </p>
+                            <div class="grid grid-cols-5 text-center text-xs gap-1">
+                                <div class="{% if olympiad.status == 'draft' %}font-semibold text-yellow-600 dark:text-yellow-400{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+                                    <div class="w-5 h-5 mx-auto mb-1 rounded-full flex items-center justify-center 
+                                        {% if olympiad.status == 'draft' %}bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300 border-2 border-yellow-400
+                                        {% elif olympiad.status_index > 0 %}bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300
+                                        {% else %}bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}">
+                                        <i class="fas fa-pencil-alt text-xs"></i>
                                     </div>
-                                {% elif olympiad.status == 'published' %}
-                                    <button type="button" onclick="alert('{% trans 'Функция активации олимпиады в разработке' %}')" class="w-full flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition-all action-btn">
-                                        <i class="fas fa-play-circle mr-2"></i> {% trans 'Активировать' %}
-                                    </button>
-                                    <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                                        <p class="text-sm text-gray-700 dark:text-gray-300">
-                                            {% trans 'Активация позволит участникам начать решать задания и получать баллы. Убедитесь, что все настройки и задания готовы.' %}
-                                        </p>
+                                    {% trans 'Черновик' %}
+                                </div>
+                                <div class="{% if olympiad.status == 'published' %}font-semibold text-blue-600 dark:text-blue-400{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+                                    <div class="w-5 h-5 mx-auto mb-1 rounded-full flex items-center justify-center 
+                                        {% if olympiad.status == 'published' %}bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300 border-2 border-blue-400
+                                        {% elif olympiad.status_index > 1 %}bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300
+                                        {% else %}bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}">
+                                        <i class="fas fa-paper-plane text-xs"></i>
                                     </div>
-                                {% elif olympiad.status == 'active' %}
-                                    <button type="button" onclick="alert('{% trans 'Функция деактивации олимпиады в разработке' %}')" class="w-full flex items-center justify-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg shadow transition-all action-btn">
-                                        <i class="fas fa-pause-circle mr-2"></i> {% trans 'Деактивировать' %}
-                                    </button>
-                                    <button type="button" onclick="alert('{% trans 'Функция завершения олимпиады в разработке' %}')" class="w-full flex items-center justify-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow transition-all action-btn">
-                                        <i class="fas fa-flag-checkered mr-2"></i> {% trans 'Завершить' %}
-                                    </button>
-                                    <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 md:col-span-2">
-                                        <p class="text-sm text-gray-700 dark:text-gray-300">
-                                            {% trans 'Деактивация временно приостановит возможность участия в олимпиаде. Завершение закроет олимпиаду навсегда - это действие нельзя отменить.' %}
-                                        </p>
+                                    {% trans 'Опубликована' %}
+                                </div>
+                                <div class="{% if olympiad.status == 'active' %}font-semibold text-green-600 dark:text-green-400{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+                                    <div class="w-5 h-5 mx-auto mb-1 rounded-full flex items-center justify-center 
+                                        {% if olympiad.status == 'active' %}bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300 border-2 border-green-400
+                                        {% elif olympiad.status_index > 2 %}bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300
+                                        {% else %}bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}">
+                                        <i class="fas fa-play text-xs"></i>
                                     </div>
-                                {% elif olympiad.status == 'completed' %}
-                                    <button type="button" onclick="alert('{% trans 'Функция архивации олимпиады в разработке' %}')" class="w-full flex items-center justify-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg shadow transition-all action-btn">
-                                        <i class="fas fa-archive mr-2"></i> {% trans 'Архивировать' %}
-                                    </button>
-                                    <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                                        <p class="text-sm text-gray-700 dark:text-gray-300">
-                                            {% trans 'Архивирование скроет олимпиаду из общих списков, но она останется доступна через прямую ссылку для просмотра результатов.' %}
-                                        </p>
+                                    {% trans 'Активна' %}
+                                </div>
+                                <div class="{% if olympiad.status == 'completed' %}font-semibold text-purple-600 dark:text-purple-400{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+                                    <div class="w-5 h-5 mx-auto mb-1 rounded-full flex items-center justify-center 
+                                        {% if olympiad.status == 'completed' %}bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300 border-2 border-purple-400
+                                        {% elif olympiad.status_index > 3 %}bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300
+                                        {% else %}bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}">
+                                        <i class="fas fa-check text-xs"></i>
                                     </div>
-                                {% elif olympiad.status == 'archived' %}
-                                    <button type="button" onclick="alert('{% trans 'Функция восстановления олимпиады в разработке' %}')" class="w-full flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow transition-all action-btn">
-                                        <i class="fas fa-undo mr-2"></i> {% trans 'Восстановить' %}
-                                    </button>
-                                    <div class="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                                        <p class="text-sm text-gray-700 dark:text-gray-300">
-                                            {% trans 'Восстановление вернет олимпиаду из архива в статус "Завершена" и сделает её снова видимой в списках завершенных олимпиад.' %}
-                                        </p>
+                                    {% trans 'Завершена' %}
+                                </div>
+                                <div class="{% if olympiad.status == 'archived' %}font-semibold text-gray-600 dark:text-gray-400{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+                                    <div class="w-5 h-5 mx-auto mb-1 rounded-full flex items-center justify-center 
+                                        {% if olympiad.status == 'archived' %}bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-300 border-2 border-gray-400
+                                        {% else %}bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}">
+                                        <i class="fas fa-archive text-xs"></i>
                                     </div>
-                                {% endif %}
+                                    {% trans 'Архивирована' %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">{% trans 'Изменить статус' %}</h3>
+                                <form method="post" action="{% url 'olympiads:olympiad_change_status' olympiad_id=olympiad.id %}">
+                                    {% csrf_token %}
+                                    <select name="status" class="form-input block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-blue-500 focus:border-blue-500 mb-4">
+                                        <option value="draft" {% if olympiad.status == 'draft' %}selected{% endif %}>{% trans 'Черновик' %}</option>
+                                        <option value="published" {% if olympiad.status == 'published' %}selected{% endif %}>{% trans 'Опубликована' %}</option>
+                                        <option value="active" {% if olympiad.status == 'active' %}selected{% endif %}>{% trans 'Активна' %}</option>
+                                        <option value="completed" {% if olympiad.status == 'completed' %}selected{% endif %}>{% trans 'Завершена' %}</option>
+                                        <option value="archived" {% if olympiad.status == 'archived' %}selected{% endif %}>{% trans 'Архивирована' %}</option>
+                                    </select>
+                                    <button type="submit" class="btn-action inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                        <i class="fas fa-sync-alt mr-2"></i> {% trans 'Обновить статус' %}
+                                    </button>
+                                </form>
                             </div>
                             
-                            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">{% trans 'Расписание олимпиады' %}</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">{% trans 'Дата начала:' %}</p>
-                                        <p class="font-medium text-gray-800 dark:text-gray-200">
-                                            {{ olympiad.start_datetime|date:"d.m.Y H:i" }}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">{% trans 'Дата окончания:' %}</p>
-                                        <p class="font-medium text-gray-800 dark:text-gray-200">
-                                            {{ olympiad.end_datetime|date:"d.m.Y H:i" }}
-                                        </p>
-                                    </div>
-                                    <div class="md:col-span-2">
-                                        <a href="{% url 'olympiads:olympiad_edit' olympiad_id=olympiad.id %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 action-btn">
-                                            <i class="fas fa-calendar-alt mr-2"></i>
-                                            {% trans 'Изменить расписание' %}
-                                        </a>
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">{% trans 'Удаление олимпиады' %}</h3>
+                                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+                                    <div class="flex items-start">
+                                        <div class="flex-shrink-0">
+                                            <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400"></i>
+                                        </div>
+                                        <div class="ml-3">
+                                            <h3 class="text-sm font-medium text-red-800 dark:text-red-300">
+                                                {% trans 'Внимание! Это действие необратимо' %}
+                                            </h3>
+                                            <div class="mt-2 text-sm text-red-700 dark:text-red-200">
+                                                <p>{% trans 'Удаление олимпиады приведет к полному удалению всех связанных данных, включая задания, решения участников и результаты.' %}</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
+                                <form method="post" action="{% url 'olympiads:olympiad_delete' olympiad_id=olympiad.id %}" onsubmit="return confirm('{% trans 'Вы уверены, что хотите удалить эту олимпиаду? Это действие нельзя отменить.' %}');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-action inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                                        <i class="fas fa-trash-alt mr-2"></i> {% trans 'Удалить олимпиаду' %}
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -1319,4 +1038,136 @@ document.head.appendChild(style);
         </div>
     </div>
 </div>
+
+<!-- Скрипт для работы навигации -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Выбираем все навигационные ссылки в сайдбаре
+    const navLinks = document.querySelectorAll('.sidebar-nav-item');
+    
+    // Выбираем все разделы контента
+    const contentSections = document.querySelectorAll('.content-section');
+    
+    // Скрываем все секции при загрузке страницы
+    contentSections.forEach(section => {
+        section.style.display = 'none';
+    });
+    
+    // Показываем раздел "Обзор" по умолчанию
+    const defaultSection = document.getElementById('section-overview');
+    if (defaultSection) {
+        defaultSection.style.display = 'block';
+        defaultSection.classList.add('active');
+    }
+    
+    // Активируем ссылку "Обзор" по умолчанию
+    const defaultLink = document.querySelector('.sidebar-nav-item[data-section="overview"]');
+    if (defaultLink) {
+        defaultLink.classList.add('active');
+    }
+    
+    // Назначаем обработчики событий для навигационных ссылок
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Получаем идентификатор раздела из атрибута data-section
+            const sectionId = this.getAttribute('data-section');
+            
+            // Вызываем функцию переключения секций
+            showSection(sectionId);
+            
+            // Обновляем URL с якорем для сохранения состояния навигации
+            const baseUrl = window.location.href.split('#')[0];
+            window.history.pushState({section: sectionId}, '', baseUrl + '#' + sectionId);
+        });
+    });
+    
+    // Проверяем якорь в URL при загрузке страницы
+    if (window.location.hash) {
+        const section = window.location.hash.substring(1);
+        showSection(section);
+    }
+    
+    // Обработчик для кнопки "Назад" в браузере
+    window.addEventListener('popstate', function(e) {
+        if (e.state && e.state.section) {
+            showSection(e.state.section);
+        } else {
+            showSection('overview');
+        }
+    });
+    
+    // Функция для переключения секций
+    function showSection(sectionId) {
+        console.log('Переключение на секцию:', sectionId);
+        
+        // Удаляем класс active у всех навигационных ссылок
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+        });
+        
+        // Скрываем все секции
+        contentSections.forEach(section => {
+            section.classList.remove('active');
+            section.style.display = 'none';
+        });
+        
+        // Активируем выбранную навигационную ссылку
+        const activeLink = document.querySelector(`.sidebar-nav-item[data-section="${sectionId}"]`);
+        if (activeLink) {
+            activeLink.classList.add('active');
+        } else {
+            console.warn('Навигационная ссылка не найдена:', sectionId);
+        }
+        
+        // Показываем выбранную секцию
+        const activeSection = document.getElementById('section-' + sectionId);
+        if (activeSection) {
+            activeSection.classList.add('active');
+            activeSection.style.display = 'block';
+            
+            // Обновляем хлебные крошки
+            updateBreadcrumbs(sectionId);
+        } else {
+            console.warn('Секция не найдена:', sectionId);
+        }
+        
+        // Плавная прокрутка к началу контента
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+    
+    // Функция для обновления хлебных крошек
+    function updateBreadcrumbs(sectionId) {
+        const sectionName = document.querySelector(`.sidebar-nav-item[data-section="${sectionId}"]`)?.textContent.trim() || 'Управление';
+        const breadcrumbCurrent = document.getElementById('breadcrumb-current');
+        if (breadcrumbCurrent) {
+            breadcrumbCurrent.textContent = sectionName;
+        }
+    }
+});
+
+// Функция для копирования ссылки-приглашения в буфер обмена
+function copyInvitationLink() {
+    const invitationLink = document.getElementById('invitation-link');
+    if (invitationLink) {
+        invitationLink.select();
+        document.execCommand('copy');
+        
+        // Создаем и показываем всплывающее уведомление
+        const toast = document.createElement('div');
+        toast.className = 'notification-toast bg-green-500 text-white';
+        toast.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Ссылка скопирована в буфер обмена';
+        document.body.appendChild(toast);
+        
+        // Удаляем уведомление через 3 секунды
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+}
+</script>
 {% endblock %}
