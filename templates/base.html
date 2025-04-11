@@ -706,15 +706,47 @@
     <!-- Подключаем компонент уведомлений -->
     {% include 'components/toast.html' %}
     
-    <!-- Преобразованные сообщения Django в скрытые элементы для JS -->
+    <!-- Преобразованные сообщения Django для показа через toast -->
     {% if messages %}
-    <div style="display: none;">
+    <div id="django-messages-container">
         {% for message in messages %}
         <div class="django-message" data-type="{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}">
             {{ message }}
         </div>
         {% endfor %}
     </div>
+    
+    <!-- Скрипт для мгновенного показа сообщений при загрузке страницы -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Принудительно триггерим обработку сообщений, если компонент toast уже загружен
+            if (window.showToast) {
+                processDjangoMessages();
+            } else {
+                // Если showToast еще не загружен, добавляем слушатель события
+                document.addEventListener('toastReady', processDjangoMessages);
+            }
+            
+            function processDjangoMessages() {
+                const messages = document.querySelectorAll('#django-messages-container .django-message');
+                messages.forEach(message => {
+                    const text = message.textContent.trim();
+                    const type = message.dataset.type || 'info';
+                    
+                    // Добавляем небольшую задержку для лучшего отображения
+                    setTimeout(() => {
+                        window.showToast(text, type, 5000);
+                    }, 300);
+                });
+                
+                // Удаляем контейнер сообщений после обработки
+                const container = document.getElementById('django-messages-container');
+                if (container) {
+                    container.remove();
+                }
+            }
+        });
+    </script>
     {% endif %}
     
     <!-- Основное содержимое -->
@@ -723,74 +755,76 @@
     </main>
     
     <!-- Современный подвал с градиентом и анимациями -->
-    <footer class="bg-gradient-to-b from-gray-800 to-gray-900 text-white py-8 mt-auto relative overflow-hidden shadow-lg">
-        <!-- Декоративный элемент с анимацией -->
+    <footer class="bg-gradient-to-b from-gray-800 to-gray-900 text-white py-10 mt-auto relative overflow-hidden shadow-xl">
+        <!-- Верхняя цветная линия -->
         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-80"></div>
-        
-        <div class="container mx-auto px-4">
-            <!-- Верхний блок с логотипом и соцсетями -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
-                <!-- Блок с логотипом -->
-                <div class="flex flex-col items-center md:items-start">
+
+        <div class="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
+            <!-- Сетка с контентом -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
+                <!-- Логотип и описание -->
+                <div class="flex flex-col items-center md:items-start text-center md:text-left space-y-2">
                     <h2 class="text-2xl font-bold flex items-center">
                         <span class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mr-2 shadow-md">
                             <i class="fas fa-graduation-cap text-white"></i>
                         </span>
                         ПроОбучение
                     </h2>
-                    <p class="text-gray-400 mt-2 text-center md:text-left">Учитесь с удовольствием и достигайте новых высот в программировании</p>
+                    <p class="text-gray-400">Учитесь с удовольствием</p>
                 </div>
-                
-                <!-- Блок с ссылками -->
-                <div class="hidden md:flex flex-col space-y-2 items-center">
-                    <h3 class="font-bold text-lg mb-2">Полезные ссылки</h3>
-                    <a href="{% url 'home' %}" class="text-gray-400 hover:text-white transition-colors hover:translate-x-1 transform inline-flex items-center">
-                        <i class="fas fa-chevron-right text-xs mr-1"></i> Главная
+
+                <!-- Полезные ссылки -->
+                <div class="flex flex-col items-center md:items-start text-center md:text-left space-y-3">
+                    <h3 class="font-bold text-lg">Полезные ссылки</h3>
+                    <a href="{% url 'home' %}" class="flex items-center text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1">
+                        <i class="fas fa-chevron-right text-sm mr-2"></i> Главная
                     </a>
-                    <a href="{% url 'course_list' %}" class="text-gray-400 hover:text-white transition-colors hover:translate-x-1 transform inline-flex items-center">
-                        <i class="fas fa-chevron-right text-xs mr-1"></i> Все курсы
+                    <a href="{% url 'course_list' %}" class="flex items-center text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1">
+                        <i class="fas fa-chevron-right text-sm mr-2"></i> Все курсы
                     </a>
-                    <a href="{% url 'olympiads:olympiad_list' %}" class="text-gray-400 hover:text-white transition-colors hover:translate-x-1 transform inline-flex items-center">
-                        <i class="fas fa-chevron-right text-xs mr-1"></i> Олимпиады
+                    <a href="{% url 'olympiads:olympiad_list' %}" class="flex items-center text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1">
+                        <i class="fas fa-chevron-right text-sm mr-2"></i> Олимпиады
                     </a>
-                    <a href="#" class="text-gray-400 hover:text-white transition-colors hover:translate-x-1 transform inline-flex items-center">
-                        <i class="fas fa-chevron-right text-xs mr-1"></i> О платформе
+                    <a href="#" class="flex items-center text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1">
+                        <i class="fas fa-chevron-right text-sm mr-2"></i> О платформе
                     </a>
                 </div>
-                
-                <!-- Блок с соцсетями -->
-                <div class="flex flex-col items-center md:items-end">
-                    <h3 class="font-bold text-lg mb-4">Мы в соцсетях</h3>
-                    <div class="flex space-x-4">
-                        <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-blue-600 hover:scale-110 transform transition-all duration-300">
-                            <i class="fab fa-github"></i>
+
+                <!-- Соцсети -->
+                <div class="flex flex-col items-center text-center md:items-end md:text-right space-y-4">
+                    <h3 class="font-bold text-lg">Мы в соцсетях</h3>
+                    <div class="flex space-x-4 justify-center md:justify-end">
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-gray-900 hover:scale-110 transform transition duration-300">
+                            <i class="fab fa-github text-lg text-white"></i>
                         </a>
-                        <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-blue-400 hover:scale-110 transform transition-all duration-300">
-                            <i class="fab fa-twitter"></i>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-blue-400 hover:scale-110 transform transition duration-300">
+                            <i class="fab fa-twitter text-lg text-white"></i>
                         </a>
-                        <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-blue-500 hover:scale-110 transform transition-all duration-300">
-                            <i class="fab fa-telegram"></i>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-blue-500 hover:scale-110 transform transition duration-300">
+                            <i class="fab fa-telegram text-lg text-white"></i>
                         </a>
-                        <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-red-500 hover:scale-110 transform transition-all duration-300">
-                            <i class="fab fa-youtube"></i>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-red-500 hover:scale-110 transform transition duration-300">
+                            <i class="fab fa-youtube text-lg text-white"></i>
                         </a>
                     </div>
                 </div>
             </div>
-            
+
             <!-- Разделитель -->
-            <div class="h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent my-4"></div>
-            
-            <!-- Нижний блок с копирайтом -->
-            <div class="flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm">
-                <div>&copy; 2024-{% now "Y" %} CodeMastersPRO. Все права защищены.</div>
-                <div class="mt-2 md:mt-0 flex space-x-4">
+            <div class="h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent my-6"></div>
+
+            <!-- Нижняя строка -->
+            <div class="flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm space-y-4 md:space-y-0 text-center md:text-left">
+                <div>&copy; 2024–{% now "Y" %} CodeMastersPRO. Все права защищены.</div>
+                <div class="flex space-x-4">
                     <a href="#" class="hover:text-gray-300 transition-colors">Политика конфиденциальности</a>
                     <a href="#" class="hover:text-gray-300 transition-colors">Условия использования</a>
                 </div>
             </div>
         </div>
     </footer>
+
+
     
     <!-- Скрипты -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
