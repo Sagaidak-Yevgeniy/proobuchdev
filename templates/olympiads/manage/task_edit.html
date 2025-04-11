@@ -65,6 +65,9 @@
 <div class="container mx-auto px-4 py-8">
     <!-- Хлебные крошки -->
     {% include "components/olympiad_breadcrumbs.html" with olympiad=olympiad current="tasks_manage" task_action="Редактирование задания" %}
+    
+    <!-- Компактная навигация для управления олимпиадой -->
+    {% include "components/olympiad_management_nav.html" with olympiad=olympiad %}
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Боковая навигация -->
