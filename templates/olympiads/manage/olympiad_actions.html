@@ -185,7 +185,7 @@
                 <div class="flex items-center">
                     <i class="fas fa-chevron-right mx-2 text-gray-400"></i>
                     <a href="{% url 'olympiads:olympiad_manage_list' %}" class="hover:text-gray-700 dark:hover:text-gray-300">
-                        {% trans 'Управление олимпиадами' %}
+                        {% trans 'Управление' %}
                     </a>
                 </div>
             </li>
@@ -201,7 +201,7 @@
                 <div class="flex items-center">
                     <i class="fas fa-chevron-right mx-2 text-gray-400"></i>
                     <span class="text-gray-800 dark:text-gray-200" id="breadcrumb-current">
-                        {% trans 'Управление' %}
+                        {% trans 'Управление' %} {{ olympiad.title|truncatechars:20 }}
                     </span>
                 </div>
             </li>
