@@ -971,8 +971,16 @@ def olympiad_task_create(request, olympiad_id):
     if request.method == 'POST':
         # Основные поля
         title = request.POST.get('title')
-        description = request.POST.get('description')
+        if not title:
+            messages.error(request, _('Название задания не может быть пустым'))
+            return redirect('olympiads:olympiad_task_create', olympiad_id=olympiad.id)
+            
+        description = request.POST.get('description', '')
         task_type = request.POST.get('task_type')
+        if not task_type:
+            messages.error(request, _('Тип задания не может быть пустым'))
+            return redirect('olympiads:olympiad_task_create', olympiad_id=olympiad.id)
+            
         points = int(request.POST.get('points', 1))
         
         # Дополнительные поля
@@ -1057,8 +1065,13 @@ def olympiad_task_edit(request, olympiad_id, task_id):
     
     if request.method == 'POST':
         # Основные поля
-        task.title = request.POST.get('title')
-        task.description = request.POST.get('description')
+        title = request.POST.get('title')
+        if not title:
+            messages.error(request, _('Название задания не может быть пустым'))
+            return redirect('olympiads:olympiad_task_edit', olympiad_id=olympiad.id, task_id=task.id)
+            
+        task.title = title
+        task.description = request.POST.get('description', '')
         task.points = int(request.POST.get('points', 1))
         task.order = int(request.POST.get('order', task.order))
         
