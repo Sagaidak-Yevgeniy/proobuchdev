@@ -121,6 +121,41 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// Функция для копирования ссылки-приглашения в буфер обмена
+function copyInvitationLink() {
+    const invitationLink = document.getElementById('invitation-link');
+    if (invitationLink) {
+        invitationLink.select();
+        document.execCommand('copy');
+        
+        // Создаем временное уведомление
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in-out';
+        notification.innerHTML = '<i class="fas fa-check mr-2"></i> Ссылка скопирована в буфер обмена';
+        document.body.appendChild(notification);
+        
+        // Удаляем уведомление через 2 секунды
+        setTimeout(() => {
+            notification.remove();
+        }, 2000);
+    }
+}
+
+// Добавляем CSS-анимацию для уведомления
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeInOut {
+        0% { opacity: 0; transform: translateY(20px); }
+        10% { opacity: 1; transform: translateY(0); }
+        90% { opacity: 1; transform: translateY(0); }
+        100% { opacity: 0; transform: translateY(-20px); }
+    }
+    .animate-fade-in-out {
+        animation: fadeInOut 2s ease-in-out forwards;
+    }
+`;
+document.head.appendChild(style);
 </script>
 {% endblock %}
 
