@@ -38,6 +38,7 @@ urlpatterns = [
     path('manage/<int:olympiad_id>/deactivate/', views.olympiad_deactivate, name='olympiad_deactivate'),
     path('manage/<int:olympiad_id>/complete/', views.olympiad_complete, name='olympiad_complete'),
     path('manage/<int:olympiad_id>/archive/', views.olympiad_archive, name='olympiad_archive'),
+    path('manage/<int:olympiad_id>/tasks/', views.olympiad_tasks_manage, name='olympiad_tasks_manage'),
     path('manage/<int:olympiad_id>/tasks/create/', views.olympiad_task_create, name='olympiad_task_create'),
     path('manage/<int:olympiad_id>/tasks/<int:task_id>/edit/', views.olympiad_task_edit, name='olympiad_task_edit'),
     path('manage/<int:olympiad_id>/tasks/<int:task_id>/delete/', views.olympiad_task_delete, name='olympiad_task_delete'),

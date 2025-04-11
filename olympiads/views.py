@@ -937,6 +937,27 @@ def olympiad_publish(request, olympiad_id):
     olympiad.save()
     return redirect('olympiads:olympiad_edit', olympiad_id=olympiad.id)
 
+# Управление заданиями олимпиады для организаторов
+@login_required
+def olympiad_tasks_manage(request, olympiad_id):
+    olympiad = get_object_or_404(Olympiad, id=olympiad_id)
+    
+    # Проверяем права доступа
+    if not (request.user == olympiad.created_by or request.user.profile.is_admin):
+        messages.error(request, _('У вас нет прав для управления заданиями этой олимпиады'))
+        return redirect('olympiads:olympiad_list')
+    
+    # Получаем все задания олимпиады
+    tasks = olympiad.tasks.all().order_by('order')
+    
+    context = {
+        'title': _('Управление заданиями олимпиады'),
+        'olympiad': olympiad,
+        'tasks': tasks,
+    }
+    
+    return render(request, 'olympiads/manage/tasks_manage.html', context)
+
 # Создание нового задания для олимпиады
 @login_required
 def olympiad_task_create(request, olympiad_id):
