@@ -3,7 +3,6 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('Инициализация компонента toast...');
         const toastContainer = document.getElementById('toast-container');
         
         if (!toastContainer) {
@@ -13,7 +12,7 @@
         
         // Функция для создания уведомления (тоста)
         window.showToast = function(message, type = 'info', duration = 5000) {
-            console.log(`Создание уведомления типа: ${type}, сообщение: ${message}`);
+            // Создание уведомления
             
             // Создаем пользовательское событие для уведомления других скриптов, что тосты готовы
             document.dispatchEvent(new CustomEvent('toastReady'));
@@ -125,7 +124,7 @@
         
         // Функция для удаления уведомления
         function removeToast(toast) {
-            console.log('Удаление уведомления...');
+            // Удаление уведомления
             toast.classList.add('opacity-0', 'translate-x-4');
             
             setTimeout(() => {
@@ -138,7 +137,7 @@
         // Функция для воспроизведения звука
         function playSound(type) {
             try {
-                console.log(`Воспроизведение звука: ${type}`);
+                // Воспроизводим звук
                 const sound = new Audio(`/static/sounds/${type}.mp3`);
                 sound.volume = 0.5; // Устанавливаем громкость
                 sound.play().catch(err => {
@@ -154,12 +153,12 @@
         
         // Уведомляем, что компонент toast готов к использованию
         document.dispatchEvent(new CustomEvent('toastReady'));
-        console.log('Компонент toast готов к использованию');
+        // Компонент toast готов к использованию
         
         // Проверка, есть ли сообщения от Django для показа
         setTimeout(() => {
             if (document.getElementById('django-messages-container')) {
-                console.log('Найдены сообщения Django, обрабатываем...');
+                // Обрабатываем сообщения Django
                 const event = new Event('DOMContentLoaded');
                 document.dispatchEvent(event);
             }
