@@ -665,7 +665,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         </p>
                                     </div>
                                     <div class="md:col-span-2">
-                                        <a href="#" data-section="edit" class="olympiad-nav-link inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 action-btn">
+                                        <a href="{% url 'olympiads:olympiad_edit' olympiad_id=olympiad.id %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 action-btn">
                                             <i class="fas fa-calendar-alt mr-2"></i>
                                             {% trans 'Изменить расписание' %}
                                         </a>
@@ -677,12 +677,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
         </div>
-                        <a href="{% url 'olympiads:olympiad_edit' olympiad_id=olympiad.id %}" class="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 action-btn">
-                            <i class="fas fa-cog mr-2"></i>
-                            {% trans 'Изменить настройки' %}
-                        </a>
-                    </div>
-                </div>
                 
                 <!-- Карточка управления заданиями -->
                 <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden action-card relative">
@@ -767,14 +761,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="p-6">
                         <p class="text-gray-700 dark:text-gray-300 mb-4">{% trans 'Просмотр подробной статистики по олимпиаде, экспорт отчетов о результатах и активности участников.' %}</p>
                         <div class="flex flex-wrap gap-3">
-                            <a href="{% url 'olympiads:olympiad_statistics' olympiad_id=olympiad.id %}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-800 action-btn">
+                            <button type="button" onclick="alert('{% trans 'Функция статистики олимпиады в разработке' %}')" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-800 action-btn">
                                 <i class="fas fa-chart-line mr-2"></i>
                                 {% trans 'Статистика' %}
-                            </a>
-                            <a href="{% url 'olympiads:olympiad_reports' olympiad_id=olympiad.id %}" class="inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 focus:ring-4 focus:ring-violet-300 dark:focus:ring-violet-800 action-btn">
+                            </button>
+                            <button type="button" onclick="alert('{% trans 'Функция отчетов олимпиады в разработке' %}')" class="inline-flex items-center px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 focus:ring-4 focus:ring-violet-300 dark:focus:ring-violet-800 action-btn">
                                 <i class="fas fa-file-export mr-2"></i>
                                 {% trans 'Отчеты' %}
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </div>
