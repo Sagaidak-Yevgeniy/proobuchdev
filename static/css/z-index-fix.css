@@ -8,7 +8,9 @@
 #mobileUserDropdown,
 #notificationDropdown {
     z-index: 9999 !important;
-    position: relative !important;
+    position: absolute !important;
+    right: 0 !important;
+    top: 100% !important;
 }
 
 /* Фиксы для анимации выпадающих меню */

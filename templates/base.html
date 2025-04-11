@@ -383,7 +383,7 @@
                             </div>
                             <i class="fas fa-chevron-down text-xs ml-1 opacity-75"></i>
                         </button>
-                        <div id="desktopUserDropdown" class="dropdown-menu hidden bg-blue-800/95 text-white shadow-xl rounded-xl mt-2 py-3 w-56 max-w-[calc(100vw-2rem)] z-[2000] border border-blue-700/30 backdrop-blur-md" style="transform-origin: top right; animation: dropdown-scale 0.2s ease-out;">
+                        <div id="desktopUserDropdown" class="dropdown-menu hidden bg-blue-800/95 text-white shadow-xl rounded-xl py-3 w-56 max-w-[calc(100vw-2rem)] z-[2000] border border-blue-700/30 backdrop-blur-md" style="transform-origin: top right; animation: dropdown-scale 0.2s ease-out; position: fixed;">
                             <div class="px-4 py-2 border-b border-blue-700/30">
                                 <div class="font-medium text-white">{{ user.get_full_name|default:user.username }}</div>
                                 <div class="text-xs bg-blue-700/60 text-white rounded-full px-2 py-0.5 inline-block mt-1">{{ user.profile.get_role_display }}</div>
@@ -691,12 +691,25 @@
         
         // Проверяет и исправляет позицию выпадающего меню
         function checkDropdownPosition(dropdown) {
+            // Устанавливаем начальное позиционирование
+            if (dropdown.id === 'desktopUserDropdown') {
+                const userButton = document.getElementById('desktopUserMenuButton');
+                if (userButton) {
+                    const buttonRect = userButton.getBoundingClientRect();
+                    // Позиционируем выпадающее меню относительно кнопки
+                    dropdown.style.position = 'fixed';
+                    dropdown.style.top = (buttonRect.bottom + 5) + 'px';
+                    dropdown.style.right = (window.innerWidth - buttonRect.right) + 'px';
+                    dropdown.style.left = 'auto';
+                }
+            }
+            
             const rect = dropdown.getBoundingClientRect();
             const viewportWidth = window.innerWidth;
             
             // Если меню выходит за правую границу экрана, корректируем позицию
             if (rect.right > viewportWidth) {
-                dropdown.style.right = '0px';
+                dropdown.style.right = '10px';
                 dropdown.style.left = 'auto';
             }
             
