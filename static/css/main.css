@@ -231,6 +231,12 @@
     z-index: 1;
 }
 
+/* Стили для основного содержимого */
+main {
+    position: relative;
+    z-index: 10; /* Низкий z-index для основного содержимого */
+}
+
 /* Стили для основных навигационных меню */
 #navigation-menu, #desktopUserDropdown, #notification-dropdown-desktop, #notification-dropdown-mobile {
     z-index: 10050 !important; /* Еще более высокий z-index для навигации */
