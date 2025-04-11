@@ -517,7 +517,7 @@
                             <h2 class="text-xl font-semibold flex items-center">
                                 <i class="fas fa-tasks mr-3"></i> {% trans 'Управление заданиями' %}
                             </h2>
-                            <a href="{% url 'olympiads:task_create' olympiad_id=olympiad.id %}" class="inline-flex items-center px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-all">
+                            <a href="{% url 'olympiads:olympiad_task_create' olympiad_id=olympiad.id %}" class="inline-flex items-center px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-all">
                                 <i class="fas fa-plus mr-2"></i> {% trans 'Добавить задание' %}
                             </a>
                         </div>
@@ -562,13 +562,13 @@
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                     <div class="flex justify-end space-x-2">
-                                                        <a href="{% url 'olympiads:task_edit' olympiad_id=olympiad.id task_id=task.id %}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                                                        <a href="{% url 'olympiads:olympiad_task_edit' olympiad_id=olympiad.id task_id=task.id %}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
                                                             <i class="fas fa-edit"></i>
                                                         </a>
-                                                        <a href="{% url 'olympiads:task_preview' olympiad_id=olympiad.id task_id=task.id %}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
+                                                        <a href="{% url 'olympiads:olympiad_task_detail' olympiad_id=olympiad.id task_id=task.id %}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
                                                             <i class="fas fa-eye"></i>
                                                         </a>
-                                                        <a href="{% url 'olympiads:task_delete' olympiad_id=olympiad.id task_id=task.id %}" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300" onclick="return confirm('{% trans 'Вы уверены, что хотите удалить это задание?' %}');">
+                                                        <a href="{% url 'olympiads:olympiad_task_delete' olympiad_id=olympiad.id task_id=task.id %}" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300" onclick="return confirm('{% trans 'Вы уверены, что хотите удалить это задание?' %}');">
                                                             <i class="fas fa-trash-alt"></i>
                                                         </a>
                                                     </div>
@@ -585,7 +585,7 @@
                                 </div>
                                 <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-white">{% trans 'Нет заданий' %}</h3>
                                 <p class="text-gray-500 dark:text-gray-400 mb-6">{% trans 'В этой олимпиаде пока нет заданий. Добавьте задания, чтобы участники могли приступить к их выполнению.' %}</p>
-                                <a href="{% url 'olympiads:task_create' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                                <a href="{% url 'olympiads:olympiad_task_create' olympiad_id=olympiad.id %}" class="btn-action inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
                                     <i class="fas fa-plus mr-2"></i> {% trans 'Добавить первое задание' %}
                                 </a>
                             </div>
