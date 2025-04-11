@@ -185,7 +185,7 @@
                 <div class="flex items-center">
                     <i class="fas fa-chevron-right mx-2 text-gray-400"></i>
                     <a href="{% url 'olympiads:olympiad_manage_list' %}" class="hover:text-gray-700 dark:hover:text-gray-300">
-                        {% trans 'Управление олимпиадами' %}
+                        {% trans 'Управление' %}
                     </a>
                 </div>
             </li>
@@ -201,7 +201,7 @@
                 <div class="flex items-center">
                     <i class="fas fa-chevron-right mx-2 text-gray-400"></i>
                     <span class="text-gray-800 dark:text-gray-200" id="breadcrumb-current">
-                        {% trans 'Управление' %}
+                        {% trans 'Управление' %}  {{ olympiad.title|truncatechars:20 }}
                     </span>
                 </div>
             </li>
@@ -511,17 +511,100 @@
             
             <!-- Секция: Задания -->
             <div id="section-tasks" class="content-section">
+                <!-- Панель управления заданиями -->
                 <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden mb-6">
                     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white">
                         <div class="flex justify-between items-center">
                             <h2 class="text-xl font-semibold flex items-center">
                                 <i class="fas fa-tasks mr-3"></i> {% trans 'Управление заданиями' %}
                             </h2>
-                            <a href="{% url 'olympiads:olympiad_task_create' olympiad_id=olympiad.id %}" class="inline-flex items-center px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-all">
-                                <i class="fas fa-plus mr-2"></i> {% trans 'Добавить задание' %}
-                            </a>
+                            <div class="flex space-x-2">
+                                <button id="addTaskButton" class="inline-flex items-center px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-all">
+                                    <i class="fas fa-plus mr-2"></i> {% trans 'Добавить задание' %}
+                                </button>
+                                <a href="{% url 'olympiads:olympiad_task_create' olympiad_id=olympiad.id %}" class="inline-flex items-center px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-all">
+                                    <i class="fas fa-external-link-alt mr-2"></i> {% trans 'Полное редактирование' %}
+                                </a>
+                            </div>
                         </div>
                     </div>
+                    
+                    <!-- Форма быстрого добавления задания (скрыта по умолчанию) -->
+                    <div id="quickAddTaskForm" class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 hidden">
+                        <form id="taskForm" method="post" action="{% url 'olympiads:olympiad_task_create' olympiad_id=olympiad.id %}" class="space-y-4">
+                            {% csrf_token %}
+                            <input type="hidden" name="quick_add" value="true">
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="id_title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{% trans 'Название' %} *</label>
+                                    <input type="text" name="title" id="id_title" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                </div>
+                                
+                                <div>
+                                    <label for="id_task_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{% trans 'Тип задания' %} *</label>
+                                    <select name="task_type" id="id_task_type" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                        <option value="single_choice">{% trans 'Выбор одного варианта' %}</option>
+                                        <option value="multiple_choice">{% trans 'Выбор нескольких вариантов' %}</option>
+                                        <option value="text_answer">{% trans 'Текстовый ответ' %}</option>
+                                        <option value="programming">{% trans 'Программирование' %}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="id_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{% trans 'Описание задания' %} *</label>
+                                <textarea name="description" id="id_description" rows="3" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"></textarea>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label for="id_points" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{% trans 'Баллы' %} *</label>
+                                    <input type="number" name="points" id="id_points" min="1" value="10" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                </div>
+                                
+                                <div>
+                                    <label for="id_difficulty" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{% trans 'Сложность' %} *</label>
+                                    <select name="difficulty" id="id_difficulty" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                        <option value="1">{% trans '1 - Очень легкая' %}</option>
+                                        <option value="2">{% trans '2 - Легкая' %}</option>
+                                        <option value="3" selected>{% trans '3 - Средняя' %}</option>
+                                        <option value="4">{% trans '4 - Сложная' %}</option>
+                                        <option value="5">{% trans '5 - Очень сложная' %}</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label for="id_order" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{% trans 'Порядок' %}</label>
+                                    <input type="number" name="order" id="id_order" min="1" value="{{ olympiad.tasks.count|add:1 }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between pt-2">
+                                <div>
+                                    <div class="flex items-center space-x-4">
+                                        <div class="flex items-center">
+                                            <input type="checkbox" name="use_markdown" id="id_use_markdown" class="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700">
+                                            <label for="id_use_markdown" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">{% trans 'Markdown' %}</label>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <input type="checkbox" name="use_latex" id="id_use_latex" class="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700">
+                                            <label for="id_use_latex" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">{% trans 'LaTeX' %}</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex space-x-3">
+                                    <button type="button" id="cancelTaskButton" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600">
+                                        {% trans 'Отмена' %}
+                                    </button>
+                                    <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 dark:bg-emerald-700 dark:hover:bg-emerald-600">
+                                        {% trans 'Добавить задание' %}
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    
                     <div class="p-6">
                         {% if olympiad.tasks.all %}
                             <div class="overflow-x-auto">
@@ -1184,6 +1267,83 @@ function copyInvitationLink() {
         setTimeout(() => {
             toast.remove();
         }, 3000);
+    }
+}
+
+// Функции для управления формой быстрого добавления задания
+document.addEventListener('DOMContentLoaded', function() {
+    const addTaskButton = document.getElementById('addTaskButton');
+    const cancelTaskButton = document.getElementById('cancelTaskButton');
+    const quickAddTaskForm = document.getElementById('quickAddTaskForm');
+    
+    // Показать форму при нажатии на кнопку добавления
+    if (addTaskButton) {
+        addTaskButton.addEventListener('click', function() {
+            quickAddTaskForm.classList.remove('hidden');
+            // Прокрутка к форме
+            quickAddTaskForm.scrollIntoView({ behavior: 'smooth' });
+            // Фокус на первом поле
+            document.getElementById('id_title').focus();
+        });
+    }
+    
+    // Скрыть форму при нажатии на кнопку отмены
+    if (cancelTaskButton) {
+        cancelTaskButton.addEventListener('click', function() {
+            quickAddTaskForm.classList.add('hidden');
+        });
+    }
+    
+    // Обработка отправки формы
+    const taskForm = document.getElementById('taskForm');
+    if (taskForm) {
+        taskForm.addEventListener('submit', function(e) {
+            const titleField = document.getElementById('id_title');
+            const descriptionField = document.getElementById('id_description');
+            
+            // Простая валидация формы
+            let isValid = true;
+            
+            if (!titleField.value.trim()) {
+                titleField.classList.add('border-red-500');
+                isValid = false;
+            } else {
+                titleField.classList.remove('border-red-500');
+            }
+            
+            if (!descriptionField.value.trim()) {
+                descriptionField.classList.add('border-red-500');
+                isValid = false;
+            } else {
+                descriptionField.classList.remove('border-red-500');
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                
+                // Показать уведомление об ошибке
+                const toast = document.createElement('div');
+                toast.className = 'notification-toast bg-red-500 text-white';
+                toast.innerHTML = '<i class="fas fa-exclamation-circle mr-2"></i> Пожалуйста, заполните все обязательные поля';
+                document.body.appendChild(toast);
+                
+                // Удаляем уведомление через 3 секунды
+                setTimeout(() => {
+                    toast.remove();
+                }, 3000);
+            }
+        });
+    }
+    
+    // Функция для быстрого редактирования задания (открывает модальное окно)
+    function openQuickEditTask(taskId) {
+        // Здесь будет код для загрузки данных задания и отображения формы редактирования
+        // в модальном окне
+    }
+    
+    // Функция для отображения всплывающей подсказки с описанием задания
+    function showTaskTooltip(taskId, description) {
+        // Создание и отображение тултипа для просмотра описания задания
     }
 }
 </script>

@@ -863,7 +863,7 @@ def olympiad_create(request):
         'form': form
     }
     
-    return render(request, 'olympiads/olympiad_form.html', context)
+    return render(request, 'olympiads/manage/olympiad_create.html', context)
 
 # Редактирование олимпиады
 @login_required
@@ -1056,7 +1056,7 @@ def olympiad_task_create(request, olympiad_id):
         'courses': courses
     }
     
-    return render(request, 'olympiads/manage/task_create.html', context)
+    return render(request, 'olympiads/manage/olympiad_actions.html', context)
 
 # Редактирование задания
 @login_required
