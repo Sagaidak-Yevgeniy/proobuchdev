@@ -1457,6 +1457,95 @@ def olympiad_task_delete(request, olympiad_id, task_id):
     
     return render(request, 'olympiads/manage/task_delete.html', context)
 
+
+@login_required
+def olympiad_task_test_cases(request, olympiad_id, task_id):
+    """Управление тестовыми случаями для задания олимпиады"""
+    # Получаем задание
+    task = get_object_or_404(OlympiadTask, id=task_id, olympiad_id=olympiad_id)
+    olympiad = task.olympiad
+    
+    # Проверка прав доступа
+    if not request.user.is_staff and olympiad.created_by != request.user:
+        messages.error(request, _('У вас нет прав для редактирования этой олимпиады'))
+        return redirect('olympiads:olympiad_detail', olympiad_id=olympiad.id)
+    
+    # Получаем существующие тестовые случаи
+    test_cases = task.test_cases.all().order_by('order')
+    
+    # Для обработки формы добавления нового тестового случая
+    if request.method == 'POST':
+        # Создание нового тестового случая
+        if 'add_test_case' in request.POST:
+            input_data = request.POST.get('input_data', '')
+            expected_output = request.POST.get('expected_output', '')
+            is_hidden = request.POST.get('is_hidden', '') == 'on'
+            explanation = request.POST.get('explanation', '')
+            points = request.POST.get('points', 1)
+            
+            # Получаем максимальный порядок
+            max_order = test_cases.aggregate(max_order=Max('order'))['max_order'] or 0
+            
+            # Создаем новый тестовый случай
+            OlympiadTestCase.objects.create(
+                task=task,
+                input_data=input_data,
+                expected_output=expected_output,
+                is_hidden=is_hidden,
+                explanation=explanation,
+                points=points,
+                order=max_order + 1
+            )
+            
+            messages.success(request, _('Тестовый случай успешно добавлен'))
+            return redirect('olympiads:olympiad_task_test_cases', olympiad_id=olympiad.id, task_id=task.id)
+        
+        # Удаление тестового случая
+        elif 'delete_test_case' in request.POST:
+            test_case_id = request.POST.get('test_case_id')
+            test_case = get_object_or_404(OlympiadTestCase, id=test_case_id, task=task)
+            test_case.delete()
+            
+            messages.success(request, _('Тестовый случай успешно удален'))
+            return redirect('olympiads:olympiad_task_test_cases', olympiad_id=olympiad.id, task_id=task.id)
+        
+        # Обновление порядка тестовых случаев
+        elif 'update_order' in request.POST:
+            orders = request.POST.getlist('order[]')
+            test_case_ids = request.POST.getlist('test_case_id[]')
+            
+            for i, test_case_id in enumerate(test_case_ids):
+                test_case = get_object_or_404(OlympiadTestCase, id=test_case_id, task=task)
+                test_case.order = orders[i]
+                test_case.save(update_fields=['order'])
+            
+            messages.success(request, _('Порядок тестовых случаев успешно обновлен'))
+            return redirect('olympiads:olympiad_task_test_cases', olympiad_id=olympiad.id, task_id=task.id)
+        
+        # Редактирование тестового случая
+        elif 'edit_test_case' in request.POST:
+            test_case_id = request.POST.get('test_case_id')
+            test_case = get_object_or_404(OlympiadTestCase, id=test_case_id, task=task)
+            
+            test_case.input_data = request.POST.get('input_data', '')
+            test_case.expected_output = request.POST.get('expected_output', '')
+            test_case.is_hidden = request.POST.get('is_hidden', '') == 'on'
+            test_case.explanation = request.POST.get('explanation', '')
+            test_case.points = request.POST.get('points', 1)
+            test_case.save()
+            
+            messages.success(request, _('Тестовый случай успешно обновлен'))
+            return redirect('olympiads:olympiad_task_test_cases', olympiad_id=olympiad.id, task_id=task.id)
+    
+    context = {
+        'olympiad': olympiad,
+        'task': task,
+        'test_cases': test_cases,
+    }
+    
+    return render(request, 'olympiads/manage/task_test_cases.html', context)
+
+
 # Статистика олимпиады
 @login_required
 def olympiad_statistics(request, olympiad_id):

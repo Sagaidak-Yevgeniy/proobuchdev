@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Тестовые случаи для задания" %} {{ task.title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col lg:flex-row justify-between items-start gap-6">
+        <!-- Левая панель с навигацией -->
+        <div class="w-full lg:w-1/4 order-2 lg:order-1">
+            {% include 'components/olympiad_navigation.html' with active='tasks' %}
+        </div>
+
+        <!-- Правая панель содержимого -->
+        <div class="w-full lg:w-3/4 order-1 lg:order-2">
+            <!-- Заголовок -->
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold mb-2">{% trans "Тестовые случаи для задания" %}</h1>
+                <h2 class="text-xl mb-4">{{ task.title }}</h2>
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <a href="{% url 'olympiads:olympiad_tasks_manage' olympiad_id=olympiad.id %}" class="btn-secondary">
+                        {% trans "Назад к заданиям" %}
+                    </a>
+                    <a href="{% url 'olympiads:olympiad_task_edit' olympiad_id=olympiad.id task_id=task.id %}" class="btn-secondary">
+                        {% trans "Редактировать задание" %}
+                    </a>
+                </div>
+            </div>
+
+            <!-- Список существующих тестовых случаев -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">{% trans "Существующие тестовые случаи" %}</h3>
+                
+                {% if test_cases %}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-100 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-2 w-10">#</th>
+                                <th class="px-4 py-2">{% trans "Входные данные" %}</th>
+                                <th class="px-4 py-2">{% trans "Ожидаемый результат" %}</th>
+                                <th class="px-4 py-2 w-20">{% trans "Баллы" %}</th>
+                                <th class="px-4 py-2 w-20">{% trans "Скрытый" %}</th>
+                                <th class="px-4 py-2 w-32">{% trans "Действия" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for test_case in test_cases %}
+                            <tr class="border-b dark:border-gray-700">
+                                <td class="px-4 py-2">{{ test_case.order }}</td>
+                                <td class="px-4 py-2">
+                                    <pre class="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded whitespace-pre-wrap max-h-24 overflow-y-auto">{{ test_case.input_data }}</pre>
+                                </td>
+                                <td class="px-4 py-2">
+                                    <pre class="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded whitespace-pre-wrap max-h-24 overflow-y-auto">{{ test_case.expected_output }}</pre>
+                                </td>
+                                <td class="px-4 py-2">{{ test_case.points }}</td>
+                                <td class="px-4 py-2">
+                                    {% if test_case.is_hidden %}
+                                    <span class="badge-success">{% trans "Да" %}</span>
+                                    {% else %}
+                                    <span class="badge-secondary">{% trans "Нет" %}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-2">
+                                    <div class="flex space-x-2">
+                                        <button class="btn-xs btn-primary edit-test-case" 
+                                                data-id="{{ test_case.id }}"
+                                                data-input="{{ test_case.input_data|escapejs }}"
+                                                data-output="{{ test_case.expected_output|escapejs }}"
+                                                data-points="{{ test_case.points }}"
+                                                data-hidden="{{ test_case.is_hidden|yesno:'true,false' }}"
+                                                data-explanation="{{ test_case.explanation|escapejs }}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <form method="post" class="inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="test_case_id" value="{{ test_case.id }}">
+                                            <button type="submit" name="delete_test_case" class="btn-xs btn-danger confirm-delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-gray-500 dark:text-gray-400">
+                    <p>{% trans "Тестовые случаи не добавлены" %}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Форма добавления нового тестового случая -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold mb-4" id="add-form-title">{% trans "Добавить новый тестовый случай" %}</h3>
+                
+                <form method="post" id="test-case-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="test_case_id" id="test_case_id">
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="input_data" class="block text-sm font-medium mb-1">{% trans "Входные данные" %}</label>
+                            <textarea name="input_data" id="input_data" rows="5" class="w-full form-textarea" placeholder="{% trans 'Введите входные данные для теста' %}"></textarea>
+                        </div>
+                        <div>
+                            <label for="expected_output" class="block text-sm font-medium mb-1">{% trans "Ожидаемый результат" %}</label>
+                            <textarea name="expected_output" id="expected_output" rows="5" class="w-full form-textarea" placeholder="{% trans 'Введите ожидаемый результат' %}"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label for="points" class="block text-sm font-medium mb-1">{% trans "Баллы" %}</label>
+                            <input type="number" name="points" id="points" class="w-full form-input" min="1" value="1">
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" name="is_hidden" id="is_hidden" class="form-checkbox mr-2">
+                            <label for="is_hidden" class="text-sm font-medium">{% trans "Скрытый тест" %}</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="explanation" class="block text-sm font-medium mb-1">{% trans "Пояснение" %} ({% trans "необязательно" %})</label>
+                        <textarea name="explanation" id="explanation" rows="3" class="w-full form-textarea" placeholder="{% trans 'Добавьте пояснение к тестовому случаю' %}"></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button type="button" id="cancel-edit" class="btn-secondary mr-2 hidden">{% trans "Отмена" %}</button>
+                        <button type="submit" name="add_test_case" id="submit-button" class="btn-primary">{% trans "Добавить" %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('test-case-form');
+        const formTitle = document.getElementById('add-form-title');
+        const submitButton = document.getElementById('submit-button');
+        const cancelButton = document.getElementById('cancel-edit');
+        const testCaseIdInput = document.getElementById('test_case_id');
+        
+        // Кнопки редактирования
+        const editButtons = document.querySelectorAll('.edit-test-case');
+        
+        // Кнопки удаления
+        const deleteButtons = document.querySelectorAll('.confirm-delete');
+        
+        // Обработчик редактирования
+        editButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const input = this.dataset.input;
+                const output = this.dataset.output;
+                const points = this.dataset.points;
+                const hidden = this.dataset.hidden === 'true';
+                const explanation = this.dataset.explanation;
+                
+                // Заполняем форму
+                testCaseIdInput.value = id;
+                document.getElementById('input_data').value = input;
+                document.getElementById('expected_output').value = output;
+                document.getElementById('points').value = points;
+                document.getElementById('is_hidden').checked = hidden;
+                document.getElementById('explanation').value = explanation;
+                
+                // Меняем текст
+                formTitle.textContent = '{% trans "Редактировать тестовый случай" %}';
+                submitButton.textContent = '{% trans "Сохранить" %}';
+                submitButton.name = 'edit_test_case';
+                
+                // Показываем кнопку отмены
+                cancelButton.classList.remove('hidden');
+                
+                // Прокручиваем к форме
+                form.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+        
+        // Обработчик отмены редактирования
+        cancelButton.addEventListener('click', function() {
+            // Сбрасываем форму
+            form.reset();
+            testCaseIdInput.value = '';
+            
+            // Возвращаем исходный текст
+            formTitle.textContent = '{% trans "Добавить новый тестовый случай" %}';
+            submitButton.textContent = '{% trans "Добавить" %}';
+            submitButton.name = 'add_test_case';
+            
+            // Скрываем кнопку отмены
+            cancelButton.classList.add('hidden');
+        });
+        
+        // Подтверждение удаления
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                if (!confirm('{% trans "Вы уверены, что хотите удалить этот тестовый случай?" %}')) {
+                    e.preventDefault();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

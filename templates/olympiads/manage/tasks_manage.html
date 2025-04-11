@@ -113,6 +113,11 @@
                                 <a href="{% url 'olympiads:olympiad_task_edit' olympiad_id=olympiad.id task_id=task.id %}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300" title="{% trans 'Редактировать' %}">
                                     <i class="fas fa-edit"></i>
                                 </a>
+                                {% if task.task_type == 'programming' %}
+                                <a href="{% url 'olympiads:olympiad_task_test_cases' olympiad_id=olympiad.id task_id=task.id %}" class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300" title="{% trans 'Тестовые случаи' %}">
+                                    <i class="fas fa-vial"></i>
+                                </a>
+                                {% endif %}
                                 <a href="#" onclick="confirmDelete('{% url 'olympiads:olympiad_task_delete' olympiad_id=olympiad.id task_id=task.id %}', '{{ task.title }}')" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300" title="{% trans 'Удалить' %}">
                                     <i class="fas fa-trash-alt"></i>
                                 </a>
