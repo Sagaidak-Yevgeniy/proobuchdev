@@ -33,6 +33,7 @@ urlpatterns = [
     path('manage/', views.olympiad_manage_list, name='olympiad_manage_list'),
     path('manage/create/', views.olympiad_create, name='olympiad_create'),
     path('manage/<int:olympiad_id>/edit/', views.olympiad_actions, name='olympiad_edit'),
+    path('manage/<int:olympiad_id>/actions/', views.olympiad_actions, name='olympiad_actions'),
     path('manage/<int:olympiad_id>/publish/', views.olympiad_publish, name='olympiad_publish'),
     path('manage/<int:olympiad_id>/activate/', views.olympiad_activate, name='olympiad_activate'),
     path('manage/<int:olympiad_id>/deactivate/', views.olympiad_deactivate, name='olympiad_deactivate'),
