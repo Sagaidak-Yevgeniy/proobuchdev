@@ -23,32 +23,32 @@
             <a href="{% url 'olympiads:olympiad_tasks_manage' olympiad_id=olympiad.id %}"
                class="flex flex-col items-center justify-center p-3 rounded-lg bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/30 hover:from-emerald-100 hover:to-emerald-200 dark:hover:from-emerald-900/50 dark:hover:to-emerald-800/50 text-emerald-800 dark:text-emerald-300 transition-all duration-200 shadow-sm transform hover:-translate-y-1 text-center">
                 <i class="fas fa-tasks text-lg mb-1"></i>
-                <span class="text-xs font-medium truncate w-full">Задания</span>
+                <span class="text-xs font-medium truncate w-full">{% trans 'Задания' %}</span>
             </a>
             
             <a href="{% url 'olympiads:olympiad_participants' olympiad_id=olympiad.id %}"
                class="flex flex-col items-center justify-center p-3 rounded-lg bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-900/30 dark:to-cyan-800/30 hover:from-cyan-100 hover:to-cyan-200 dark:hover:from-cyan-900/50 dark:hover:to-cyan-800/50 text-cyan-800 dark:text-cyan-300 transition-all duration-200 shadow-sm transform hover:-translate-y-1 text-center">
                 <i class="fas fa-users text-lg mb-1"></i>
-                <span class="text-xs font-medium truncate w-full">Участники</span>
+                <span class="text-xs font-medium truncate w-full">{% trans 'Участники' %}</span>
             </a>
             
             <a href="{% url 'olympiads:olympiad_invitations' olympiad_id=olympiad.id %}"
                class="flex flex-col items-center justify-center p-3 rounded-lg bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/30 dark:to-teal-800/30 hover:from-teal-100 hover:to-teal-200 dark:hover:from-teal-900/50 dark:hover:to-teal-800/50 text-teal-800 dark:text-teal-300 transition-all duration-200 shadow-sm transform hover:-translate-y-1 text-center">
                 <i class="fas fa-envelope-open-text text-lg mb-1"></i>
-                <span class="text-xs font-medium truncate w-full">Приглашения</span>
+                <span class="text-xs font-medium truncate w-full">{% trans 'Приглашения' %}</span>
             </a>
             
             <a href="{% url 'olympiads:olympiad_statistics' olympiad_id=olympiad.id %}"
                class="flex flex-col items-center justify-center p-3 rounded-lg bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/30 dark:to-indigo-800/30 hover:from-indigo-100 hover:to-indigo-200 dark:hover:from-indigo-900/50 dark:hover:to-indigo-800/50 text-indigo-800 dark:text-indigo-300 transition-all duration-200 shadow-sm transform hover:-translate-y-1 text-center">
                 <i class="fas fa-chart-line text-lg mb-1"></i>
-                <span class="text-xs font-medium truncate w-full">Статистика</span>
+                <span class="text-xs font-medium truncate w-full">{% trans 'Статистика' %}</span>
             </a>
             
             {% if olympiad.status != olympiad.OlympiadStatus.COMPLETED and olympiad.status != olympiad.OlympiadStatus.ARCHIVED %}
-            <a href="{% url 'olympiads:olympiad_status' olympiad_id=olympiad.id %}"
+            <a href="{% url 'olympiads:olympiad_actions' olympiad_id=olympiad.id %}"
                class="flex flex-col items-center justify-center p-3 rounded-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 hover:from-red-100 hover:to-red-200 dark:hover:from-red-900/50 dark:hover:to-red-800/50 text-red-800 dark:text-red-300 transition-all duration-200 shadow-sm transform hover:-translate-y-1 text-center">
                 <i class="fas fa-power-off text-lg mb-1"></i>
-                <span class="text-xs font-medium truncate w-full">Статус</span>
+                <span class="text-xs font-medium truncate w-full">{% trans 'Статус' %}</span>
             </a>
             {% endif %}
         </div>
