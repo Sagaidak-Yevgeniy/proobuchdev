@@ -602,12 +602,99 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                     <div class="p-6">
-                        <div class="p-4 text-center bg-gray-100 dark:bg-gray-700 rounded-lg">
-                            <p class="mb-4">{% trans 'Список участников олимпиады загружается здесь' %}</p>
-                            <a href="{% url 'olympiads:olympiad_participants' olympiad_id=olympiad.id %}" class="inline-flex items-center px-5 py-2.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:ring-4 focus:ring-cyan-300 dark:focus:ring-cyan-800 action-btn">
-                                <i class="fas fa-external-link-alt mr-2"></i>
-                                {% trans 'Открыть список участников' %}
-                            </a>
+                        <div class="mb-4 flex justify-between items-center">
+                            <p class="text-gray-500 dark:text-gray-400">
+                                {% trans 'Всего участников' %}: {{ participants|length }}
+                            </p>
+                            <div class="flex space-x-2">
+                                <button class="btn btn-outline-primary" onclick="alert('{% trans 'Функция экспорта будет доступна в будущих обновлениях' %}')">
+                                    <i class="fas fa-file-export mr-2"></i>
+                                    {% trans 'Экспорт участников' %}
+                                </button>
+                                <button class="btn btn-outline-primary" onclick="alert('{% trans 'Функция отправки уведомлений будет доступна в будущих обновлениях' %}')">
+                                    <i class="fas fa-envelope mr-2"></i>
+                                    {% trans 'Отправить уведомление' %}
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            {% if participants %}
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            {% trans 'Пользователь' %}
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            {% trans 'Дата регистрации' %}
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            {% trans 'Статус' %}
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            {% trans 'Баллы' %}
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            {% trans 'Действия' %}
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    {% for participant in participants %}
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                                                    <span class="text-blue-800 dark:text-blue-300 font-semibold">{{ participant.user.username|first|upper }}</span>
+                                                </div>
+                                                <div class="ml-4">
+                                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                        {{ participant.user.username }}
+                                                    </div>
+                                                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                                                        {{ participant.user.email }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {{ participant.registered_at|date:"d.m.Y H:i" }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if participant.is_finished %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300{% else %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300{% endif %}">
+                                                {% if participant.is_finished %}
+                                                    {% trans 'Завершил' %}
+                                                {% else %}
+                                                    {% trans 'Участвует' %}
+                                                {% endif %}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            <span class="font-semibold">{{ participant.score }}</span> / {{ olympiad.max_score }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <button class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300" onclick="alert('{% trans 'Детали участника будут доступны в будущих обновлениях' %}')">
+                                                {% trans 'Детали' %}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            {% else %}
+                            <div class="py-10 px-6 text-center">
+                                <div class="text-gray-500 dark:text-gray-400 mb-4">
+                                    <i class="fas fa-users fa-4x"></i>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{% trans 'Пока нет участников' %}</h3>
+                                <p class="text-gray-500 dark:text-gray-400 mb-4">{% trans 'Пригласите участников или разрешите самостоятельную регистрацию' %}</p>
+                                <button class="btn btn-primary" onclick="showSection('invitations')">
+                                    <i class="fas fa-envelope-open-text mr-2"></i>
+                                    {% trans 'Управление приглашениями' %}
+                                </button>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -623,12 +710,147 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                     <div class="p-6">
-                        <div class="p-4 text-center bg-gray-100 dark:bg-gray-700 rounded-lg">
-                            <p class="mb-4">{% trans 'Управление приглашениями загружается здесь' %}</p>
-                            <a href="{% url 'olympiads:olympiad_invitations' olympiad_id=olympiad.id %}" class="inline-flex items-center px-5 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 focus:ring-4 focus:ring-teal-300 dark:focus:ring-teal-800 action-btn">
-                                <i class="fas fa-external-link-alt mr-2"></i>
-                                {% trans 'Открыть управление приглашениями' %}
-                            </a>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="md:col-span-1">
+                                <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg border border-gray-200 dark:border-gray-700">
+                                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+                                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                                            {% trans 'Пригласить пользователя' %}
+                                        </h3>
+                                    </div>
+                                    
+                                    <div class="px-4 py-5 sm:p-6">
+                                        <form method="post" action="{% url 'olympiads:olympiad_invitations' olympiad_id=olympiad.id %}" id="invitation-form">
+                                            {% csrf_token %}
+                                            
+                                            <div class="space-y-4">
+                                                <div>
+                                                    <label for="id_username" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans 'Имя пользователя' %} *</label>
+                                                    <input type="text" name="username" id="id_username" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
+                                                </div>
+                                                
+                                                <div>
+                                                    <button type="button" onclick="alert('{% trans 'Эта функция будет реализована в рамках внедрения AJAX запросов' %}')" class="w-full px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:bg-teal-800 dark:hover:bg-teal-700">
+                                                        {% trans 'Пригласить' %}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg border border-gray-200 dark:border-gray-700 mt-6">
+                                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+                                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                                            {% trans 'Общая ссылка-приглашение' %}
+                                        </h3>
+                                    </div>
+                                    
+                                    <div class="px-4 py-5 sm:p-6">
+                                        <div class="space-y-4">
+                                            <p class="text-sm text-gray-600 dark:text-gray-400">{% trans 'Создайте ссылку, которую можно отправить неограниченному числу пользователей для приглашения на олимпиаду.' %}</p>
+                                            
+                                            {% if olympiad.invitation_code %}
+                                                <div class="flex items-center space-x-2">
+                                                    <input type="text" value="{{ request.scheme }}://{{ request.get_host }}{% url 'olympiads:olympiad_join_by_invitation' code=olympiad.invitation_code %}" id="invitation-link" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" readonly>
+                                                    <button type="button" onclick="copyInvitationLink()" class="inline-flex items-center p-2 border border-transparent rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
+                                                        <i class="fas fa-copy"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="flex justify-end">
+                                                    <button type="button" onclick="alert('{% trans 'Функция сброса кода будет доступна в будущих обновлениях' %}')" class="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
+                                                        {% trans 'Сбросить код' %}
+                                                    </button>
+                                                </div>
+                                            {% else %}
+                                                <button type="button" onclick="alert('{% trans 'Функция создания кода будет доступна в будущих обновлениях' %}')" class="w-full px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:bg-teal-800 dark:hover:bg-teal-700">
+                                                    {% trans 'Создать ссылку-приглашение' %}
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="md:col-span-2">
+                                <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg border border-gray-200 dark:border-gray-700">
+                                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+                                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                                            {% trans 'Список приглашений' %}
+                                        </h3>
+                                        <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+                                            {% trans 'Всего приглашений' %}: {{ invitations|length|default:"0" }}
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="overflow-x-auto">
+                                        {% if invitations and invitations|length > 0 %}
+                                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                                <tr>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                        {% trans 'Пользователь' %}
+                                                    </th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                        {% trans 'Дата приглашения' %}
+                                                    </th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                        {% trans 'Статус' %}
+                                                    </th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                        {% trans 'Кем приглашен' %}
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                                {% for invitation in invitations %}
+                                                <tr>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="flex items-center">
+                                                            <div class="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                                                                <span class="text-blue-800 dark:text-blue-300 font-semibold">{{ invitation.user.username|first|upper }}</span>
+                                                            </div>
+                                                            <div class="ml-4">
+                                                                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                                    {{ invitation.user.username }}
+                                                                </div>
+                                                                <div class="text-sm text-gray-500 dark:text-gray-400">
+                                                                    {{ invitation.user.email }}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                        {{ invitation.created_at|date:"d.m.Y H:i" }}
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if invitation.is_accepted %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300{% else %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300{% endif %}">
+                                                            {% if invitation.is_accepted %}
+                                                                {% trans 'Принято' %}
+                                                            {% else %}
+                                                                {% trans 'Ожидает' %}
+                                                            {% endif %}
+                                                        </span>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                        {{ invitation.invited_by.username }}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                        {% else %}
+                                        <div class="py-10 px-6 text-center">
+                                            <div class="text-gray-500 dark:text-gray-400 mb-4">
+                                                <i class="fas fa-envelope-open-text fa-4x"></i>
+                                            </div>
+                                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{% trans 'Пока нет приглашений' %}</h3>
+                                            <p class="text-gray-500 dark:text-gray-400 mb-4">{% trans 'Используйте форму слева, чтобы отправить приглашения пользователям' %}</p>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
