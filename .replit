@@ -1,7 +1,9 @@
-modules = ["python-3.11", "nodejs-20", "python3"]
+modules = ["python-3.11"]
+run = "node index.js"
 
 [nix]
 channel = "stable-24_05"
+packages = ["freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "tcl", "tk", "zlib"]
 
 [workflows]
 runButton = "Project"
@@ -31,7 +33,7 @@ args = "pip install django Pillow psycopg2-binary python-dotenv && python manage
 waitForPort = 5000
 
 [deployment]
-run = ["sh", "-c", "pip install django Pillow psycopg2-binary python-dotenv && python manage.py runserver 0.0.0.0:5000"]
+run = ["sh", "-c", "node index.js"]
 
 [[ports]]
 localPort = 5000
