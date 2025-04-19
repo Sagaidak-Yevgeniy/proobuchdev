@@ -19,6 +19,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-u^e$!+nyn%n(c3%*=f09#
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '0.0.0.0,localhost,127.0.0.1,testserver').split(',')
+ALLOWED_HOSTS.append('f483f18e-7fb8-4ed3-a030-6826aa63f5d3-00-18gt2om9wenpq.pike.replit.dev')
+ALLOWED_HOSTS.extend(['.replit.dev', '.repl.co'])
 
 # Base URL для генерации абсолютных ссылок
 BASE_URL = os.environ.get('BASE_URL', 'http://localhost:8000')
